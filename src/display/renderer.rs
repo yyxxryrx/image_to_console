@@ -14,8 +14,10 @@ pub fn render(result: ImageProcessorResult, config: Config) {
         "\x1b[0;32mImage Size\x1b[0m: \x1b[1m{} x {}\x1b[0m",
         result.width, result.height
     );
-    if let Some(file_name) = config.file_name {
-        println!("\x1b[0;32mFile Name\x1b[0m: \x1b[1;34m{}\x1b[0m", file_name);
+    if config.show_file_name {
+        if let Some(file_name) = config.file_name {
+            println!("\x1b[0;32mFile Name\x1b[0m: \x1b[1;34m{}\x1b[0m", file_name);
+        }
     }
 
     println!(
