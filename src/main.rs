@@ -1,10 +1,12 @@
-mod util;
-mod image;
+mod color;
 mod config;
 mod display;
-use image::processor::ImageProcessor;
-use display::renderer::render;
+mod image;
+mod util;
 
+use color::{colors::TerminalColor, prelude::ToColoredText};
+use display::renderer::render;
+use image::processor::ImageProcessor;
 
 fn main() {
     let config = config::Config::parse();
@@ -13,7 +15,14 @@ fn main() {
             let mut image_processor = ImageProcessor::from_config(config.clone());
             let result = image_processor.process();
             render(result, config);
-        },
-        Err(err_msg) => eprintln!("\x1b[31mERR\x1b[0m: {}", err_msg)
+        }
+        Err(err_msg) => eprintln!(
+            "{}: {}",
+            "err"
+                .to_colored_text()
+                .set_foreground_color(TerminalColor::Red)
+                .to_string(),
+            err_msg
+        ),
     }
 }

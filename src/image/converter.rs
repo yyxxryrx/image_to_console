@@ -105,7 +105,7 @@ impl ImageConverter {
         let pixel1_color = PixelColor::from_channels(pixel1.0);
         let pixel2_color = PixelColor::from_channels(pixel2.0);
         if pixel1_color.a < 128 && pixel2_color.a < 128 {
-            return "x1b[0m".to_string();
+            return "\x1b[0m".to_string();
         }
         if pixel1_color.a < 128 {
             return format!("\x1b[0m{}▄", pixel2_color.fg());
