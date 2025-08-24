@@ -36,7 +36,7 @@ pub fn render(result: ImageProcessorResult, config: Config) {
     }
 
     println!(
-        "{}: \x1b[1mcenter={} resize-height={}",
+        "{}: \x1b[1mcenter={} resize-height={} full-resolution={}",
         "Args"
             .to_colored_text()
             .set_foreground_color(TerminalColor::Green),
@@ -50,7 +50,13 @@ pub fn render(result: ImageProcessorResult, config: Config) {
             .resize_height
             .to_string()
             .to_colored_text()
-            .set_foreground_color(TerminalColor::Yellow)
+            .set_foreground_color(TerminalColor::Yellow),
+        result
+            .option
+            .full
+            .to_string()
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::Yellow),
     );
     if config.show_time {
         println!();

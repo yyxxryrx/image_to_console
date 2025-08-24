@@ -58,8 +58,12 @@ impl ImageProcessor {
             (w, h) = rgba_img.dimensions();
         }
         if self.option.resize_height {
-            if h > height.0 as u32 {
-                let new_img = self.image.resize(w, height.0 as u32, FilterType::Lanczos3);
+            if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
+                let new_img = self.image.resize(
+                    w,
+                    (height.0 * if self.option.full { 2 } else { 1 }) as u32,
+                    FilterType::Lanczos3,
+                );
                 rgba_img = new_img.to_rgba8();
                 luma_img = new_img.to_luma8();
                 (w, h) = rgba_img.dimensions();
