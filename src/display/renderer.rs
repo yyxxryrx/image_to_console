@@ -5,8 +5,8 @@ use crate::util::get_char;
 use std::io::Write;
 
 pub fn render(result: ImageProcessorResult, config: Config) {
-    print!("\x1bc");
     if !config.disable_print {
+        print!("\x1bc");
         for _ in 0..result.air_lines {
             println!();
         }
