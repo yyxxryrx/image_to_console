@@ -6,11 +6,13 @@ use std::io::Write;
 
 pub fn render(result: ImageProcessorResult, config: Config) {
     print!("\x1bc");
-    for _ in 0..result.air_lines {
-        println!();
+    if !config.disable_print {
+        for _ in 0..result.air_lines {
+            println!();
+        }
+        let output = result.lines.join("\n");
+        println!("{}", output);
     }
-    let output = result.lines.join("\n");
-    println!("{}", output);
     println!(
         "{}: \x1b[1m{} x {}\x1b[0m",
         "Image Size"

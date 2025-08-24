@@ -47,6 +47,13 @@ pub struct Cli {
         default_value_t = false
     )]
     pub full_resolution: bool,
+    #[clap(
+        short,
+        long,
+        help = "Disable the print",
+        default_value_t = false
+    )]
+    pub disable_print: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -90,6 +97,7 @@ pub struct Config {
     pub pause: bool,
     pub center: bool,
     pub show_time: bool,
+    pub disable_print: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
     pub output: Option<String>,
@@ -104,6 +112,7 @@ impl Config {
         pause: bool,
         center: bool,
         show_time: bool,
+        disable_print: bool,
         show_file_name: bool,
         full_resolution: bool,
         output: Option<String>,
@@ -117,6 +126,7 @@ impl Config {
             output,
             show_time,
             file_name,
+            disable_print,
             show_file_name,
             full_resolution,
             without_resize_height,
@@ -140,6 +150,7 @@ impl Config {
                     cli.pause,
                     cli.center,
                     cli.show_time,
+                    cli.disable_print,
                     !args.hide_filename,
                     cli.full_resolution,
                     cli.output,
@@ -158,6 +169,7 @@ impl Config {
                     cli.pause,
                     cli.center,
                     cli.show_time,
+                    cli.disable_print,
                     false,
                     cli.full_resolution,
                     cli.output,
@@ -204,6 +216,7 @@ impl Config {
                         cli.pause,
                         cli.center,
                         cli.show_time,
+                        cli.disable_print,
                         false,
                         cli.full_resolution,
                         cli.output,
