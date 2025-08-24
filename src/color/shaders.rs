@@ -81,7 +81,7 @@ impl Text {
     }
 
     pub fn to_string(&self) -> String {
-        format!("\x1b[{}{}0m", self.head.to_string(), self.content)
+        format!("\x1b[{}{}\x1b[0m", self.head.to_string(), self.content)
     }
 }
 

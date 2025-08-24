@@ -28,7 +28,7 @@ pub fn render(result: ImageProcessorResult, config: Config) {
                     .set_foreground_color(TerminalColor::Green),
                 file_name
                     .to_colored_text()
-                    .set_foreground_color(TerminalColor::Blue)
+                    .set_foreground_color(TerminalColor::LightBlue)
             );
         }
     }
@@ -63,7 +63,7 @@ pub fn render(result: ImageProcessorResult, config: Config) {
                 .set_foreground_color(TerminalColor::Green),
             format!("{:02}:{:02}.{:03}", min, sec, ms)
                 .to_colored_text()
-                .set_foreground_color(TerminalColor::LightYellow)
+                .set_foreground_color(TerminalColor::LightGreen)
         );
     }
     if let Some(output) = config.output {

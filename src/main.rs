@@ -20,8 +20,7 @@ fn main() {
             "{}: {}",
             "err"
                 .to_colored_text()
-                .set_foreground_color(TerminalColor::Red)
-                .to_string(),
+                .set_foreground_color(TerminalColor::Red),
             err_msg
         ),
     }
