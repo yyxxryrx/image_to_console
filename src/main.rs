@@ -14,14 +14,26 @@ fn main() {
         Ok(config) => {
             let mut image_processor = ImageProcessor::from_config(config.clone());
             let result = image_processor.process();
-            render(result, config);
+            if let Err(e) = render(result, config) {
+                eprintln!(
+                    "{}: {}",
+                    "error"
+                        .to_colored_text()
+                        .set_foreground_color(TerminalColor::Red),
+                    e.to_string()
+                );
+                std::process::exit(e.raw_os_error().unwrap_or(1))
+            }
         }
-        Err(err_msg) => eprintln!(
-            "{}: {}",
-            "err"
-                .to_colored_text()
-                .set_foreground_color(TerminalColor::Red),
-            err_msg
-        ),
+        Err(err_msg) => {
+            eprintln!(
+                "{}: {}",
+                "error"
+                    .to_colored_text()
+                    .set_foreground_color(TerminalColor::Red),
+                err_msg
+            );
+            std::process::exit(1)
+        },
     }
 }
