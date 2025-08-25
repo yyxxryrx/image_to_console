@@ -6,6 +6,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::blocking::{Client, Response};
 use std::io::Write;
 use std::path::Path;
+use crate::types::DisplayMode;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -47,18 +48,12 @@ pub struct Cli {
         default_value_t = false
     )]
     pub full_resolution: bool,
-    #[clap(
-        long,
-        help = "Disable the print",
-        default_value_t = false
-    )]
+    #[clap(long, help = "Disable the print", default_value_t = false)]
     pub disable_print: bool,
-    #[clap(
-        long,
-        help = "Disable display info",
-        default_value_t = false
-    )]
+    #[clap(long, help = "Disable display info", default_value_t = false)]
     pub disable_info: bool,
+    #[clap(long, help = "Convert the image to grayscale", default_value_t = false)]
+    pub no_color: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -101,7 +96,9 @@ pub struct UrlArgs {
 pub struct Config {
     pub pause: bool,
     pub center: bool,
+    pub no_color: bool,
     pub show_time: bool,
+    pub mode: DisplayMode,
     pub disable_info: bool,
     pub disable_print: bool,
     pub show_file_name: bool,
@@ -113,10 +110,12 @@ pub struct Config {
 }
 
 impl Config {
+    #[allow(dead_code)]
     pub fn new(
         image: image::DynamicImage,
         pause: bool,
         center: bool,
+        no_color: bool,
         show_time: bool,
         disable_info: bool,
         disable_print: bool,
@@ -131,6 +130,7 @@ impl Config {
             pause,
             center,
             output,
+            no_color,
             show_time,
             file_name,
             disable_info,
@@ -138,11 +138,27 @@ impl Config {
             show_file_name,
             full_resolution,
             without_resize_height,
+            mode: DisplayMode::from_bool(full_resolution, no_color)
         }
     }
 
     pub fn parse() -> Result<Self, String> {
         let cli = Cli::parse();
+        let builder = |img, file_name, show_file_name| Self {
+            file_name,
+            image: img,
+            show_file_name,
+            pause: cli.pause,
+            center: cli.center,
+            output: cli.output,
+            no_color: cli.no_color,
+            show_time: cli.show_time,
+            disable_info: cli.disable_info,
+            disable_print: cli.disable_print,
+            without_resize_height: cli.without_resize_height,
+            full_resolution: cli.full_resolution || cli.no_color,
+            mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color),
+        };
         match cli.command {
             Commands::File(args) => {
                 let path = Path::new(&args.path);
@@ -153,18 +169,10 @@ impl Config {
                     return Err("Path is not a file".to_string());
                 }
                 let img = image::open(&args.path).expect("Failed to open image");
-                Ok(Self::new(
+                Ok(builder(
                     img,
-                    cli.pause,
-                    cli.center,
-                    cli.show_time,
-                    cli.disable_info,
-                    cli.disable_print,
-                    !args.hide_filename,
-                    cli.full_resolution,
-                    cli.output,
                     Some(path.file_name().unwrap().to_string_lossy().to_string()),
-                    cli.without_resize_height,
+                    !args.hide_filename,
                 ))
             }
             Commands::Base64(args) => {
@@ -173,19 +181,7 @@ impl Config {
                     .map_err(|_| "Invalid base64 string")?;
                 let img = image::load_from_memory(&buffer)
                     .map_err(|_| "Failed to load image from bytes")?;
-                Ok(Self::new(
-                    img,
-                    cli.pause,
-                    cli.center,
-                    cli.show_time,
-                    cli.disable_info,
-                    cli.disable_print,
-                    false,
-                    cli.full_resolution,
-                    cli.output,
-                    None,
-                    cli.without_resize_height,
-                ))
+                Ok(builder(img, None, false))
             }
             Commands::Url(args) => {
                 println!("Downloading the image from: {}", args.url);
@@ -221,19 +217,7 @@ impl Config {
                     pd.finish_with_message("Download complete");
                     let img = image::load_from_memory(&buffer)
                         .map_err(|_| "Failed to load image from bytes")?;
-                    Ok(Self::new(
-                        img,
-                        cli.pause,
-                        cli.center,
-                        cli.show_time,
-                        cli.disable_info,
-                        cli.disable_print,
-                        false,
-                        cli.full_resolution,
-                        cli.output,
-                        None,
-                        cli.without_resize_height,
-                    ))
+                    Ok(builder(img, None, false))
                 } else {
                     Err(format!("Bad requests({})", resp.status()))
                 }

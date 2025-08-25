@@ -3,6 +3,7 @@ mod config;
 mod display;
 mod image;
 mod util;
+mod types;
 
 use color::{colors::TerminalColor, prelude::ToColoredText};
 use display::renderer::render;

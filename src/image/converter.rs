@@ -1,3 +1,4 @@
+use crate::types::DisplayMode;
 use rayon::iter::*;
 
 struct PixelColor {
@@ -26,14 +27,68 @@ impl PixelColor {
     }
 }
 
+struct NoColorPixel {
+    top: &'static str,
+    full: &'static str,
+    bottom: &'static str,
+    sep: bool,
+    from: usize,
+    to: usize,
+}
+
+// 实验得出的
+const NO_COLOR_PIXELS: [NoColorPixel; 5] = [
+    NoColorPixel {
+        top: "▘",
+        full: "▮",
+        bottom: "▖",
+        sep: true,
+        from: 153,
+        to: 204,
+    },
+    NoColorPixel {
+        top: "",
+        full: "▪",
+        bottom: "",
+        sep: false,
+        from: 122,
+        to: 204,
+    },
+    NoColorPixel {
+        top: "",
+        bottom: "",
+        full: "▫",
+        sep: false,
+        from: 100,
+        to: 204,
+    },
+    NoColorPixel {
+        top: "",
+        bottom: "",
+        full: ",",
+        sep: false,
+        from: 75,
+        to: 204,
+    },
+    NoColorPixel {
+        top: "",
+        bottom: "",
+        full: ".",
+        sep: false,
+        from: 51,
+        to: 204,
+    },
+];
+
 pub struct ImageConverterOption {
     pub width: u32,
     pub height: u32,
-    pub full: bool,
     pub line_init: String,
+    pub mode: DisplayMode,
 }
 
 pub struct ImageConverter {
+    full: bool,
     rgba_img: image::RgbaImage,
     luma_img: image::GrayImage,
     pub option: ImageConverterOption,
@@ -48,13 +103,14 @@ impl ImageConverter {
         Self {
             rgba_img,
             luma_img,
+            full: option.mode.is_full(),
             option,
         }
     }
 
     pub fn convert(&self) -> Vec<String> {
         let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
-        (if self.option.full {
+        (if self.full {
             0..(self.option.height - 1) / 2
         } else {
             0..(self.option.height - 1)
@@ -68,12 +124,11 @@ impl ImageConverter {
                     let mut line = self.option.line_init.clone();
                     let c = (0..(self.option.width - 1))
                         .into_par_iter()
-                        .map(move |x| {
-                            if self.option.full {
-                                self.full_convert(x, y)
-                            } else {
-                                self.unfull_convert(x, y)
-                            }
+                        .map(move |x| match self.option.mode {
+                            DisplayMode::FullColor => self.full_convert(x, y),
+                            DisplayMode::HalfColor => self.unfull_convert(x, y),
+                            DisplayMode::FullNoColor => self.no_color_convert(x, y),
+                            _ => String::new(),
                         })
                         .collect::<String>();
                     line.push_str(&c);
@@ -119,6 +174,69 @@ impl ImageConverter {
             format!("{}{}▄", pixel1_color.bg(), pixel2_color.fg())
         } else {
             format!("{}█", pixel1_color.fg())
+        }
+    }
+
+    fn no_color_convert(&self, x: u32, y: u32) -> String {
+        let pixel1 = self.luma_img.get_pixel(x, y * 2);
+        let pixel2 = self.luma_img.get_pixel(x, y * 2 + 1);
+        let p1 = pixel1.0[0] as usize;
+        let p2 = pixel2.0[0] as usize;
+        // 逐个选取pixel看是否可以和当前的像素匹配
+        for pixel in NO_COLOR_PIXELS.iter() {
+            if pixel.sep {
+                if pixel.from < p1 && p1 < pixel.to && pixel.from < p2 && p2 < pixel.to {
+                    return pixel.full.to_string();
+                } else if pixel.from < p1 && p1 < pixel.to {
+                    return pixel.top.to_string();
+                } else if pixel.from < p2 && p2 < pixel.to {
+                    return pixel.bottom.to_string();
+                }
+            } else {
+                if (pixel.from < p1 || pixel.from < p2) && (p1 < pixel.to && p2 < pixel.to) {
+                    return pixel.full.to_string();
+                }
+            }
+        }
+        if p1 > 128 && p2 > 128 {
+            "█".to_string()
+        } else if p1 > 128 {
+            "▀".to_string()
+        } else if p2 > 128 {
+            "▄".to_string()
+        } else {
+            " ".to_string()
+        }
+    }
+
+    // 旧的转换算法，以后可能会用到
+    #[allow(dead_code)]
+    fn no_color_convert_old(&self, x: u32, y: u32) -> String {
+        let pixel1 = self.luma_img.get_pixel(x, y * 2);
+        let pixel2 = self.luma_img.get_pixel(x, y * 2 + 1);
+        let p1 = pixel1.0[0] as usize;
+        let p2 = pixel2.0[0] as usize;
+        if (153 < p1) && (p1 < 204) && (153 < p2) && (p2 < 204) {
+            return "▮".to_string();
+        } else if (153 < p1) && (p1 < 204) {
+            return "▘".to_string();
+        } else if (153 < p2) && (p2 < 204) {
+            return "▖".to_string();
+        }
+        if (102 < p1 || 102 < p2) && (p1 < 204 && p2 < 204) {
+            return "▪".to_string();
+        }
+        if (51 < p1 || 51 < p2) && (p1 < 204 && p2 < 204) {
+            return ".".to_string();
+        }
+        if p1 > 128 && p2 > 128 {
+            "█".to_string()
+        } else if p1 > 128 {
+            "▀".to_string()
+        } else if p2 > 128 {
+            "▄".to_string()
+        } else {
+            " ".to_string()
         }
     }
 }

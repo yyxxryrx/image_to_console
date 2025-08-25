@@ -1,11 +1,13 @@
 use crate::config::Config;
 use crate::image::converter::{ImageConverter, ImageConverterOption};
 use image::imageops::FilterType;
+use crate::types::DisplayMode;
 
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
     pub full: bool,
     pub center: bool,
+    pub mode: DisplayMode,
     pub resize_height: bool,
 }
 
@@ -32,6 +34,7 @@ impl ImageProcessor {
         Self::new(
             config.image,
             ImageProcessorOptions {
+                mode: config.mode,
                 center: config.center,
                 full: config.full_resolution,
                 resize_height: !config.without_resize_height,
@@ -98,7 +101,7 @@ impl ImageProcessor {
                 width: w,
                 height: h,
                 line_init,
-                full: self.option.full,
+                mode: self.option.mode,
             },
         );
         ImageProcessorResult {
