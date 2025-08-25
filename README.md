@@ -1,6 +1,7 @@
 # image_to_console
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Last Version](https://img.shields.io/github/v/release/yyxxryrx/image_to_console
+)](https://github.com/yyxxryrx/image_to_console/releases/latest)
 
 一个用 Rust 编写的高性能终端图片查看工具。
 
@@ -18,7 +19,7 @@
 
 ### 从 Release 下载
 
-1. 访问 [GitHub Release 页面](https://github.com/your-username/image_to_console/releases)
+1. 访问 [GitHub Release 页面](https://github.com/yyxxryrx/image_to_console/releases)
 2. 下载适用于您操作系统的预编译二进制文件
 3. 解压并将二进制文件添加到系统 PATH 中
 
