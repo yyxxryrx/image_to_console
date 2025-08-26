@@ -1,0 +1,1 @@
+pub const IMAGE_EXTS: [&str; 6] = ["png", "jpg", "jpeg", "webp", "tiff", "bmp"];

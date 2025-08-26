@@ -20,13 +20,13 @@ impl DisplayMode {
     pub fn is_color(&self) -> bool {
         matches!(self, Self::FullColor | Self::HalfColor)
     }
-    
+
     pub fn from_bool(full: bool, no_color: bool) -> Self {
         match (full, no_color) {
             (true, true) => Self::FullNoColor,
             (true, false) => Self::FullColor,
-            (false, true) => Self::HalfColor,
-            (false, false) => Self::Ascii,
+            (false, false) => Self::HalfColor,
+            (false, true) => Self::Ascii,
         }
     }
 }

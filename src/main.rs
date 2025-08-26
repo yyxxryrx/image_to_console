@@ -1,40 +1,19 @@
 mod color;
 mod config;
+mod const_value;
 mod display;
 mod image;
-mod util;
+mod runner;
 mod types;
+mod util;
 
-use color::{colors::TerminalColor, prelude::ToColoredText};
-use display::renderer::render;
-use image::processor::ImageProcessor;
+use crate::runner::{run, run_multiple};
+use config::RunMode::*;
 
 fn main() {
-    let config = config::Config::parse();
+    let config = config::parse();
     match config {
-        Ok(config) => {
-            let mut image_processor = ImageProcessor::from_config(config.clone());
-            let result = image_processor.process();
-            if let Err(e) = render(result, config) {
-                eprintln!(
-                    "{}: {}",
-                    "error"
-                        .to_colored_text()
-                        .set_foreground_color(TerminalColor::Red),
-                    e.to_string()
-                );
-                std::process::exit(e.raw_os_error().unwrap_or(1))
-            }
-        }
-        Err(err_msg) => {
-            eprintln!(
-                "{}: {}",
-                "error"
-                    .to_colored_text()
-                    .set_foreground_color(TerminalColor::Red),
-                err_msg
-            );
-            std::process::exit(1)
-        },
+        Once(config) => run(config),
+        Multiple(configs) => run_multiple(configs),
     }
 }

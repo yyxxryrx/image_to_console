@@ -1,12 +1,16 @@
+use crate::config::RunMode::{Multiple, Once};
+use crate::const_value::IMAGE_EXTS;
+use crate::types::DisplayMode;
 use base64::Engine;
 use clap::builder::styling::{AnsiColor, Color, Style};
 use clap::builder::Styles;
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::blocking::{Client, Response};
+use rayon::iter::ParallelIterator;
+use rayon::prelude::ParallelBridge;
+use reqwest::blocking::Client;
 use std::io::Write;
 use std::path::Path;
-use crate::types::DisplayMode;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -35,6 +39,12 @@ pub struct Cli {
     #[clap(short, long, help = "Output file path")]
     pub output: Option<String>,
     #[clap(
+        long,
+        help = "Without resize the width",
+        default_value_t = false
+    )]
+    pub without_resize_width: bool,
+    #[clap(
         short,
         long,
         help = "Without resize the height",
@@ -62,6 +72,8 @@ pub struct Cli {
 pub enum Commands {
     #[clap(about = "Load an image from a file")]
     File(FileArgs),
+    #[clap(about = "Load all the images from a directory")]
+    Directory(DirectoryArgs),
     #[clap(about = "Load an image from a base64")]
     Base64(Base64Args),
     #[clap(about = "Load an image from a url")]
@@ -77,6 +89,12 @@ pub struct FileArgs {
     )]
     pub hide_filename: bool,
     #[clap(help = "Path to the image")]
+    pub path: String,
+}
+
+#[derive(Parser)]
+pub struct DirectoryArgs {
+    #[clap(help = "Path of directory")]
     pub path: String,
 }
 
@@ -106,121 +124,175 @@ pub struct Config {
     pub output: Option<String>,
     pub file_name: Option<String>,
     pub image: image::DynamicImage,
+    pub without_resize_width: bool,
     pub without_resize_height: bool,
 }
 
-impl Config {
-    #[allow(dead_code)]
-    pub fn new(
-        image: image::DynamicImage,
-        pause: bool,
-        center: bool,
-        no_color: bool,
-        show_time: bool,
-        disable_info: bool,
-        disable_print: bool,
-        show_file_name: bool,
-        full_resolution: bool,
-        output: Option<String>,
-        file_name: Option<String>,
-        without_resize_height: bool,
-    ) -> Self {
-        Self {
-            image,
-            pause,
-            center,
-            output,
-            no_color,
-            show_time,
-            file_name,
-            disable_info,
-            disable_print,
-            show_file_name,
-            full_resolution,
-            without_resize_height,
-            mode: DisplayMode::from_bool(full_resolution, no_color)
+#[derive(Debug, Clone)]
+pub enum RunMode {
+    Once(Result<Config, String>),
+    Multiple(Vec<Result<Config, String>>),
+}
+
+#[allow(dead_code)]
+impl RunMode {
+    pub fn is_once(&self) -> Result<Config, String> {
+        match self {
+            Once(config) => config.clone(),
+            Multiple(_) => panic!("Cannot get the config in multiple mode"),
         }
     }
+    pub fn is_multiple(&self) -> Vec<Result<Config, String>> {
+        match self {
+            Once(_) => panic!("Cannot get the config in once mode"),
+            Multiple(configs) => configs.clone(),
+        }
+    }
+}
 
-    pub fn parse() -> Result<Self, String> {
-        let cli = Cli::parse();
-        let builder = |img, file_name, show_file_name| Self {
-            file_name,
-            image: img,
-            show_file_name,
-            pause: cli.pause,
-            center: cli.center,
-            output: cli.output,
-            no_color: cli.no_color,
-            show_time: cli.show_time,
-            disable_info: cli.disable_info,
-            disable_print: cli.disable_print,
-            without_resize_height: cli.without_resize_height,
-            full_resolution: cli.full_resolution || cli.no_color,
-            mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color),
-        };
-        match cli.command {
-            Commands::File(args) => {
-                let path = Path::new(&args.path);
-                if !path.exists() {
-                    return Err("Path is not exist".to_string());
-                }
-                if !path.is_file() {
-                    return Err("Path is not a file".to_string());
-                }
-                let img = image::open(&args.path).expect("Failed to open image");
-                Ok(builder(
-                    img,
-                    Some(path.file_name().unwrap().to_string_lossy().to_string()),
-                    !args.hide_filename,
-                ))
+pub(crate) fn parse() -> RunMode {
+    let cli = Cli::parse();
+    let builder = |img, file_name, show_file_name| Config {
+        file_name,
+        image: img,
+        show_file_name,
+        pause: cli.pause,
+        center: cli.center,
+        output: cli.output,
+        no_color: cli.no_color,
+        show_time: cli.show_time,
+        disable_info: cli.disable_info,
+        disable_print: cli.disable_print,
+        without_resize_width: cli.without_resize_width,
+        without_resize_height: cli.without_resize_height,
+        full_resolution: cli.full_resolution || cli.no_color,
+        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color),
+    };
+    match cli.command {
+        Commands::File(args) => {
+            let path = Path::new(&args.path);
+            if !path.exists() {
+                return Once(Err("Path is not exist".to_string()));
             }
-            Commands::Base64(args) => {
-                let buffer = base64::engine::general_purpose::STANDARD
-                    .decode(args.base64)
-                    .map_err(|_| "Invalid base64 string")?;
-                let img = image::load_from_memory(&buffer)
-                    .map_err(|_| "Failed to load image from bytes")?;
-                Ok(builder(img, None, false))
+            if !path.is_file() {
+                return Once(Err("Path is not a file".to_string()));
             }
-            Commands::Url(args) => {
-                println!("Downloading the image from: {}", args.url);
-                let client = Client::new();
-                let resp: Response = client
-                    .get(&args.url)
-                    .send()
-                    .map_err(|_| "Fail to download the image")?;
-                if resp.status().is_success() {
-                    let type_ = resp
-                        .headers()
-                        .get("Content-Type")
-                        .expect("Cannot get the file type!")
-                        .to_str()
-                        .unwrap();
-                    if !(type_.starts_with("image") || type_.starts_with("binary")) {
-                        return Err(format!(
-                            "The file is not an image! (\x1b[0;35m{}\x1b[0m)",
-                            type_
-                        ));
+            let img = image::open(&args.path).expect("Failed to open image");
+            Once(Ok(builder(
+                img,
+                Some(path.file_name().unwrap().to_string_lossy().to_string()),
+                !args.hide_filename,
+            )))
+        }
+        Commands::Directory(args) => {
+            let path = Path::new(&args.path);
+            if !path.exists() {
+                return Multiple(vec![Err("Path is not exist".to_string())]);
+            }
+            if !path.is_dir() {
+                return Multiple(vec![Err("Path is not a directory".to_string())]);
+            }
+
+            let configs = std::fs::read_dir(args.path)
+                .expect("Failed to read directory")
+                .par_bridge()
+                .filter_map(|entry: std::io::Result<std::fs::DirEntry>| match entry {
+                    Ok(entry) => match entry.file_type() {
+                        Ok(file_type) => {
+                            if !file_type.is_file() {
+                                return None;
+                            }
+                            let path = entry.path();
+                            match path.extension() {
+                                Some(ext) => {
+                                    if !IMAGE_EXTS.contains(&ext.to_str().unwrap()) {
+                                        return None;
+                                    }
+                                    let output = &path.parent().unwrap().join(&path.file_stem().unwrap());
+                                    Some(Ok(Config {
+                                        mode: DisplayMode::from_bool(
+                                            cli.full_resolution || cli.no_color,
+                                            cli.no_color,
+                                        ),
+                                        pause: false,
+                                        file_name: None,
+                                        show_time: false,
+                                        center: cli.center,
+                                        disable_info: true,
+                                        disable_print: true,
+                                        show_file_name: false,
+                                        no_color: cli.no_color,
+                                        without_resize_width: cli.without_resize_width,
+                                        without_resize_height: cli.without_resize_height,
+                                        full_resolution: cli.full_resolution || cli.no_color,
+                                        output: Some(output.to_str().unwrap().to_string() + ".txt"),
+                                        image: image::open(path).expect("Failed to open image"),
+                                    }))
+                                }
+                                None => None,
+                            }
+                        }
+                        Err(err) => {
+                            eprintln!("{}", err);
+                            None
+                        }
+                    },
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        None
                     }
-                    let total_size = resp.content_length().expect("Cannot get the file length");
-                    let pd = ProgressBar::new(total_size);
-                    pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta} remaining)").unwrap());
-                    let mut buffer = Vec::new();
-                    let mut cursor = std::io::Cursor::new(&mut buffer);
-                    let content = resp.bytes().unwrap();
-                    pd.enable_steady_tick(std::time::Duration::from_millis(100));
-                    for i in content.chunks(1024) {
-                        cursor.write(i).unwrap();
-                        pd.inc(i.len() as u64);
+                })
+                .collect();
+            Multiple(configs)
+        }
+        Commands::Base64(args) => {
+            match base64::engine::general_purpose::STANDARD.decode(args.base64) {
+                Ok(buffer) => match image::load_from_memory(&buffer) {
+                    Ok(img) => Once(Ok(builder(img, None, false))),
+                    Err(_) => Once(Err("Failed to load image from base64".to_string())),
+                },
+                Err(_) => Once(Err("Invalid base64 string".to_string())),
+            }
+        }
+        Commands::Url(args) => {
+            println!("Downloading the image from: {}", args.url);
+            let client = Client::new();
+            match client.get(&args.url).send() {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        let type_ = resp
+                            .headers()
+                            .get("Content-Type")
+                            .expect("Cannot get the file type!")
+                            .to_str()
+                            .unwrap();
+                        if !(type_.starts_with("image") || type_.starts_with("binary")) {
+                            return Once(Err(format!(
+                                "The file is not an image! (\x1b[0;35m{}\x1b[0m)",
+                                type_
+                            )));
+                        }
+                        let total_size = resp.content_length().expect("Cannot get the file length");
+                        let pd = ProgressBar::new(total_size);
+                        pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta} remaining)").unwrap());
+                        let mut buffer = Vec::new();
+                        let mut cursor = std::io::Cursor::new(&mut buffer);
+                        let content = resp.bytes().unwrap();
+                        pd.enable_steady_tick(std::time::Duration::from_millis(100));
+                        for i in content.chunks(1024) {
+                            cursor.write(i).unwrap();
+                            pd.inc(i.len() as u64);
+                        }
+                        pd.finish_with_message("Download complete");
+                        match image::load_from_memory(&buffer) {
+                            Ok(img) => Once(Ok(builder(img, None, false))),
+                            Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
+                        }
+                    } else {
+                        Once(Err(format!("Bad requests({})", resp.status())))
                     }
-                    pd.finish_with_message("Download complete");
-                    let img = image::load_from_memory(&buffer)
-                        .map_err(|_| "Failed to load image from bytes")?;
-                    Ok(builder(img, None, false))
-                } else {
-                    Err(format!("Bad requests({})", resp.status()))
                 }
+                Err(e) => Once(Err(format!("Failed to download the image: {}", e))),
             }
         }
     }

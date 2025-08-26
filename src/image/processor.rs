@@ -1,13 +1,14 @@
 use crate::config::Config;
 use crate::image::converter::{ImageConverter, ImageConverterOption};
-use image::imageops::FilterType;
 use crate::types::DisplayMode;
+use image::imageops::FilterType;
 
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
     pub full: bool,
     pub center: bool,
     pub mode: DisplayMode,
+    pub resize_width: bool,
     pub resize_height: bool,
 }
 
@@ -37,6 +38,7 @@ impl ImageProcessor {
                 mode: config.mode,
                 center: config.center,
                 full: config.full_resolution,
+                resize_width: !config.without_resize_width,
                 resize_height: !config.without_resize_height,
             },
         )
@@ -50,15 +52,17 @@ impl ImageProcessor {
         let mut luma_img = self.image.to_luma8();
         let (mut w, mut h) = rgba_img.dimensions();
         let (width, height) = terminal_size::terminal_size().unwrap();
-        if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
-            let new_img = self.image.resize(
-                (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round() as u32,
-                h,
-                FilterType::Lanczos3,
-            );
-            rgba_img = new_img.to_rgba8();
-            luma_img = new_img.to_luma8();
-            (w, h) = rgba_img.dimensions();
+        if self.option.resize_width {
+            if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
+                let new_img = self.image.resize(
+                    (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round() as u32,
+                    h,
+                    FilterType::Lanczos3,
+                );
+                rgba_img = new_img.to_rgba8();
+                luma_img = new_img.to_luma8();
+                (w, h) = rgba_img.dimensions();
+            }
         }
         if self.option.resize_height {
             if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
