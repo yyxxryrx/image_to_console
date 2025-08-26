@@ -1,39 +1,46 @@
-use std::time::Duration;
-use indicatif::{ProgressBar, ProgressStyle};
 use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
 use crate::display::renderer::render;
 use crate::image::processor::ImageProcessor;
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use std::time::Duration;
+
+pub fn err(err_msg: String) {
+    eprintln!(
+        "{}: {}",
+        "error"
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::Red),
+        err_msg
+    );
+    std::process::exit(1)
+}
 
 pub fn run(config: Result<Config, String>) {
     match config {
         Ok(config) => {
-            let mut image_processor = ImageProcessor::from_config(config.clone());
-            let result = image_processor.process();
-            if let Err(e) = render(result, config) {
-                eprintln!(
-                    "{}: {}",
-                    "error"
-                        .to_colored_text()
-                        .set_foreground_color(TerminalColor::Red),
-                    e.to_string()
-                );
-                std::process::exit(e.raw_os_error().unwrap_or(1))
+            match ImageProcessor::from_config(config.clone()) {
+                Ok(mut image_processor) => {
+                    let result = image_processor.process();
+                    if let Err(e) = render(result, config) {
+                        eprintln!(
+                            "{}: {}",
+                            "error"
+                                .to_colored_text()
+                                .set_foreground_color(TerminalColor::Red),
+                            e.to_string()
+                        );
+                        std::process::exit(e.raw_os_error().unwrap_or(1))
+                    }
+                },
+                Err(e) => err(e)
             }
+            
         }
-        Err(err_msg) => {
-            eprintln!(
-                "{}: {}",
-                "error"
-                    .to_colored_text()
-                    .set_foreground_color(TerminalColor::Red),
-                err_msg
-            );
-            std::process::exit(1)
-        }
+        Err(e) => err(e)
     }
 }
 

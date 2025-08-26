@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::image::converter::{ImageConverter, ImageConverterOption};
-use crate::types::DisplayMode;
+use crate::types::{DisplayMode, ImageType::*};
 use image::imageops::FilterType;
 
 #[derive(Copy, Clone)]
@@ -31,17 +31,21 @@ impl ImageProcessor {
         Self { image, option }
     }
 
-    pub fn from_config(config: Config) -> Self {
-        Self::new(
-            config.image,
-            ImageProcessorOptions {
-                mode: config.mode,
-                center: config.center,
-                full: config.full_resolution,
-                resize_width: !config.without_resize_width,
-                resize_height: !config.without_resize_height,
-            },
-        )
+    pub fn from_config(config: Config) -> Result<Self, String> {
+        let option = ImageProcessorOptions {
+            mode: config.mode,
+            center: config.center,
+            full: config.full_resolution,
+            resize_width: !config.without_resize_width,
+            resize_height: !config.without_resize_height,
+        };
+        match config.image {
+            Image(image) => Ok(Self::new(image, option)),
+            Path(path) => {
+                let image = image::open(path).map_err(|e| e.to_string())?;
+                Ok(Self::new(image, option))
+            }
+        }
     }
 
     pub fn process(&mut self) -> ImageProcessorResult {

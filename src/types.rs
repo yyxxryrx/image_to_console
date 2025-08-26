@@ -1,3 +1,5 @@
+use image::DynamicImage;
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DisplayMode {
@@ -29,4 +31,10 @@ impl DisplayMode {
             (false, true) => Self::Ascii,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum ImageType {
+    Image(DynamicImage),
+    Path(String)
 }

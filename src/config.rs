@@ -1,6 +1,6 @@
 use crate::config::RunMode::{Multiple, Once};
 use crate::const_value::IMAGE_EXTS;
-use crate::types::DisplayMode;
+use crate::types::{DisplayMode, ImageType};
 use base64::Engine;
 use clap::builder::styling::{AnsiColor, Color, Style};
 use clap::builder::Styles;
@@ -116,6 +116,7 @@ pub struct Config {
     pub center: bool,
     pub no_color: bool,
     pub show_time: bool,
+    pub image: ImageType,
     pub mode: DisplayMode,
     pub disable_info: bool,
     pub disable_print: bool,
@@ -123,7 +124,6 @@ pub struct Config {
     pub full_resolution: bool,
     pub output: Option<String>,
     pub file_name: Option<String>,
-    pub image: image::DynamicImage,
     pub without_resize_width: bool,
     pub without_resize_height: bool,
 }
@@ -150,11 +150,11 @@ impl RunMode {
     }
 }
 
-pub(crate) fn parse() -> RunMode {
+pub fn parse() -> RunMode {
     let cli = Cli::parse();
     let builder = |img, file_name, show_file_name| Config {
         file_name,
-        image: img,
+        image: ImageType::Image(img),
         show_file_name,
         pause: cli.pause,
         center: cli.center,
@@ -226,7 +226,7 @@ pub(crate) fn parse() -> RunMode {
                                         without_resize_height: cli.without_resize_height,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
-                                        image: image::open(path).expect("Failed to open image"),
+                                        image: ImageType::Path(path.to_str().unwrap().to_string()),
                                     }))
                                 }
                                 None => None,
