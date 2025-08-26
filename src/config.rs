@@ -11,6 +11,7 @@ use rayon::prelude::ParallelBridge;
 use reqwest::blocking::Client;
 use std::io::Write;
 use std::path::Path;
+use crate::types::ImageType::*;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -60,8 +61,15 @@ pub struct Cli {
     pub disable_info: bool,
     #[clap(long, help = "Convert the image to grayscale", default_value_t = false)]
     pub no_color: bool,
-    #[clap(short, long, help = "Black background (Only run in no-color mode)", default_value_t = false)]
+    #[clap(
+        short,
+        long,
+        help = "Black background (Only run in no-color mode)",
+        default_value_t = false
+    )]
     pub black_background: bool,
+    #[clap(long, help = "Read all images at once", default_value_t = false)]
+    pub read_all: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -154,7 +162,7 @@ pub fn parse() -> RunMode {
     let output_base = cli.output.clone();
     let builder = |img, file_name, show_file_name| Config {
         file_name,
-        image: ImageType::Image(img),
+        image: Image(img),
         show_file_name,
         pause: cli.pause,
         center: cli.center,
@@ -246,7 +254,11 @@ pub fn parse() -> RunMode {
                                         without_resize_height: cli.without_resize_height,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
-                                        image: ImageType::Path(path.to_str().unwrap().to_string()),
+                                        image: if cli.read_all {
+                                            Image(image::open(&path).unwrap())
+                                        } else {
+                                            Path(path.to_str().unwrap().to_string())
+                                        },
                                     }))
                                 }
                                 None => None,
