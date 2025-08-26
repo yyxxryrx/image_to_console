@@ -50,9 +50,18 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: image_to_console-windows-x86_64.exe
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+            name: image_to_console-android-aarch64
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+          link-to-sdk: true
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -62,6 +71,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+
+
+      - name: Configure Cargo for Android
+        run: |
+          mkdir -p .cargo
+          cat >> .cargo/config.toml <<EOF
+          [ target.aarch64-linux-android ]
+          linker = "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
+          ar     = "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          EOF
 
       - name: Build
         env:
