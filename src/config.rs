@@ -68,7 +68,7 @@ pub struct Cli {
         default_value_t = false
     )]
     pub black_background: bool,
-    #[clap(long, help = "Read all images at once", default_value_t = false)]
+    #[clap(long, help = "Read all images at once (Only run in directory mode)", default_value_t = false)]
     pub read_all: bool,
     #[clap(subcommand)]
     pub command: Commands,
