@@ -8,8 +8,10 @@
 ## 功能特点
 
 - 🖼️ **多种来源**: 支持从文件、URL 和 Base64 字符串加载图片。
+- 📁 **目录处理**: 支持批量处理整个目录中的图片文件。
 - 🎨 **真彩支持**: 在支持的终端中显示彩色图片。
 - ⚫ **灰度模式**: 支持将彩色图片转换为灰度字符艺术显示。
+- ⚫ **黑色背景**: 灰度模式下支持黑色背景显示选项。
 - ⚡ **并行处理**: 使用 Rayon 库进行并行计算，转换速度快。
 - 📏 **自适应尺寸**: 自动缩放图片以适应终端窗口。
 - ⌨️ **交互式暂停**: 可选择在显示后暂停，方便查看。
@@ -42,6 +44,9 @@ cargo build --release
 # 从文件加载图片
 image_to_console file path/to/image.jpg
 
+# 从目录加载所有图片
+image_to_console directory path/to/directory
+
 # 从 URL 加载图片
 image_to_console url https://example.com/image.png
 
@@ -70,6 +75,12 @@ image_to_console -f file image.jpg
 # 灰度模式显示
 image_to_console --no-color file image.jpg
 
+# 灰度模式下使用黑色背景
+image_to_console --no-color -b file image.jpg
+
+# 禁用宽度缩放
+image_to_console --without-resize-width file image.jpg
+
 # 禁用高度缩放
 image_to_console --without-resize-height file image.jpg
 
@@ -81,6 +92,9 @@ image_to_console --disable-print file image.jpg
 
 # 禁用信息显示
 image_to_console --disable-info file image.jpg
+
+# 目录模式下一次性读取所有图片
+image_to_console --read-all directory path/to/directory
 ```
 
 ### 文件子命令选项
@@ -93,6 +107,16 @@ image_to_console file --hide-filename image.jpg
 image_to_console file image.jpg
 ```
 
+### 目录子命令选项
+
+```bash
+# 处理目录中的所有图片
+image_to_console directory path/to/directory
+
+# 处理目录中的所有图片并一次性读取
+image_to_console --read-all directory path/to/directory
+```
+
 ## 显示模式说明
 
 ### 彩色模式
@@ -102,6 +126,7 @@ image_to_console file image.jpg
 ### 灰度模式
 - **灰度模式**（--no-color）：将图片转换为灰度字符艺术显示
 - 使用不同的 Unicode 字符（如 █、▀、▄、.、, 等）表示不同的灰度级别
+- **黑色背景**（-b）：在灰度模式下使用黑色背景显示图片
 
 ## 支持的图片格式
 
@@ -112,6 +137,7 @@ image_to_console file image.jpg
 - BMP
 - ICO
 - TIFF
+- WebP
 
 ## Dependencies
 
