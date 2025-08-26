@@ -19,7 +19,7 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 
 #[derive(Parser)]
 #[clap(name = "image_to_console")]
-#[command(version = "0.1.4", color = clap::ColorChoice::Auto, styles = CLAP_STYLING)]
+#[command(version = "0.1.5", color = clap::ColorChoice::Auto, styles = CLAP_STYLING)]
 pub struct Cli {
     #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
     pub center: bool,
