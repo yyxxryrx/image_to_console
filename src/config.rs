@@ -38,11 +38,7 @@ pub struct Cli {
     pub show_time: bool,
     #[clap(short, long, help = "Output file path")]
     pub output: Option<String>,
-    #[clap(
-        long,
-        help = "Without resize the width",
-        default_value_t = false
-    )]
+    #[clap(long, help = "Without resize the width", default_value_t = false)]
     pub without_resize_width: bool,
     #[clap(
         short,
@@ -64,6 +60,8 @@ pub struct Cli {
     pub disable_info: bool,
     #[clap(long, help = "Convert the image to grayscale", default_value_t = false)]
     pub no_color: bool,
+    #[clap(short, long, help = "Black background (Only run in no-color mode)", default_value_t = false)]
+    pub black_background: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -122,6 +120,7 @@ pub struct Config {
     pub disable_print: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
+    pub black_background: bool,
     pub output: Option<String>,
     pub file_name: Option<String>,
     pub without_resize_width: bool,
@@ -152,6 +151,7 @@ impl RunMode {
 
 pub fn parse() -> RunMode {
     let cli = Cli::parse();
+    let output_base = cli.output.clone();
     let builder = |img, file_name, show_file_name| Config {
         file_name,
         image: ImageType::Image(img),
@@ -163,6 +163,7 @@ pub fn parse() -> RunMode {
         show_time: cli.show_time,
         disable_info: cli.disable_info,
         disable_print: cli.disable_print,
+        black_background: cli.black_background,
         without_resize_width: cli.without_resize_width,
         without_resize_height: cli.without_resize_height,
         full_resolution: cli.full_resolution || cli.no_color,
@@ -196,8 +197,15 @@ pub fn parse() -> RunMode {
             let configs = std::fs::read_dir(args.path)
                 .expect("Failed to read directory")
                 .par_bridge()
-                .filter_map(|entry: std::io::Result<std::fs::DirEntry>| match entry {
-                    Ok(entry) => match entry.file_type() {
+                .filter_map(|entry: std::io::Result<std::fs::DirEntry>| {
+                    let entry = match entry {
+                        Ok(entry) => entry,
+                        Err(err) => {
+                            eprintln!("{}", err);
+                            return None;
+                        }
+                    };
+                    match entry.file_type() {
                         Ok(file_type) => {
                             if !file_type.is_file() {
                                 return None;
@@ -208,7 +216,18 @@ pub fn parse() -> RunMode {
                                     if !IMAGE_EXTS.contains(&ext.to_str().unwrap()) {
                                         return None;
                                     }
-                                    let output = &path.parent().unwrap().join(&path.file_stem().unwrap());
+                                    let output = match output_base.clone() {
+                                        Some(o) => {
+                                            let p = Path::new(&o);
+                                            if let Err(e) = std::fs::create_dir_all(p) {
+                                                return Some(Err(e.to_string()));
+                                            }
+                                            p.join(&path.file_stem().unwrap())
+                                        }
+                                        None => {
+                                            path.parent().unwrap().join(&path.file_stem().unwrap())
+                                        }
+                                    };
                                     Some(Ok(Config {
                                         mode: DisplayMode::from_bool(
                                             cli.full_resolution || cli.no_color,
@@ -222,6 +241,7 @@ pub fn parse() -> RunMode {
                                         disable_print: true,
                                         show_file_name: false,
                                         no_color: cli.no_color,
+                                        black_background: cli.black_background,
                                         without_resize_width: cli.without_resize_width,
                                         without_resize_height: cli.without_resize_height,
                                         full_resolution: cli.full_resolution || cli.no_color,
@@ -236,10 +256,6 @@ pub fn parse() -> RunMode {
                             eprintln!("{}", err);
                             None
                         }
-                    },
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        None
                     }
                 })
                 .collect();

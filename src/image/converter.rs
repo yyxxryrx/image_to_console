@@ -85,6 +85,7 @@ pub struct ImageConverterOption {
     pub height: u32,
     pub line_init: String,
     pub mode: DisplayMode,
+    pub black_background: bool,
 }
 
 pub struct ImageConverter {
@@ -122,6 +123,9 @@ impl ImageConverter {
                 .iter()
                 .map(move |&y| {
                     let mut line = self.option.line_init.clone();
+                    if self.option.black_background {
+                        line.push_str("\x1b[40m");
+                    }
                     let c = (0..(self.option.width - 1))
                         .into_par_iter()
                         .map(move |x| match self.option.mode {

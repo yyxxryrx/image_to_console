@@ -10,6 +10,7 @@ pub struct ImageProcessorOptions {
     pub mode: DisplayMode,
     pub resize_width: bool,
     pub resize_height: bool,
+    pub black_background: bool,
 }
 
 pub struct ImageProcessorResult {
@@ -36,6 +37,7 @@ impl ImageProcessor {
             mode: config.mode,
             center: config.center,
             full: config.full_resolution,
+            black_background: config.black_background,
             resize_width: !config.without_resize_width,
             resize_height: !config.without_resize_height,
         };
@@ -110,6 +112,7 @@ impl ImageProcessor {
                 height: h,
                 line_init,
                 mode: self.option.mode,
+                black_background: self.option.black_background
             },
         );
         ImageProcessorResult {
