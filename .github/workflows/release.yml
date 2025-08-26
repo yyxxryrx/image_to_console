@@ -3,30 +3,35 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: Create GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
           draft: false
           prerelease: false
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-release:
-    name: Build Release
+
+  build-and-upload:
+    name: Build & Upload
     needs: create-release
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
@@ -45,10 +50,9 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: image_to_console-windows-x86_64.exe
-    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -56,26 +60,22 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build
-        run: |
-          cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package
         shell: bash
         run: |
-          mkdir -p dist
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp "target/${{ matrix.target }}/release/image_to_console.exe" "dist/${{ matrix.name }}"
-          else
-            cp "target/${{ matrix.target }}/release/image_to_console" "dist/${{ matrix.name }}"
-          fi
+          mkdir dist
+          cp target/${{ matrix.target }}/release/image_to_console${{ matrix.os == 'windows-latest' && '.exe' || '' }} \
+             dist/${{ matrix.name }}
           cd dist
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a "../${{ matrix.name }}.zip" "${{ matrix.name }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            7z a ../${{ matrix.name }}.zip ${{ matrix.name }}
           else
-            tar -czf "../${{ matrix.name }}.tar.gz" "${{ matrix.name }}"
+            tar czf ../${{ matrix.name }}.tar.gz ${{ matrix.name }}
           fi
 
-      - name: Upload to Release
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
