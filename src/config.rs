@@ -70,6 +70,8 @@ pub struct Cli {
     pub black_background: bool,
     #[clap(long, help = "Read all images at once (Only run in directory mode)", default_value_t = false)]
     pub read_all: bool,
+    #[clap(long, help = "Use wezterm's image protocol", default_value_t = false)]
+    pub wezterm: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -175,7 +177,7 @@ pub fn parse() -> RunMode {
         without_resize_width: cli.without_resize_width,
         without_resize_height: cli.without_resize_height,
         full_resolution: cli.full_resolution || cli.no_color,
-        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color),
+        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color, cli.wezterm),
     };
     match cli.command {
         Commands::File(args) => {
@@ -240,6 +242,7 @@ pub fn parse() -> RunMode {
                                         mode: DisplayMode::from_bool(
                                             cli.full_resolution || cli.no_color,
                                             cli.no_color,
+                                            cli.wezterm,
                                         ),
                                         pause: false,
                                         file_name: None,

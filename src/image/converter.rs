@@ -1,5 +1,7 @@
 use crate::types::DisplayMode;
+use base64::Engine;
 use rayon::iter::*;
+use std::io::Cursor;
 
 struct PixelColor {
     r: u8,
@@ -110,38 +112,43 @@ impl ImageConverter {
     }
 
     pub fn convert(&self) -> Vec<String> {
-        let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
-        (if self.full {
-            0..(self.option.height - 1) / 2
-        } else {
-            0..(self.option.height - 1)
-        })
-        .into_par_iter()
-        .chunks(chunk_size as usize)
-        .flat_map(|chunk| {
-            chunk
-                .iter()
-                .map(move |&y| {
-                    let mut line = self.option.line_init.clone();
-                    if self.option.black_background {
-                        line.push_str("\x1b[40m");
-                    }
-                    let c = (0..(self.option.width - 1))
-                        .into_par_iter()
-                        .map(move |x| match self.option.mode {
-                            DisplayMode::FullColor => self.full_convert(x, y),
-                            DisplayMode::HalfColor => self.unfull_convert(x, y),
-                            DisplayMode::FullNoColor => self.no_color_convert(x, y),
-                            _ => String::new(),
-                        })
-                        .collect::<String>();
-                    line.push_str(&c);
-                    line.push_str("\x1b[0m");
-                    line
+        match self.option.mode {
+            DisplayMode::WezTerm | DisplayMode::WezTermNoColor => self.wezterm_convert(),
+            _ => {
+                let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
+                (if self.full {
+                    0..(self.option.height - 1) / 2
+                } else {
+                    0..(self.option.height - 1)
                 })
-                .collect::<Vec<String>>()
-        })
-        .collect()
+                .into_par_iter()
+                .chunks(chunk_size as usize)
+                .flat_map(|chunk| {
+                    chunk
+                        .iter()
+                        .map(move |&y| {
+                            let mut line = self.option.line_init.clone();
+                            if self.option.black_background {
+                                line.push_str("\x1b[40m");
+                            }
+                            let c = (0..(self.option.width - 1))
+                                .into_par_iter()
+                                .map(move |x| match self.option.mode {
+                                    DisplayMode::FullColor => self.full_convert(x, y),
+                                    DisplayMode::HalfColor => self.unfull_convert(x, y),
+                                    DisplayMode::FullNoColor => self.no_color_convert(x, y),
+                                    _ => String::new(),
+                                })
+                                .collect::<String>();
+                            line.push_str(&c);
+                            line.push_str("\x1b[0m");
+                            line
+                        })
+                        .collect::<Vec<String>>()
+                })
+                .collect()
+            }
+        }
     }
 
     fn unfull_convert(&self, x: u32, y: u32) -> String {
@@ -242,5 +249,31 @@ impl ImageConverter {
         } else {
             " ".to_string()
         }
+    }
+
+    fn wezterm_convert(&self) -> Vec<String> {
+        let (image_base64, image_size) = if self.option.mode.is_color() {
+            let mut buffer = Vec::new();
+            let mut writer = Cursor::new(&mut buffer);
+            self.rgba_img.write_to(&mut writer, image::ImageFormat::Png).unwrap();
+            (
+                base64::engine::general_purpose::STANDARD.encode(&buffer),
+                buffer.len(),
+            )
+        } else {
+            let mut buffer = Vec::new();
+            let mut writer = Cursor::new(&mut buffer);
+            self.luma_img
+                .write_to(&mut writer, image::ImageFormat::Jpeg)
+                .unwrap();
+            (
+                base64::engine::general_purpose::STANDARD.encode(&buffer),
+                buffer.len(),
+            )
+        };
+        // Add space to prevent misalignment
+        let mut lines: Vec<String> = vec![String::from(" "); 2];
+        lines[0] = format!("\x1b]1337;File=size={image_size};inline=1:{image_base64}\x1b\\");
+        lines
     }
 }

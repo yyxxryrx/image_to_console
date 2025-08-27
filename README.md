@@ -16,6 +16,7 @@
 - 📏 **自适应尺寸**: 自动缩放图片以适应终端窗口。
 - ⌨️ **交互式暂停**: 可选择在显示后暂停，方便查看。
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
+- 🖥️ **WezTerm 支持**: 支持在 WezTerm 终端中直接显示图片。
 
 ## 安装
 
@@ -95,6 +96,9 @@ image_to_console --disable-info file image.jpg
 
 # 目录模式下一次性读取所有图片
 image_to_console --read-all directory path/to/directory
+
+# 使用 WezTerm 图片协议显示图片
+image_to_console --wezterm file image.jpg
 ```
 
 ### 文件子命令选项
@@ -122,11 +126,13 @@ image_to_console --read-all directory path/to/directory
 ### 彩色模式
 - **半分辨率彩色模式**（默认）：使用背景色块显示，每个字符代表一个像素点
 - **全分辨率彩色模式**（-f）：使用上下半色块显示，每个字符代表两个像素点
+- **WezTerm 模式**（--wezterm）：使用 WezTerm 的内联图片协议直接显示原图
 
 ### 灰度模式
 - **灰度模式**（--no-color）：将图片转换为灰度字符艺术显示
 - 使用不同的 Unicode 字符（如 █、▀、▄、.、, 等）表示不同的灰度级别
 - **黑色背景**（-b）：在灰度模式下使用黑色背景显示图片
+- **WezTerm 灰度模式**（--wezterm --no-color）：在 WezTerm 中显示灰度图
 
 ## 支持的图片格式
 

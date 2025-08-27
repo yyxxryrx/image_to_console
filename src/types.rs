@@ -7,6 +7,8 @@ pub enum DisplayMode {
     FullColor,
     FullNoColor,
     Ascii,
+    WezTerm,
+    WezTermNoColor
 }
 #[allow(dead_code)]
 impl Default for DisplayMode {
@@ -20,10 +22,21 @@ impl DisplayMode {
         matches!(self, Self::FullColor | Self::FullNoColor)
     }
     pub fn is_color(&self) -> bool {
-        matches!(self, Self::FullColor | Self::HalfColor)
+        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm)
+    }
+    
+    pub fn is_wezterm(&self) -> bool {
+        matches!(self, Self::WezTerm | Self::WezTermNoColor)
     }
 
-    pub fn from_bool(full: bool, no_color: bool) -> Self {
+    pub fn from_bool(full: bool, no_color: bool, wez: bool) -> Self {
+        if wez {
+            return if no_color {
+                Self::WezTermNoColor
+            } else {
+                Self::WezTerm
+            };
+        }
         match (full, no_color) {
             (true, true) => Self::FullNoColor,
             (true, false) => Self::FullColor,
@@ -36,5 +49,5 @@ impl DisplayMode {
 #[derive(Debug, Clone)]
 pub enum ImageType {
     Image(DynamicImage),
-    Path(String)
+    Path(String),
 }
