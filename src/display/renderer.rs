@@ -40,18 +40,12 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         }
 
         println!(
-            "{}: \x1b[1mcenter={} resize-height={} full-resolution={} no-color={}",
+            "{}: \x1b[1mcenter={} full-resolution={} no-color={}",
             "Args"
                 .to_colored_text()
                 .set_foreground_color(TerminalColor::Green),
             config
                 .center
-                .to_string()
-                .to_colored_text()
-                .set_foreground_color(TerminalColor::Yellow),
-            result
-                .option
-                .resize_height
                 .to_string()
                 .to_colored_text()
                 .set_foreground_color(TerminalColor::Yellow),

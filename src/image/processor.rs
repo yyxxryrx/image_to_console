@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::image::converter::{ImageConverter, ImageConverterOption};
-use crate::types::{DisplayMode, ImageType::*};
+use crate::types::{DisplayMode, ImageType::*, ResizeMode::{self, *}};
 use image::imageops::FilterType;
 
 #[derive(Copy, Clone)]
@@ -8,9 +8,8 @@ pub struct ImageProcessorOptions {
     pub full: bool,
     pub center: bool,
     pub mode: DisplayMode,
-    pub resize_width: bool,
-    pub resize_height: bool,
     pub black_background: bool,
+    pub resize_mode: ResizeMode,
 }
 
 pub struct ImageProcessorResult {
@@ -37,9 +36,8 @@ impl ImageProcessor {
             mode: config.mode,
             center: config.center,
             full: config.full_resolution,
+            resize_mode: config.resize_mode,
             black_background: config.black_background,
-            resize_width: !config.without_resize_width,
-            resize_height: !config.without_resize_height,
         };
         match config.image {
             Image(image) => Ok(Self::new(image, option)),
@@ -58,29 +56,44 @@ impl ImageProcessor {
         let mut luma_img = self.image.to_luma8();
         let (mut w, mut h) = rgba_img.dimensions();
         let (width, height) = terminal_size::terminal_size().unwrap();
-        if self.option.resize_width {
-            if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
-                let new_img = self.image.resize(
-                    (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round() as u32,
-                    h,
-                    FilterType::Lanczos3,
-                );
-                rgba_img = new_img.to_rgba8();
-                luma_img = new_img.to_luma8();
-                (w, h) = rgba_img.dimensions();
-            }
-        }
-        if self.option.resize_height {
-            if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
-                let new_img = self.image.resize(
-                    w,
-                    (height.0 * if self.option.full { 2 } else { 1 }) as u32,
-                    FilterType::Lanczos3,
-                );
-                rgba_img = new_img.to_rgba8();
-                luma_img = new_img.to_luma8();
-                (w, h) = rgba_img.dimensions();
-            }
+        match self.option.resize_mode {
+            Auto(option) => {
+                if option.width {
+                    if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
+                        let new_img = self.image.resize(
+                            (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round() as u32,
+                            h,
+                            FilterType::Lanczos3,
+                        );
+                        rgba_img = new_img.to_rgba8();
+                        luma_img = new_img.to_luma8();
+                        (w, h) = rgba_img.dimensions();
+                    }
+                }
+                if option.height {
+                    if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
+                        let new_img = self.image.resize(
+                            w,
+                            (height.0 * if self.option.full { 2 } else { 1 }) as u32,
+                            FilterType::Lanczos3,
+                        );
+                        rgba_img = new_img.to_rgba8();
+                        luma_img = new_img.to_luma8();
+                        (w, h) = rgba_img.dimensions();
+                    }
+                }
+            },
+            Custom(option) => {
+                if option.width.is_some() || option.height.is_some() {
+                    let width = option.width.unwrap_or(w);
+                    let height = option.height.unwrap_or(h);
+                    let new_img = self.image.resize_exact(width, height, FilterType::Lanczos3);
+                    rgba_img = new_img.to_rgba8();
+                    luma_img = new_img.to_luma8();
+                    (w, h) = rgba_img.dimensions();
+                }
+            },
+            None => {}
         }
         let mut line_init = String::new();
         if self.option.center {

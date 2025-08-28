@@ -1,6 +1,7 @@
 use crate::config::RunMode::{Multiple, Once};
 use crate::const_value::IMAGE_EXTS;
-use crate::types::{DisplayMode, ImageType, Protocol};
+use crate::types::ImageType::*;
+use crate::types::{ClapResizeMode, DisplayMode, ImageType, Protocol, ResizeMode};
 use base64::Engine;
 use clap::builder::styling::{AnsiColor, Color, Style};
 use clap::builder::Styles;
@@ -11,7 +12,6 @@ use rayon::prelude::ParallelBridge;
 use reqwest::blocking::Client;
 use std::io::Write;
 use std::path::Path;
-use crate::types::ImageType::*;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -39,15 +39,6 @@ pub struct Cli {
     pub show_time: bool,
     #[clap(short, long, help = "Output file path")]
     pub output: Option<String>,
-    #[clap(long, help = "Without resize the width", default_value_t = false)]
-    pub without_resize_width: bool,
-    #[clap(
-        short,
-        long,
-        help = "Without resize the height",
-        default_value_t = false
-    )]
-    pub without_resize_height: bool,
     #[clap(
         short,
         long,
@@ -68,12 +59,31 @@ pub struct Cli {
         default_value_t = false
     )]
     pub black_background: bool,
-    #[clap(long, help = "Read all images at once (Only run in directory mode)", default_value_t = false)]
+    #[clap(
+        long,
+        help = "Read all images at once (Only run in directory mode)",
+        default_value_t = false
+    )]
     pub read_all: bool,
     #[clap(short, long, help = "Disable resize", default_value_t = false)]
     pub no_resize: bool,
-    #[clap(short, long, help = "Protocol to use", default_value="normal")]
+    #[clap(short, long, help = "Protocol to use", default_value = "normal")]
     pub protocol: Protocol,
+    #[clap(short, long, help = "Set image resize mode", default_value = "auto")]
+    pub resize_mode: ClapResizeMode,
+    #[clap(long, help="Set image width (Only run in custom mode)")]
+    pub width: Option<u32>,
+    #[clap(long, help="Set image height (Only run in custom mode)")]
+    pub height: Option<u32>,
+    #[clap(long, help = "Without resize the width", default_value_t = false)]
+    pub without_resize_width: bool,
+    #[clap(
+        short,
+        long,
+        help = "Without resize the height",
+        default_value_t = false
+    )]
+    pub without_resize_height: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -134,9 +144,8 @@ pub struct Config {
     pub full_resolution: bool,
     pub black_background: bool,
     pub output: Option<String>,
+    pub resize_mode: ResizeMode,
     pub file_name: Option<String>,
-    pub without_resize_width: bool,
-    pub without_resize_height: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -163,10 +172,12 @@ impl RunMode {
 
 pub fn parse() -> RunMode {
     let cli = Cli::parse();
+    let resize_mode = ResizeMode::from_cli(&cli);
     let output_base = cli.output.clone();
     let builder = |img, file_name, show_file_name| Config {
         file_name,
         image: Image(img),
+        resize_mode,
         show_file_name,
         pause: cli.pause,
         center: cli.center,
@@ -177,9 +188,11 @@ pub fn parse() -> RunMode {
         disable_print: cli.disable_print,
         black_background: cli.black_background,
         full_resolution: cli.full_resolution || cli.no_color,
-        without_resize_width: cli.without_resize_width || cli.no_resize,
-        without_resize_height: cli.without_resize_height || cli.no_resize,
-        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color, cli.protocol),
+        mode: DisplayMode::from_bool(
+            cli.full_resolution || cli.no_color,
+            cli.no_color,
+            cli.protocol,
+        ),
     };
     match cli.command {
         Commands::File(args) => {
@@ -246,6 +259,7 @@ pub fn parse() -> RunMode {
                                             cli.no_color,
                                             cli.protocol,
                                         ),
+                                        resize_mode,
                                         pause: false,
                                         file_name: None,
                                         show_time: false,
@@ -255,8 +269,6 @@ pub fn parse() -> RunMode {
                                         show_file_name: false,
                                         no_color: cli.no_color,
                                         black_background: cli.black_background,
-                                        without_resize_width: cli.without_resize_width || cli.no_resize,
-                                        without_resize_height: cli.without_resize_height || cli.no_resize,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
                                         image: if cli.read_all {
