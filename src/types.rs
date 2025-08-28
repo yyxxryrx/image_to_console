@@ -73,7 +73,7 @@ impl DisplayMode {
                 true => Self::WezTermNoColor,
                 false => Self::WezTerm,
             },
-            _ => Self::default(),
+            _ => panic!("Not Implemented"),
         }
     }
 }
