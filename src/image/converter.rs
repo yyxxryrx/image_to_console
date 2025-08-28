@@ -299,7 +299,13 @@ impl ImageConverter {
     }
 
     fn kitty_convert(&self) -> Vec<String> {
-        // I don't know why 3072 in rust like 4096 in python, but this is the same
+        /// Base64 encodes 3 raw bytes → 4 ASCII bytes.
+        ///
+        /// 3072 raw bytes / 3 * 4 = 4096 encoded bytes.
+        ///
+        /// Thus CHUNK_SIZE = 3072 keeps every Kitty payload ≤ 4096 bytes after encoding.
+        ///
+        /// This matches the Python example, which splits *after* encoding.
         const CHUNK_SIZE: usize = 3072;
         let image_data = if self.option.mode.is_color() {
             let mut buffer = Vec::new();
