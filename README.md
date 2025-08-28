@@ -22,6 +22,7 @@
 - [x] WezTerm
 - [x] Kitty
 - [ ] iTerm2
+- [ ] Sixel
 
 ## 安装
 
