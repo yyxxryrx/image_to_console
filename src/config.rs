@@ -65,7 +65,7 @@ pub struct Cli {
         default_value_t = false
     )]
     pub read_all: bool,
-    #[clap(short, long, help = "Disable resize (outdated options)", default_value_t = false)]
+    #[clap(short, long, help = "Disable resize (Only run in auto mode)", default_value_t = false)]
     pub no_resize: bool,
     #[clap(short, long, help = "Protocol to use", default_value = "normal")]
     pub protocol: Protocol,
