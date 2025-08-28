@@ -1,4 +1,4 @@
-use crate::types::DisplayMode;
+use crate::types::DisplayMode::{self, *};
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
@@ -113,14 +113,15 @@ impl ImageConverter {
 
     pub fn convert(&self) -> Vec<String> {
         match self.option.mode {
-            DisplayMode::WezTerm | DisplayMode::WezTermNoColor => self.wezterm_convert(),
+            WezTerm | WezTermNoColor => self.wezterm_convert(),
+            Kitty | KittyNoColor => self.kitty_convert(),
             _ => {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
 
                 let convert_pixel = |x, y| match self.option.mode {
-                    DisplayMode::FullColor => self.full_convert(x, y),
-                    DisplayMode::HalfColor => self.unfull_convert(x, y),
-                    DisplayMode::FullNoColor => self.no_color_convert(x, y),
+                    FullColor => self.full_convert(x, y),
+                    HalfColor => self.unfull_convert(x, y),
+                    FullNoColor => self.no_color_convert(x, y),
                     _ => String::new(),
                 };
                 let mut lines = (if self.full {
@@ -295,5 +296,24 @@ impl ImageConverter {
         let mut lines: Vec<String> = vec![String::from(" "); 2];
         lines[0] = format!("\x1b]1337;File=size={image_size};inline=1:{image_base64}\x1b\\");
         lines
+    }
+
+    fn kitty_convert(&self) -> Vec<String> {
+        let image_base64 = if self.option.mode.is_color() {
+            let mut buffer = Vec::new();
+            let mut writer = Cursor::new(&mut buffer);
+            self.rgba_img
+                .write_to(&mut writer, image::ImageFormat::Png)
+                .unwrap();
+            base64::engine::general_purpose::STANDARD.encode(&buffer)
+        } else {
+            let mut buffer = Vec::new();
+            let mut writer = Cursor::new(&mut buffer);
+            self.luma_img
+                .write_to(&mut writer, image::ImageFormat::Jpeg)
+                .unwrap();
+            base64::engine::general_purpose::STANDARD.encode(&buffer)
+        };
+        vec![format!("\x1b_GF=100;{image_base64}\x1b\\"), String::new()]
     }
 }

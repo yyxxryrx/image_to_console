@@ -41,6 +41,8 @@ pub enum DisplayMode {
     Ascii,
     WezTerm,
     WezTermNoColor,
+    Kitty,
+    KittyNoColor,
 }
 #[allow(dead_code)]
 impl Default for DisplayMode {
@@ -72,6 +74,10 @@ impl DisplayMode {
             Protocol::WezTerm => match no_color {
                 true => Self::WezTermNoColor,
                 false => Self::WezTerm,
+            },
+            Protocol::Kitty => match no_color {
+                true => Self::KittyNoColor,
+                false => Self::Kitty,
             },
             _ => panic!("Not Implemented"),
         }
