@@ -116,10 +116,17 @@ impl ImageConverter {
             DisplayMode::WezTerm | DisplayMode::WezTermNoColor => self.wezterm_convert(),
             _ => {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
-                (if self.full {
-                    0..(self.option.height - 1) / 2
+
+                let convert_pixel = |x, y| match self.option.mode {
+                    DisplayMode::FullColor => self.full_convert(x, y),
+                    DisplayMode::HalfColor => self.unfull_convert(x, y),
+                    DisplayMode::FullNoColor => self.no_color_convert(x, y),
+                    _ => String::new(),
+                };
+                let mut lines = (if self.full {
+                    0..self.option.height / 2
                 } else {
-                    0..(self.option.height - 1)
+                    0..self.option.height
                 })
                 .into_par_iter()
                 .chunks(chunk_size as usize)
@@ -131,22 +138,33 @@ impl ImageConverter {
                             if self.option.black_background {
                                 line.push_str("\x1b[40m");
                             }
-                            let c = (0..(self.option.width - 1))
+                            let c = (0..self.option.width)
                                 .into_par_iter()
-                                .map(move |x| match self.option.mode {
-                                    DisplayMode::FullColor => self.full_convert(x, y),
-                                    DisplayMode::HalfColor => self.unfull_convert(x, y),
-                                    DisplayMode::FullNoColor => self.no_color_convert(x, y),
-                                    _ => String::new(),
-                                })
+                                .map(move |x| convert_pixel(x, y))
                                 .collect::<String>();
                             line.push_str(&c);
-                            line.push_str("\x1b[0m");
+                            if self.option.mode.is_color() {
+                                line.push_str("\x1b[0m");
+                            }
                             line
                         })
                         .collect::<Vec<String>>()
                 })
-                .collect()
+                .collect::<Vec<String>>();
+                // Maybe the last line is not converted
+                if self.full && self.option.height % 2 == 1 {
+                    let mut line = self.option.line_init.clone();
+                    let c = (0..self.option.width)
+                        .into_par_iter()
+                        .map(|x| self.unfull_convert(x, self.option.height - 1))
+                        .collect::<String>();
+                    line.push_str(&c);
+                    if self.option.mode.is_color() {
+                        line.push_str("\x1b[0m");
+                    }
+                    lines.push(line);
+                }
+                lines
             }
         }
     }
@@ -255,7 +273,9 @@ impl ImageConverter {
         let (image_base64, image_size) = if self.option.mode.is_color() {
             let mut buffer = Vec::new();
             let mut writer = Cursor::new(&mut buffer);
-            self.rgba_img.write_to(&mut writer, image::ImageFormat::Png).unwrap();
+            self.rgba_img
+                .write_to(&mut writer, image::ImageFormat::Png)
+                .unwrap();
             (
                 base64::engine::general_purpose::STANDARD.encode(&buffer),
                 buffer.len(),
