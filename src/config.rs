@@ -1,6 +1,6 @@
 use crate::config::RunMode::{Multiple, Once};
 use crate::const_value::IMAGE_EXTS;
-use crate::types::{DisplayMode, ImageType};
+use crate::types::{DisplayMode, ImageType, Protocol};
 use base64::Engine;
 use clap::builder::styling::{AnsiColor, Color, Style};
 use clap::builder::Styles;
@@ -28,7 +28,7 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 pub struct Cli {
     #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
     pub center: bool,
-    #[clap(short, long, help = "Pause at the end", default_value_t = false)]
+    #[clap(long, help = "Pause at the end", default_value_t = false)]
     pub pause: bool,
     #[clap(
         short,
@@ -70,8 +70,10 @@ pub struct Cli {
     pub black_background: bool,
     #[clap(long, help = "Read all images at once (Only run in directory mode)", default_value_t = false)]
     pub read_all: bool,
-    #[clap(long, help = "Use wezterm's image protocol", default_value_t = false)]
-    pub wezterm: bool,
+    #[clap(short, long, help = "Disable resize", default_value_t = false)]
+    pub no_resize: bool,
+    #[clap(short, long, help = "Protocol to use", default_value="normal")]
+    pub protocol: Protocol,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -174,10 +176,10 @@ pub fn parse() -> RunMode {
         disable_info: cli.disable_info,
         disable_print: cli.disable_print,
         black_background: cli.black_background,
-        without_resize_width: cli.without_resize_width,
-        without_resize_height: cli.without_resize_height,
         full_resolution: cli.full_resolution || cli.no_color,
-        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color, cli.wezterm),
+        without_resize_width: cli.without_resize_width || cli.no_resize,
+        without_resize_height: cli.without_resize_height || cli.no_resize,
+        mode: DisplayMode::from_bool(cli.full_resolution || cli.no_color, cli.no_color, cli.protocol),
     };
     match cli.command {
         Commands::File(args) => {
@@ -242,7 +244,7 @@ pub fn parse() -> RunMode {
                                         mode: DisplayMode::from_bool(
                                             cli.full_resolution || cli.no_color,
                                             cli.no_color,
-                                            cli.wezterm,
+                                            cli.protocol,
                                         ),
                                         pause: false,
                                         file_name: None,
@@ -253,8 +255,8 @@ pub fn parse() -> RunMode {
                                         show_file_name: false,
                                         no_color: cli.no_color,
                                         black_background: cli.black_background,
-                                        without_resize_width: cli.without_resize_width,
-                                        without_resize_height: cli.without_resize_height,
+                                        without_resize_width: cli.without_resize_width || cli.no_resize,
+                                        without_resize_height: cli.without_resize_height || cli.no_resize,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
                                         image: if cli.read_all {
