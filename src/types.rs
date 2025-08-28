@@ -56,7 +56,11 @@ impl DisplayMode {
         matches!(self, Self::FullColor | Self::FullNoColor)
     }
     pub fn is_color(&self) -> bool {
-        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm)
+        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty)
+    }
+
+    pub fn is_normal(&self) -> bool {
+        matches!(self, Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor)
     }
 
     pub fn is_wezterm(&self) -> bool {

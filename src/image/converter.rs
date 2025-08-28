@@ -285,7 +285,7 @@ impl ImageConverter {
             let mut buffer = Vec::new();
             let mut writer = Cursor::new(&mut buffer);
             self.luma_img
-                .write_to(&mut writer, image::ImageFormat::Jpeg)
+                .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
             (
                 base64::engine::general_purpose::STANDARD.encode(&buffer),
@@ -299,21 +299,42 @@ impl ImageConverter {
     }
 
     fn kitty_convert(&self) -> Vec<String> {
-        let image_base64 = if self.option.mode.is_color() {
+        // I don't know why 3072 in rust like 4096 in python, but this is the same
+        const CHUNK_SIZE: usize = 3072;
+        let image_data = if self.option.mode.is_color() {
             let mut buffer = Vec::new();
             let mut writer = Cursor::new(&mut buffer);
             self.rgba_img
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
-            base64::engine::general_purpose::STANDARD.encode(&buffer)
+            buffer
         } else {
             let mut buffer = Vec::new();
             let mut writer = Cursor::new(&mut buffer);
             self.luma_img
-                .write_to(&mut writer, image::ImageFormat::Jpeg)
+                .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
-            base64::engine::general_purpose::STANDARD.encode(&buffer)
+            buffer
         };
-        vec![format!("\x1b_GF=100;{image_base64}\x1b\\"), String::new()]
+        let mut line = format!(
+            "\x1b_Gm=1,a=T,f=100,s={},v={},S={};",
+            self.option.width,
+            self.option.height,
+            image_data.len()
+        );
+        let mut chunks = image_data.chunks(CHUNK_SIZE);
+        line.push_str(&base64::engine::general_purpose::STANDARD.encode(chunks.nth(0).unwrap()));
+        line.push_str("\x1b\\");
+        for chunk in chunks.clone().take(chunks.len() - 1) {
+            line.push_str(&format!(
+                "\x1b_Gm=1;{}\x1b\\",
+                base64::engine::general_purpose::STANDARD.encode(chunk)
+            ));
+        }
+        line.push_str(&format!(
+            "\x1b_Gm=0;{}\x1b\\",
+            base64::engine::general_purpose::STANDARD.encode(chunks.last().unwrap())
+        ));
+        vec![line]
     }
 }

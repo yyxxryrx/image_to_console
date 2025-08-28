@@ -8,7 +8,7 @@ use std::io::Result;
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
     if !config.disable_print {
-        if !config.mode.is_wezterm() {
+        if config.mode.is_normal() {
             print!("\x1bc");
         }
         for _ in 0..result.air_lines {
