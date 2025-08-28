@@ -75,12 +75,12 @@ pub struct Cli {
     pub width: Option<u32>,
     #[clap(long, help="Set image height (Only run in custom mode)")]
     pub height: Option<u32>,
-    #[clap(long, help = "Without resize the width", default_value_t = false)]
+    #[clap(long, help = "Without resize the width (Only run in auto mode)", default_value_t = false)]
     pub without_resize_width: bool,
     #[clap(
         short,
         long,
-        help = "Without resize the height",
+        help = "Without resize the height (Only run in auto mode)",
         default_value_t = false
     )]
     pub without_resize_height: bool,
