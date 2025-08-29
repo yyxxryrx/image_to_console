@@ -1,17 +1,24 @@
-use crate::config::RunMode::{Multiple, Once};
-use crate::const_value::IMAGE_EXTS;
-use crate::types::ImageType::*;
-use crate::types::{ClapResizeMode, DisplayMode, ImageType, Protocol, ResizeMode};
+use crate::{
+    config::RunMode::{Multiple, Once},
+    const_value::IMAGE_EXTS,
+    types::{
+        ClapResizeMode, DisplayMode,
+        ImageType::{self, *},
+        Protocol, ResizeMode,
+    },
+};
 use base64::Engine;
-use clap::builder::styling::{AnsiColor, Color, Style};
-use clap::builder::Styles;
-use clap::{Parser, Subcommand};
+use clap::{
+    builder::{
+        styling::{AnsiColor, Color, Style},
+        Styles,
+    },
+    Parser, Subcommand,
+};
 use indicatif::{ProgressBar, ProgressStyle};
-use rayon::iter::ParallelIterator;
-use rayon::prelude::ParallelBridge;
+use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use reqwest::blocking::Client;
-use std::io::Write;
-use std::path::Path;
+use std::{io::Write, path::Path};
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -60,22 +67,25 @@ pub struct Cli {
     )]
     pub black_background: bool,
     #[clap(
+        short,
         long,
-        help = "Read all images at once (Only run in directory mode)",
+        help = "Disable resize (Only run in auto mode)",
         default_value_t = false
     )]
-    pub read_all: bool,
-    #[clap(short, long, help = "Disable resize (Only run in auto mode)", default_value_t = false)]
     pub no_resize: bool,
     #[clap(short, long, help = "Protocol to use", default_value = "normal")]
     pub protocol: Protocol,
     #[clap(short, long, help = "Set image resize mode", default_value = "auto")]
     pub resize_mode: ClapResizeMode,
-    #[clap(long, help="Set image width (Only run in custom mode)")]
+    #[clap(long, help = "Set image width (Only run in custom mode)")]
     pub width: Option<u32>,
-    #[clap(long, help="Set image height (Only run in custom mode)")]
+    #[clap(long, help = "Set image height (Only run in custom mode)")]
     pub height: Option<u32>,
-    #[clap(long, help = "Without resize the width (Only run in auto mode)", default_value_t = false)]
+    #[clap(
+        long,
+        help = "Without resize the width (Only run in auto mode)",
+        default_value_t = false
+    )]
     pub without_resize_width: bool,
     #[clap(
         short,
@@ -114,6 +124,12 @@ pub struct FileArgs {
 
 #[derive(Parser)]
 pub struct DirectoryArgs {
+    #[clap(
+        long,
+        help = "Read all images at once",
+        default_value_t = false
+    )]
+    pub read_all: bool,
     #[clap(help = "Path of directory")]
     pub path: String,
 }
@@ -271,7 +287,7 @@ pub fn parse() -> RunMode {
                                         black_background: cli.black_background,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
-                                        image: if cli.read_all {
+                                        image: if args.read_all {
                                             Image(image::open(&path).unwrap())
                                         } else {
                                             Path(path.to_str().unwrap().to_string())
