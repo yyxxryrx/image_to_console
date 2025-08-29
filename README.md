@@ -21,7 +21,7 @@
 ## 支持的协议
 - [x] WezTerm
 - [x] Kitty
-- [ ] iTerm2
+- [x] iTerm2
 - [ ] Sixel
 
 ## 安装

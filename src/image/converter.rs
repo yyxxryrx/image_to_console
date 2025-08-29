@@ -2,6 +2,7 @@ use crate::types::DisplayMode::{self, *};
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
+use base64::engine::general_purpose::STANDARD;
 
 struct PixelColor {
     r: u8,
@@ -113,8 +114,9 @@ impl ImageConverter {
 
     pub fn convert(&self) -> Vec<String> {
         match self.option.mode {
-            WezTerm | WezTermNoColor => self.wezterm_convert(),
             Kitty | KittyNoColor => self.kitty_convert(),
+            Iterm2 | Iterm2NoColor => self.iterm2_convert(),
+            WezTerm | WezTermNoColor => self.wezterm_convert(),
             _ => {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
 
@@ -270,31 +272,26 @@ impl ImageConverter {
         }
     }
 
-    fn wezterm_convert(&self) -> Vec<String> {
-        let (image_base64, image_size) = if self.option.mode.is_color() {
-            let mut buffer = Vec::new();
-            let mut writer = Cursor::new(&mut buffer);
+    fn get_image_data(&self) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        let mut writer = Cursor::new(&mut buffer);
+        if self.option.mode.is_color() {
             self.rgba_img
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
-            (
-                base64::engine::general_purpose::STANDARD.encode(&buffer),
-                buffer.len(),
-            )
         } else {
-            let mut buffer = Vec::new();
-            let mut writer = Cursor::new(&mut buffer);
             self.luma_img
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
-            (
-                base64::engine::general_purpose::STANDARD.encode(&buffer),
-                buffer.len(),
-            )
-        };
+        }
+        buffer
+    }
+
+    fn wezterm_convert(&self) -> Vec<String> {
+        let image_data = self.get_image_data();
         // Add space to prevent misalignment
         let mut lines: Vec<String> = vec![String::from(" "); 2];
-        lines[0] = format!("\x1b]1337;File=size={image_size};inline=1:{image_base64}\x1b\\");
+        lines[0] = format!("\x1b]1337;File=size={};inline=1:{}\x1b\\", image_data.len(), STANDARD.encode(image_data));
         lines
     }
 
@@ -307,21 +304,7 @@ impl ImageConverter {
         ///
         /// This matches the Python example, which splits *after* encoding.
         const CHUNK_SIZE: usize = 3072;
-        let image_data = if self.option.mode.is_color() {
-            let mut buffer = Vec::new();
-            let mut writer = Cursor::new(&mut buffer);
-            self.rgba_img
-                .write_to(&mut writer, image::ImageFormat::Png)
-                .unwrap();
-            buffer
-        } else {
-            let mut buffer = Vec::new();
-            let mut writer = Cursor::new(&mut buffer);
-            self.luma_img
-                .write_to(&mut writer, image::ImageFormat::Png)
-                .unwrap();
-            buffer
-        };
+        let image_data = self.get_image_data();
         let mut line = format!(
             "\x1b_Gm=1,a=T,f=100,s={},v={},S={};",
             self.option.width,
@@ -329,18 +312,23 @@ impl ImageConverter {
             image_data.len()
         );
         let mut chunks = image_data.chunks(CHUNK_SIZE);
-        line.push_str(&base64::engine::general_purpose::STANDARD.encode(chunks.nth(0).unwrap()));
+        line.push_str(&STANDARD.encode(chunks.nth(0).unwrap()));
         line.push_str("\x1b\\");
         for chunk in chunks.clone().take(chunks.len() - 1) {
             line.push_str(&format!(
                 "\x1b_Gm=1;{}\x1b\\",
-                base64::engine::general_purpose::STANDARD.encode(chunk)
+                STANDARD.encode(chunk)
             ));
         }
         line.push_str(&format!(
             "\x1b_Gm=0;{}\x1b\\",
-            base64::engine::general_purpose::STANDARD.encode(chunks.last().unwrap())
+            STANDARD.encode(chunks.last().unwrap())
         ));
         vec![line]
+    }
+
+    fn iterm2_convert(&self) -> Vec<String> {
+        let image_data = self.get_image_data();
+        vec![format!("\x1b]1337;File=size={};inline=1:{}\x07", image_data.len(), STANDARD.encode(image_data))]
     }
 }

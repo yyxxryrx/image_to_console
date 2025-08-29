@@ -9,7 +9,7 @@ pub enum Protocol {
     Normal,
     WezTerm,
     Kitty,
-    ITerm,
+    ITerm2,
 }
 #[allow(dead_code)]
 impl Default for Protocol {
@@ -19,7 +19,7 @@ impl Default for Protocol {
 }
 impl ValueEnum for Protocol {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm]
+        &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
@@ -27,7 +27,7 @@ impl ValueEnum for Protocol {
             Self::Normal => PossibleValue::new("normal"),
             Self::WezTerm => PossibleValue::new("wezterm"),
             Self::Kitty => PossibleValue::new("kitty"),
-            Self::ITerm => PossibleValue::new("iterm"),
+            Self::ITerm2 => PossibleValue::new("iterm2"),
         })
     }
 }
@@ -43,6 +43,8 @@ pub enum DisplayMode {
     WezTermNoColor,
     Kitty,
     KittyNoColor,
+    Iterm2,
+    Iterm2NoColor,
 }
 #[allow(dead_code)]
 impl Default for DisplayMode {
@@ -56,7 +58,7 @@ impl DisplayMode {
         matches!(self, Self::FullColor | Self::FullNoColor)
     }
     pub fn is_color(&self) -> bool {
-        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty)
+        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2)
     }
 
     pub fn is_normal(&self) -> bool {
@@ -83,7 +85,10 @@ impl DisplayMode {
                 true => Self::KittyNoColor,
                 false => Self::Kitty,
             },
-            _ => panic!("Not Implemented"),
+            Protocol::ITerm2 => match no_color {
+                true => Self::Iterm2NoColor,
+                false => Self::Iterm2,
+            },
         }
     }
 }
