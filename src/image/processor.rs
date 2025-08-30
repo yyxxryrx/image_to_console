@@ -1,7 +1,16 @@
-use crate::config::Config;
-use crate::image::converter::{ImageConverter, ImageConverterOption};
-use crate::types::{DisplayMode, ImageType::*, ResizeMode::{self, *}};
-use image::imageops::FilterType;
+use crate::{
+    config::Config,
+    image::{
+        converter::{ImageConverter, ImageConverterOption},
+        ProcessedImage,
+    },
+    types::{
+        DisplayMode,
+        ImageType::*,
+        ResizeMode::{self, *},
+    },
+};
+use image::{imageops::FilterType, GenericImageView};
 
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
@@ -52,22 +61,20 @@ impl ImageProcessor {
         let time = std::time::SystemTime::now();
         let mut arr: Vec<String> = Vec::new();
         let mut air_line: usize = 0;
-        let mut rgba_img = self.image.to_rgba8();
-        let mut luma_img = self.image.to_luma8();
-        let (mut w, mut h) = rgba_img.dimensions();
+        let (mut w, mut h) = self.image.dimensions();
         let (width, height) = terminal_size::terminal_size().unwrap();
         match self.option.resize_mode {
             Auto(option) => {
                 if option.width {
                     if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
                         let new_img = self.image.resize(
-                            (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round() as u32,
+                            (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round()
+                                as u32,
                             h,
                             FilterType::Lanczos3,
                         );
-                        rgba_img = new_img.to_rgba8();
-                        luma_img = new_img.to_luma8();
-                        (w, h) = rgba_img.dimensions();
+                        (w, h) = new_img.dimensions();
+                        self.image = new_img;
                     }
                 }
                 if option.height {
@@ -77,22 +84,20 @@ impl ImageProcessor {
                             (height.0 * if self.option.full { 2 } else { 1 }) as u32,
                             FilterType::Lanczos3,
                         );
-                        rgba_img = new_img.to_rgba8();
-                        luma_img = new_img.to_luma8();
-                        (w, h) = rgba_img.dimensions();
+                        (w, h) = new_img.dimensions();
+                        self.image = new_img;
                     }
                 }
-            },
+            }
             Custom(option) => {
                 if option.width.is_some() || option.height.is_some() {
                     let width = option.width.unwrap_or(w);
                     let height = option.height.unwrap_or(h);
                     let new_img = self.image.resize_exact(width, height, FilterType::Lanczos3);
-                    rgba_img = new_img.to_rgba8();
-                    luma_img = new_img.to_luma8();
-                    (w, h) = rgba_img.dimensions();
+                    (w, h) = new_img.dimensions();
+                    self.image = new_img;
                 }
-            },
+            }
             None => {}
         }
         let mut line_init = String::new();
@@ -118,14 +123,13 @@ impl ImageProcessor {
             }
         }
         let converter = ImageConverter::new(
-            rgba_img,
-            luma_img,
+            ProcessedImage::new(self.option.mode, &self.image),
             ImageConverterOption {
                 width: w,
                 height: h,
                 line_init,
                 mode: self.option.mode,
-                black_background: self.option.black_background
+                black_background: self.option.black_background,
             },
         );
         ImageProcessorResult {

@@ -1,8 +1,11 @@
-use crate::types::DisplayMode::{self, *};
+use crate::{
+    image::ProcessedImage,
+    types::DisplayMode::{self, *},
+};
+use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
-use base64::engine::general_purpose::STANDARD;
 
 struct PixelColor {
     r: u8,
@@ -93,20 +96,14 @@ pub struct ImageConverterOption {
 
 pub struct ImageConverter {
     full: bool,
-    rgba_img: image::RgbaImage,
-    luma_img: image::GrayImage,
+    img: ProcessedImage,
     pub option: ImageConverterOption,
 }
 
 impl ImageConverter {
-    pub fn new(
-        rgba_img: image::RgbaImage,
-        luma_img: image::GrayImage,
-        option: ImageConverterOption,
-    ) -> Self {
+    pub fn new(img: ProcessedImage, option: ImageConverterOption) -> Self {
         Self {
-            rgba_img,
-            luma_img,
+            img,
             full: option.mode.is_full(),
             option,
         }
@@ -173,114 +170,134 @@ impl ImageConverter {
     }
 
     fn unfull_convert(&self, x: u32, y: u32) -> String {
-        let pixel = self.rgba_img.get_pixel(x, y);
-        let color = PixelColor::from_channels(pixel.0);
-        let mut c = if color.a >= 128 {
-            color.bg()
+        if let ProcessedImage::Color(rgba_img) = &self.img {
+            let pixel = rgba_img.get_pixel(x, y);
+            let color = PixelColor::from_channels(pixel.0);
+            let mut c = if color.a >= 128 {
+                color.bg()
+            } else {
+                "\x1b[0m".to_string()
+            };
+            c.push_str("  ");
+            c
         } else {
-            "\x1b[0m".to_string()
-        };
-        c.push_str("  ");
-        c
+            panic!("Invalid image type")
+        }
     }
 
     fn full_convert(&self, x: u32, y: u32) -> String {
-        let pixel1 = self.rgba_img.get_pixel(x, y * 2);
-        let pixel2 = self.rgba_img.get_pixel(x, y * 2 + 1);
-        let p1 = self.luma_img.get_pixel(x, y * 2).0[0];
-        let p2 = self.luma_img.get_pixel(x, y * 2 + 1).0[0];
-        let pixel1_color = PixelColor::from_channels(pixel1.0);
-        let pixel2_color = PixelColor::from_channels(pixel2.0);
-        if pixel1_color.a < 128 && pixel2_color.a < 128 {
-            return "\x1b[0m".to_string();
-        }
-        if pixel1_color.a < 128 {
-            return format!("\x1b[0m{}▄", pixel2_color.fg());
-        }
-        if pixel2_color.a < 128 {
-            return format!("\x1b[0m{}▀", pixel1_color.fg());
-        }
-        if p1 > p2 {
-            format!("{}{}▀", pixel1_color.fg(), pixel2_color.bg())
-        } else if p2 > p1 {
-            format!("{}{}▄", pixel1_color.bg(), pixel2_color.fg())
+        if let ProcessedImage::Both(rgba_img, luma_img) = &self.img {
+            let pixel1 = rgba_img.get_pixel(x, y * 2);
+            let pixel2 = rgba_img.get_pixel(x, y * 2 + 1);
+            let p1 = luma_img.get_pixel(x, y * 2).0[0];
+            let p2 = luma_img.get_pixel(x, y * 2 + 1).0[0];
+            let pixel1_color = PixelColor::from_channels(pixel1.0);
+            let pixel2_color = PixelColor::from_channels(pixel2.0);
+            if pixel1_color.a < 128 && pixel2_color.a < 128 {
+                return "\x1b[0m".to_string();
+            }
+            if pixel1_color.a < 128 {
+                return format!("\x1b[0m{}▄", pixel2_color.fg());
+            }
+            if pixel2_color.a < 128 {
+                return format!("\x1b[0m{}▀", pixel1_color.fg());
+            }
+            if p1 > p2 {
+                format!("{}{}▀", pixel1_color.fg(), pixel2_color.bg())
+            } else if p2 > p1 {
+                format!("{}{}▄", pixel1_color.bg(), pixel2_color.fg())
+            } else {
+                format!("{}█", pixel1_color.fg())
+            }
         } else {
-            format!("{}█", pixel1_color.fg())
+            panic!("Invalid image type")
         }
     }
 
     fn no_color_convert(&self, x: u32, y: u32) -> String {
-        let pixel1 = self.luma_img.get_pixel(x, y * 2);
-        let pixel2 = self.luma_img.get_pixel(x, y * 2 + 1);
-        let p1 = pixel1.0[0] as usize;
-        let p2 = pixel2.0[0] as usize;
-        // Choose a pixel one by one to see if it matches the current pixel
-        for pixel in NO_COLOR_PIXELS.iter() {
-            if pixel.sep {
-                if pixel.from < p1 && p1 < pixel.to && pixel.from < p2 && p2 < pixel.to {
-                    return pixel.full.to_string();
-                } else if pixel.from < p1 && p1 < pixel.to {
-                    return pixel.top.to_string();
-                } else if pixel.from < p2 && p2 < pixel.to {
-                    return pixel.bottom.to_string();
-                }
-            } else {
-                if (pixel.from < p1 || pixel.from < p2) && (p1 < pixel.to && p2 < pixel.to) {
-                    return pixel.full.to_string();
+        if let ProcessedImage::NoColor(luma_img) = &self.img {
+            let pixel1 = luma_img.get_pixel(x, y * 2);
+            let pixel2 = luma_img.get_pixel(x, y * 2 + 1);
+            let p1 = pixel1.0[0] as usize;
+            let p2 = pixel2.0[0] as usize;
+            // Choose a pixel one by one to see if it matches the current pixel
+            for pixel in NO_COLOR_PIXELS.iter() {
+                if pixel.sep {
+                    if pixel.from < p1 && p1 < pixel.to && pixel.from < p2 && p2 < pixel.to {
+                        return pixel.full.to_string();
+                    } else if pixel.from < p1 && p1 < pixel.to {
+                        return pixel.top.to_string();
+                    } else if pixel.from < p2 && p2 < pixel.to {
+                        return pixel.bottom.to_string();
+                    }
+                } else {
+                    if (pixel.from < p1 || pixel.from < p2) && (p1 < pixel.to && p2 < pixel.to) {
+                        return pixel.full.to_string();
+                    }
                 }
             }
-        }
-        if p1 > 128 && p2 > 128 {
-            "█".to_string()
-        } else if p1 > 128 {
-            "▀".to_string()
-        } else if p2 > 128 {
-            "▄".to_string()
+            if p1 > 128 && p2 > 128 {
+                "█".to_string()
+            } else if p1 > 128 {
+                "▀".to_string()
+            } else if p2 > 128 {
+                "▄".to_string()
+            } else {
+                " ".to_string()
+            }
         } else {
-            " ".to_string()
+            panic!("Invalid image type")
         }
     }
 
     // Older conversion algorithms may be used in the future
     #[allow(dead_code)]
     fn no_color_convert_old(&self, x: u32, y: u32) -> String {
-        let pixel1 = self.luma_img.get_pixel(x, y * 2);
-        let pixel2 = self.luma_img.get_pixel(x, y * 2 + 1);
-        let p1 = pixel1.0[0] as usize;
-        let p2 = pixel2.0[0] as usize;
-        if (153 < p1) && (p1 < 204) && (153 < p2) && (p2 < 204) {
-            return "▮".to_string();
-        } else if (153 < p1) && (p1 < 204) {
-            return "▘".to_string();
-        } else if (153 < p2) && (p2 < 204) {
-            return "▖".to_string();
-        }
-        if (102 < p1 || 102 < p2) && (p1 < 204 && p2 < 204) {
-            return "▪".to_string();
-        }
-        if (51 < p1 || 51 < p2) && (p1 < 204 && p2 < 204) {
-            return ".".to_string();
-        }
-        if p1 > 128 && p2 > 128 {
-            "█".to_string()
-        } else if p1 > 128 {
-            "▀".to_string()
-        } else if p2 > 128 {
-            "▄".to_string()
+        if let ProcessedImage::NoColor(luma_img) = &self.img {
+            let pixel1 = luma_img.get_pixel(x, y * 2);
+            let pixel2 = luma_img.get_pixel(x, y * 2 + 1);
+            let p1 = pixel1.0[0] as usize;
+            let p2 = pixel2.0[0] as usize;
+            if (153 < p1) && (p1 < 204) && (153 < p2) && (p2 < 204) {
+                return "▮".to_string();
+            } else if (153 < p1) && (p1 < 204) {
+                return "▘".to_string();
+            } else if (153 < p2) && (p2 < 204) {
+                return "▖".to_string();
+            }
+            if (102 < p1 || 102 < p2) && (p1 < 204 && p2 < 204) {
+                return "▪".to_string();
+            }
+            if (51 < p1 || 51 < p2) && (p1 < 204 && p2 < 204) {
+                return ".".to_string();
+            }
+            if p1 > 128 && p2 > 128 {
+                "█".to_string()
+            } else if p1 > 128 {
+                "▀".to_string()
+            } else if p2 > 128 {
+                "▄".to_string()
+            } else {
+                " ".to_string()
+            }
         } else {
-            " ".to_string()
+            panic!("Invalid image type")
         }
     }
 
     fn get_image_data(&self) -> Vec<u8> {
         let mut buffer = Vec::new();
         let mut writer = Cursor::new(&mut buffer);
-        if self.option.mode.is_color() {
-            self.rgba_img
+        if self.img.is_color() {
+            self.img
+                .rgba()
+                .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
         } else {
-            self.luma_img
+            self.img
+                .luma()
+                .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .unwrap();
         }
@@ -291,7 +308,11 @@ impl ImageConverter {
         let image_data = self.get_image_data();
         // Add space to prevent misalignment
         let mut lines: Vec<String> = vec![String::from(" "); 2];
-        lines[0] = format!("\x1b]1337;File=size={};inline=1:{}\x1b\\", image_data.len(), STANDARD.encode(image_data));
+        lines[0] = format!(
+            "\x1b]1337;File=size={};inline=1:{}\x1b\\",
+            image_data.len(),
+            STANDARD.encode(image_data)
+        );
         lines
     }
 
@@ -315,10 +336,7 @@ impl ImageConverter {
         line.push_str(&STANDARD.encode(chunks.nth(0).unwrap()));
         line.push_str("\x1b\\");
         for chunk in chunks.clone().take(chunks.len() - 1) {
-            line.push_str(&format!(
-                "\x1b_Gm=1;{}\x1b\\",
-                STANDARD.encode(chunk)
-            ));
+            line.push_str(&format!("\x1b_Gm=1;{}\x1b\\", STANDARD.encode(chunk)));
         }
         line.push_str(&format!(
             "\x1b_Gm=0;{}\x1b\\",
@@ -329,6 +347,10 @@ impl ImageConverter {
 
     fn iterm2_convert(&self) -> Vec<String> {
         let image_data = self.get_image_data();
-        vec![format!("\x1b]1337;File=size={};inline=1:{}\x07", image_data.len(), STANDARD.encode(image_data))]
+        vec![format!(
+            "\x1b]1337;File=size={};inline=1:{}\x07",
+            image_data.len(),
+            STANDARD.encode(image_data)
+        )]
     }
 }
