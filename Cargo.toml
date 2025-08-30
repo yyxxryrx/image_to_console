@@ -1,6 +1,6 @@
 [package]
 name = "image_to_console"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
@@ -10,9 +10,9 @@ license = "MIT"
 
 [dependencies]
 rayon = "1.11.0"
-num_cpus = "1.17.0"
 image = "0.25.4"
 base64 = "0.22.1"
+num_cpus = "1.17.0"
 indicatif = "0.17.8"
 terminal_size = "0.4.0"
 
