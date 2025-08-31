@@ -180,83 +180,50 @@ impl ResizeMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
     #[test]
     fn test_crate_display_mode() {
-        assert_eq!(
-            DisplayMode::from_bool(false, false, Protocol::Normal),
-            DisplayMode::HalfColor
-        );
-        assert_eq!(
-            DisplayMode::from_bool(true, false, Protocol::Normal),
-            DisplayMode::FullColor
-        );
-        assert_eq!(
-            DisplayMode::from_bool(true, true, Protocol::Normal),
-            DisplayMode::FullNoColor
-        );
-        assert_eq!(
-            DisplayMode::from_bool(false, true, Protocol::Normal),
-            DisplayMode::Ascii
-        );
-        assert_eq!(
-            DisplayMode::from_bool(true, false, Protocol::WezTerm),
-            DisplayMode::WezTerm
-        );
-        assert_eq!(
-            DisplayMode::from_bool(true, true, Protocol::WezTerm),
-            DisplayMode::WezTermNoColor
-        );
-        assert_eq!(
-            DisplayMode::from_bool(false, false, Protocol::Kitty),
-            DisplayMode::Kitty
-        );
-        assert_eq!(
-            DisplayMode::from_bool(false, true, Protocol::Kitty),
-            DisplayMode::KittyNoColor
-        );
-        assert_eq!(
-            DisplayMode::from_bool(false, false, Protocol::ITerm2),
-            DisplayMode::Iterm2
-        );
-        assert_eq!(
-            DisplayMode::from_bool(false, true, Protocol::ITerm2),
-            DisplayMode::Iterm2NoColor
-        );
+        let test_cases = vec![
+            ((false, false, Protocol::Normal), DisplayMode::HalfColor),
+            ((true, false, Protocol::Normal), DisplayMode::FullColor),
+            ((true, true, Protocol::Normal), DisplayMode::FullNoColor),
+            ((false, true, Protocol::Normal), DisplayMode::Ascii),
+            ((true, false, Protocol::WezTerm), DisplayMode::WezTerm),
+            ((true, true, Protocol::WezTerm), DisplayMode::WezTermNoColor),
+            ((false, false, Protocol::Kitty), DisplayMode::Kitty),
+            ((false, true, Protocol::Kitty), DisplayMode::KittyNoColor),
+            ((false, false, Protocol::ITerm2), DisplayMode::Iterm2),
+            ((false, true, Protocol::ITerm2), DisplayMode::Iterm2NoColor),
+        ];
+
+        for ((full, no_color, protocol), expected) in test_cases {
+            assert_eq!(
+                DisplayMode::from_bool(full, no_color, protocol),
+                expected,
+                "Failed for input: full={}, no_color={}, protocol={:?}", 
+                full, no_color, protocol
+            );
+        }
     }
 
     #[test]
     fn test_get_display_mode_info() {
-        assert_eq!(DisplayMode::HalfColor.is_full(), false);
-        assert_eq!(DisplayMode::HalfColor.is_color(), true);
-        assert_eq!(DisplayMode::HalfColor.is_normal(), true);
-        assert_eq!(DisplayMode::HalfColor.is_wezterm(), false);
-        assert_eq!(DisplayMode::FullColor.is_full(), true);
-        assert_eq!(DisplayMode::FullColor.is_color(), true);
-        assert_eq!(DisplayMode::FullColor.is_normal(), true);
-        assert_eq!(DisplayMode::FullColor.is_wezterm(), false);
-        assert_eq!(DisplayMode::FullNoColor.is_full(), true);
-        assert_eq!(DisplayMode::FullNoColor.is_color(), false);
-        assert_eq!(DisplayMode::FullNoColor.is_normal(), true);
-        assert_eq!(DisplayMode::FullNoColor.is_wezterm(), false);
-        assert_eq!(DisplayMode::Ascii.is_full(), false);
-        assert_eq!(DisplayMode::Ascii.is_color(), false);
-        assert_eq!(DisplayMode::Ascii.is_normal(), true);
-        assert_eq!(DisplayMode::Ascii.is_wezterm(), false);
-        assert_eq!(DisplayMode::Kitty.is_full(), true);
-        assert_eq!(DisplayMode::Kitty.is_color(), true);
-        assert_eq!(DisplayMode::Kitty.is_normal(), false);
-        assert_eq!(DisplayMode::Kitty.is_wezterm(), false);
-        assert_eq!(DisplayMode::KittyNoColor.is_full(), true);
-        assert_eq!(DisplayMode::KittyNoColor.is_color(), false);
-        assert_eq!(DisplayMode::KittyNoColor.is_normal(), false);
-        assert_eq!(DisplayMode::KittyNoColor.is_wezterm(), false);
-        assert_eq!(DisplayMode::Iterm2.is_full(), true);
-        assert_eq!(DisplayMode::Iterm2.is_color(), true);
-        assert_eq!(DisplayMode::Iterm2.is_normal(), false);
-        assert_eq!(DisplayMode::Iterm2.is_wezterm(), false);
-        assert_eq!(DisplayMode::Iterm2NoColor.is_full(), true);
-        assert_eq!(DisplayMode::Iterm2NoColor.is_color(), false);
-        assert_eq!(DisplayMode::Iterm2NoColor.is_normal(), false);
-        assert_eq!(DisplayMode::Iterm2NoColor.is_wezterm(), false);
+        let mode_properties = vec![
+            (DisplayMode::HalfColor, false, true, true, false),
+            (DisplayMode::FullColor, true, true, true, false),
+            (DisplayMode::FullNoColor, true, false, true, false),
+            (DisplayMode::Ascii, false, false, true, false),
+            (DisplayMode::Kitty, true, true, false, false),
+            (DisplayMode::KittyNoColor, true, false, false, false),
+            (DisplayMode::Iterm2, true, true, false, false),
+            (DisplayMode::Iterm2NoColor, true, false, false, false),
+        ];
+
+        for (mode, is_full, is_color, is_normal, is_wezterm) in mode_properties {
+            assert_eq!(mode.is_full(), is_full, "is_full check failed for {:?}", mode);
+            assert_eq!(mode.is_color(), is_color, "is_color check failed for {:?}", mode);
+            assert_eq!(mode.is_normal(), is_normal, "is_normal check failed for {:?}", mode);
+            assert_eq!(mode.is_wezterm(), is_wezterm, "is_wezterm check failed for {:?}", mode);
+        }
     }
 }
