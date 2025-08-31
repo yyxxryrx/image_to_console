@@ -124,11 +124,7 @@ pub struct FileArgs {
 
 #[derive(Parser)]
 pub struct DirectoryArgs {
-    #[clap(
-        long,
-        help = "Read all images at once",
-        default_value_t = false
-    )]
+    #[clap(long, help = "Read all images at once", default_value_t = false)]
     pub read_all: bool,
     #[clap(help = "Path of directory")]
     pub path: String,
@@ -144,6 +140,33 @@ pub struct Base64Args {
 pub struct UrlArgs {
     #[clap(help = "Url to the image")]
     pub url: String,
+}
+
+impl Default for Cli {
+    fn default() -> Self {
+        Self {
+            width: None,
+            height: None,
+            output: None,
+            pause: false,
+            center: false,
+            no_color: false,
+            show_time: false,
+            no_resize: false,
+            disable_info: false,
+            disable_print: false,
+            full_resolution: false,
+            black_background: false,
+            protocol: Protocol::Normal,
+            without_resize_width: false,
+            without_resize_height: false,
+            resize_mode: ClapResizeMode::Auto,
+            command: Commands::File(FileArgs {
+                hide_filename: false,
+                path: "".to_string(),
+            }),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

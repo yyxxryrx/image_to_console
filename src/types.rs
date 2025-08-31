@@ -58,11 +58,17 @@ impl DisplayMode {
         !matches!(self, Self::HalfColor | Self::Ascii)
     }
     pub fn is_color(&self) -> bool {
-        matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2)
+        matches!(
+            self,
+            Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
+        )
     }
 
     pub fn is_normal(&self) -> bool {
-        matches!(self, Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor)
+        matches!(
+            self,
+            Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor
+        )
     }
 
     pub fn from_bool(full: bool, no_color: bool, protocol: Protocol) -> Self {
@@ -120,7 +126,7 @@ impl ValueEnum for ClapResizeMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, Parser)]
+#[derive(Debug, Clone, Copy, Parser, PartialEq)]
 pub struct AutoResizeOption {
     // Resize with terminal width
     #[clap(short, long)]
@@ -130,7 +136,7 @@ pub struct AutoResizeOption {
     pub height: bool,
 }
 
-#[derive(Debug, Clone, Copy, Parser)]
+#[derive(Debug, Clone, Copy, Parser, PartialEq)]
 pub struct CustomResizeOption {
     #[clap(short, long)]
     pub width: Option<u32>,
@@ -138,7 +144,7 @@ pub struct CustomResizeOption {
     pub height: Option<u32>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ResizeMode {
     // Resize with terminal size
     Auto(AutoResizeOption),
@@ -176,7 +182,7 @@ impl ResizeMode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_crate_display_mode() {
         let test_cases = vec![
@@ -196,10 +202,17 @@ mod tests {
             assert_eq!(
                 DisplayMode::from_bool(full, no_color, protocol),
                 expected,
-                "Failed for input: full={}, no_color={}, protocol={:?}", 
-                full, no_color, protocol
+                "Failed for input: full={}, no_color={}, protocol={:?}",
+                full,
+                no_color,
+                protocol
             );
         }
+        assert_eq!(
+            DisplayMode::default(),
+            DisplayMode::HalfColor,
+            "Default display mode should be HalfColor"
+        );
     }
 
     #[test]
@@ -216,9 +229,65 @@ mod tests {
         ];
 
         for (mode, is_full, is_color, is_normal) in mode_properties {
-            assert_eq!(mode.is_full(), is_full, "is_full check failed for {:?}", mode);
-            assert_eq!(mode.is_color(), is_color, "is_color check failed for {:?}", mode);
-            assert_eq!(mode.is_normal(), is_normal, "is_normal check failed for {:?}", mode);
+            assert_eq!(
+                mode.is_full(),
+                is_full,
+                "is_full check failed for {:?}",
+                mode
+            );
+            assert_eq!(
+                mode.is_color(),
+                is_color,
+                "is_color check failed for {:?}",
+                mode
+            );
+            assert_eq!(
+                mode.is_normal(),
+                is_normal,
+                "is_normal check failed for {:?}",
+                mode
+            );
+        }
+    }
+
+    #[test]
+    fn test_crate_resize_mode() {
+        let mut cli = Cli::default();
+        let test_cases = vec![(true, true), (true, false), (false, true), (false, false)];
+        for (width, height) in test_cases {
+            cli.without_resize_width = !width;
+            cli.without_resize_height = !height;
+            assert_eq!(
+                ResizeMode::from_cli(&cli),
+                ResizeMode::Auto(AutoResizeOption { width, height }),
+                "Failed for input: width={}, height={}",
+                width,
+                height
+            );
+        }
+        cli.resize_mode = ClapResizeMode::None;
+        assert_eq!(
+            ResizeMode::from_cli(&cli),
+            ResizeMode::None,
+            "Default resize mode should be None"
+        );
+        let test_cases = vec![
+            (Some(10), Some(20)),
+            (Some(10), None),
+            (None, Some(20)),
+            (None, None),
+        ];
+        cli.resize_mode = ClapResizeMode::Custom;
+        for (width, height) in test_cases {
+            cli.width = width;
+            cli.height = height;
+            assert_eq!(
+                ResizeMode::from_cli(&cli),
+                ResizeMode::Custom(CustomResizeOption { width, height }),
+                "Failed for input: width={:?}, height={:?}",
+                width,
+                height
+            );
         }
     }
 }
