@@ -65,10 +65,6 @@ impl DisplayMode {
         matches!(self, Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor)
     }
 
-    pub fn is_wezterm(&self) -> bool {
-        matches!(self, Self::WezTerm | Self::WezTermNoColor)
-    }
-
     pub fn from_bool(full: bool, no_color: bool, protocol: Protocol) -> Self {
         match protocol {
             Protocol::Normal => match (full, no_color) {
@@ -209,21 +205,20 @@ mod tests {
     #[test]
     fn test_get_display_mode_info() {
         let mode_properties = vec![
-            (DisplayMode::HalfColor, false, true, true, false),
-            (DisplayMode::FullColor, true, true, true, false),
-            (DisplayMode::FullNoColor, true, false, true, false),
-            (DisplayMode::Ascii, false, false, true, false),
-            (DisplayMode::Kitty, true, true, false, false),
-            (DisplayMode::KittyNoColor, true, false, false, false),
-            (DisplayMode::Iterm2, true, true, false, false),
-            (DisplayMode::Iterm2NoColor, true, false, false, false),
+            (DisplayMode::HalfColor, false, true, true),
+            (DisplayMode::FullColor, true, true, true),
+            (DisplayMode::FullNoColor, true, false, true),
+            (DisplayMode::Ascii, false, false, true),
+            (DisplayMode::Kitty, true, true, false),
+            (DisplayMode::KittyNoColor, true, false, false),
+            (DisplayMode::Iterm2, true, true, false),
+            (DisplayMode::Iterm2NoColor, true, false, false),
         ];
 
-        for (mode, is_full, is_color, is_normal, is_wezterm) in mode_properties {
+        for (mode, is_full, is_color, is_normal) in mode_properties {
             assert_eq!(mode.is_full(), is_full, "is_full check failed for {:?}", mode);
             assert_eq!(mode.is_color(), is_color, "is_color check failed for {:?}", mode);
             assert_eq!(mode.is_normal(), is_normal, "is_normal check failed for {:?}", mode);
-            assert_eq!(mode.is_wezterm(), is_wezterm, "is_wezterm check failed for {:?}", mode);
         }
     }
 }
