@@ -11,6 +11,7 @@ pub enum ProcessedImage {
     NoColor(GrayImage),
     Both(RgbaImage, GrayImage),
 }
+
 #[allow(dead_code)]
 impl ProcessedImage {
     pub fn new(mode: DisplayMode, img: &DynamicImage) -> Self {

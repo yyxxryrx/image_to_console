@@ -55,7 +55,7 @@ impl Default for DisplayMode {
 #[allow(dead_code)]
 impl DisplayMode {
     pub fn is_full(&self) -> bool {
-        matches!(self, Self::FullColor | Self::FullNoColor)
+        !matches!(self, Self::HalfColor | Self::Ascii)
     }
     pub fn is_color(&self) -> bool {
         matches!(self, Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2)
@@ -174,5 +174,89 @@ impl ResizeMode {
             }),
             ClapResizeMode::None => Self::None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_crate_display_mode() {
+        assert_eq!(
+            DisplayMode::from_bool(false, false, Protocol::Normal),
+            DisplayMode::HalfColor
+        );
+        assert_eq!(
+            DisplayMode::from_bool(true, false, Protocol::Normal),
+            DisplayMode::FullColor
+        );
+        assert_eq!(
+            DisplayMode::from_bool(true, true, Protocol::Normal),
+            DisplayMode::FullNoColor
+        );
+        assert_eq!(
+            DisplayMode::from_bool(false, true, Protocol::Normal),
+            DisplayMode::Ascii
+        );
+        assert_eq!(
+            DisplayMode::from_bool(true, false, Protocol::WezTerm),
+            DisplayMode::WezTerm
+        );
+        assert_eq!(
+            DisplayMode::from_bool(true, true, Protocol::WezTerm),
+            DisplayMode::WezTermNoColor
+        );
+        assert_eq!(
+            DisplayMode::from_bool(false, false, Protocol::Kitty),
+            DisplayMode::Kitty
+        );
+        assert_eq!(
+            DisplayMode::from_bool(false, true, Protocol::Kitty),
+            DisplayMode::KittyNoColor
+        );
+        assert_eq!(
+            DisplayMode::from_bool(false, false, Protocol::ITerm2),
+            DisplayMode::Iterm2
+        );
+        assert_eq!(
+            DisplayMode::from_bool(false, true, Protocol::ITerm2),
+            DisplayMode::Iterm2NoColor
+        );
+    }
+
+    #[test]
+    fn test_get_display_mode_info() {
+        assert_eq!(DisplayMode::HalfColor.is_full(), false);
+        assert_eq!(DisplayMode::HalfColor.is_color(), true);
+        assert_eq!(DisplayMode::HalfColor.is_normal(), true);
+        assert_eq!(DisplayMode::HalfColor.is_wezterm(), false);
+        assert_eq!(DisplayMode::FullColor.is_full(), true);
+        assert_eq!(DisplayMode::FullColor.is_color(), true);
+        assert_eq!(DisplayMode::FullColor.is_normal(), true);
+        assert_eq!(DisplayMode::FullColor.is_wezterm(), false);
+        assert_eq!(DisplayMode::FullNoColor.is_full(), true);
+        assert_eq!(DisplayMode::FullNoColor.is_color(), false);
+        assert_eq!(DisplayMode::FullNoColor.is_normal(), true);
+        assert_eq!(DisplayMode::FullNoColor.is_wezterm(), false);
+        assert_eq!(DisplayMode::Ascii.is_full(), false);
+        assert_eq!(DisplayMode::Ascii.is_color(), false);
+        assert_eq!(DisplayMode::Ascii.is_normal(), true);
+        assert_eq!(DisplayMode::Ascii.is_wezterm(), false);
+        assert_eq!(DisplayMode::Kitty.is_full(), true);
+        assert_eq!(DisplayMode::Kitty.is_color(), true);
+        assert_eq!(DisplayMode::Kitty.is_normal(), false);
+        assert_eq!(DisplayMode::Kitty.is_wezterm(), false);
+        assert_eq!(DisplayMode::KittyNoColor.is_full(), true);
+        assert_eq!(DisplayMode::KittyNoColor.is_color(), false);
+        assert_eq!(DisplayMode::KittyNoColor.is_normal(), false);
+        assert_eq!(DisplayMode::KittyNoColor.is_wezterm(), false);
+        assert_eq!(DisplayMode::Iterm2.is_full(), true);
+        assert_eq!(DisplayMode::Iterm2.is_color(), true);
+        assert_eq!(DisplayMode::Iterm2.is_normal(), false);
+        assert_eq!(DisplayMode::Iterm2.is_wezterm(), false);
+        assert_eq!(DisplayMode::Iterm2NoColor.is_full(), true);
+        assert_eq!(DisplayMode::Iterm2NoColor.is_color(), false);
+        assert_eq!(DisplayMode::Iterm2NoColor.is_normal(), false);
+        assert_eq!(DisplayMode::Iterm2NoColor.is_wezterm(), false);
     }
 }
