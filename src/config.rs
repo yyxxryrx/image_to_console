@@ -137,7 +137,7 @@ pub struct DirectoryArgs {
 #[derive(Parser)]
 pub struct GifArgs {
     #[clap(long, help = "Set the frames per second for gif playback", default_value = "10")]
-    pub fps: usize,
+    pub fps: u64,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
     #[clap(help = "Gif file path")]
@@ -185,7 +185,7 @@ impl Default for Cli {
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub fps: usize,
+    pub fps: u64,
     pub pause: bool,
     pub center: bool,
     pub no_color: bool,

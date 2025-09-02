@@ -97,20 +97,22 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
     // Clear the screen
     print!("\x1bc");
     // calculate the delay
-    let delay = Duration::from_millis((1000 / config.fps) as _);
+    let delay = 1000000 / config.fps;
     if config.loop_play {
         for frame in frames.cycle() {
             // Move the cursor to the first row and column
+            let time = std::time::Instant::now();
             print!("\x1b[0;0H");
             println!("{}", frame);
-            std::thread::sleep(delay);
+            std::thread::sleep(Duration::from_micros(delay - (time.elapsed().as_micros() as u64) - config.fps.pow(2)));
         }
     } else {
         for frame in frames {
             // As same as above
+            let time = std::time::Instant::now();
             print!("\x1b[0;0H");
             println!("{}", frame);
-            std::thread::sleep(delay);
+            std::thread::sleep(Duration::from_micros(delay - (time.elapsed().as_micros() as u64) - config.fps.pow(2)));
         }
     }
 }
