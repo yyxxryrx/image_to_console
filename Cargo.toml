@@ -22,6 +22,7 @@ base64 = "0.22.1"
 num_cpus = "1.17.0"
 indicatif = "0.17.8"
 terminal_size = "0.4.0"
+crossbeam-channel = "0.5.15"
 
 [dependencies.clap]
 version = "4.5.20"

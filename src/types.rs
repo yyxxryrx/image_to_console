@@ -1,6 +1,7 @@
 use crate::config::Cli;
 use clap::builder::PossibleValue;
 use clap::{Parser, ValueEnum};
+use crossbeam_channel::Receiver;
 use image::DynamicImage;
 
 #[allow(dead_code)]
@@ -99,7 +100,7 @@ impl DisplayMode {
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
-    Gif(Vec<DynamicImage>)
+    Gif(Receiver<Result<(DynamicImage, usize), String>>)
 }
 
 #[derive(Debug, Clone, Copy)]

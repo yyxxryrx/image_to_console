@@ -15,6 +15,7 @@ use clap::{
     },
     Parser, Subcommand,
 };
+use crossbeam_channel::unbounded;
 use image::{DynamicImage, Rgba};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
@@ -363,33 +364,38 @@ pub fn parse() -> RunMode {
                 decoder.set_color_output(gif::ColorOutput::RGBA);
                 match decoder.read_info(file) {
                     Ok(mut decoder) => {
-                        let mut frames = vec![];
-                        loop {
-                            match decoder.read_next_frame() {
-                                Ok(frame) => match frame {
-                                    Some(frame) => {
-                                        let img = image::ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(
-                                            frame.width as u32,
-                                            frame.height as u32,
-                                            frame.buffer.to_vec(),
-                                        );
-                                        if let Some(img) = img {
-                                            frames.push(DynamicImage::from(img));
+                        let (tx, rx) = unbounded::<Result<(DynamicImage, usize), String>>();
+                        std::thread::spawn(move || {
+                            let mut index: usize = 0;
+                            loop {
+                                match decoder.read_next_frame() {
+                                    Ok(frame) => match frame {
+                                        Some(frame) => {
+                                            let img = image::ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(
+                                                frame.width as u32,
+                                                frame.height as u32,
+                                                frame.buffer.to_vec(),
+                                            );
+                                            if let Some(img) = img {
+                                                tx.send(Ok((DynamicImage::from(img), index))).unwrap();
+                                                index += 1;
+                                            }
                                         }
-                                    }
-                                    None => {
-                                        break Video(Ok(builder(
-                                            Gif(frames),
-                                            None,
-                                            false,
-                                            args.fps,
-                                            args.loop_play
-                                        )))
-                                    }
-                                },
-                                Err(err) => return Once(Err(err.to_string())),
+                                        None => {
+                                            break;
+                                        }
+                                    },
+                                    Err(err) => tx.send(Err(err.to_string())).unwrap(),
+                                }
                             }
-                        }
+                        });
+                        Video(Ok(builder(
+                            Gif(rx),
+                            None,
+                            false,
+                            args.fps,
+                            args.loop_play
+                        )))
                     }
                     Err(err) => Once(Err(err.to_string())),
                 }

@@ -2,11 +2,12 @@ use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
 use crate::display::renderer::{render, render_video};
-use crate::image::processor::ImageProcessor;
+use crate::image::processor::{ImageProcessor, ImageProcessorResult};
 use crate::types::ImageType;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use rayon::prelude::*;
 use std::time::Duration;
 
 pub fn err(err_msg: String) {
@@ -48,16 +49,32 @@ pub fn run_video(config: Result<Config, String>) {
             let config_clone = config.clone();
             match config.image {
                 ImageType::Gif(video) => {
-                    let mut frames = vec![];
                     // Process the evey frame image
-                    for frame in video {
-                        let mut config = config_clone.clone();
-                        config.image = ImageType::Image(frame);
-                        match ImageProcessor::from_config(config) {
-                            Ok(mut image_processor) => frames.push(image_processor.process()),
-                            Err(e) => err(e),
-                        }
-                    }
+                    let mut frames = video
+                        .iter()
+                        .par_bridge()
+                        .flat_map(|frame| match frame {
+                            Ok((frame, index)) => {
+                                let mut frame_config = config_clone.clone();
+                                frame_config.image = ImageType::Image(frame);
+                                match ImageProcessor::from_config(frame_config) {
+                                    Ok(mut image_processor) => {
+                                        print!("\rRendered {} frames", index + 1);
+                                        Some((image_processor.process(), index))
+                                    }
+                                    Err(e) => {
+                                        err(e);
+                                        None
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                err(e);
+                                None
+                            }
+                        })
+                        .collect::<Vec<(ImageProcessorResult, usize)>>();
+                    frames.sort_by(|a, b| a.1.cmp(&b.1));
                     render_video(frames, config_clone);
                 }
                 _ => err(String::from("cannot init")),

@@ -92,8 +92,8 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     Ok(())
 }
 
-pub fn render_video(results: Vec<ImageProcessorResult>, config: Config) {
-    let frames = results.iter().map(|result| result.lines.join("\n"));
+pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config) {
+    let frames = results.iter().map(|result| result.0.lines.join("\n"));
     // Clear the screen
     print!("\x1bc");
     // calculate the delay
