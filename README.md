@@ -194,6 +194,7 @@ image_to_console gif --fps 30 --loop animation.gif
 | [terminal_size](https://crates.io/crates/terminal_size) | 0.4.0 | MIT | 检测终端尺寸 |
 | [reqwest](https://crates.io/crates/reqwest) | 0.12.9 | MIT / Apache-2.0 | 阻塞式 HTTP 客户端 |
 | [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF 动画解码 |
+| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | 跨线程通信 |
 
 ## License
 
