@@ -156,7 +156,7 @@ impl ImageConverter {
                     let mut line = self.option.line_init.clone();
                     let c = (0..self.option.width)
                         .into_par_iter()
-                        .map(|x| self.unfull_convert(x, self.option.height - 1))
+                        .map(|x| self.full_convert_pixel(x, self.option.height - 1))
                         .collect::<String>();
                     line.push_str(&c);
                     if self.option.mode.is_color() {
@@ -209,6 +209,16 @@ impl ImageConverter {
             } else {
                 format!("{}█", pixel1_color.fg())
             }
+        } else {
+            panic!("Invalid image type")
+        }
+    }
+
+    fn full_convert_pixel(&self, x: u32, y: u32) -> String {
+        if let ProcessedImage::Both(rgba_img, _) = &self.img {
+            let pixel = rgba_img.get_pixel(x, y);
+            let color = PixelColor::from_channels(pixel.0);
+            format!("{}▀", color.fg())
         } else {
             panic!("Invalid image type")
         }

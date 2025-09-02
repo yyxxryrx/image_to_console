@@ -99,6 +99,7 @@ impl DisplayMode {
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
+    Gif(Vec<DynamicImage>)
 }
 
 #[derive(Debug, Clone, Copy)]

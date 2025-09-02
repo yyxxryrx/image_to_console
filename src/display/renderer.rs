@@ -2,8 +2,10 @@ use crate::color::{colors::TerminalColor, prelude::ToColoredText};
 use crate::config::Config;
 use crate::image::processor::ImageProcessorResult;
 use crate::util::get_char;
-use std::io::Write;
 use std::io::Result;
+use std::io::Write;
+use std::time::Duration;
+use std::vec::Vec;
 
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
@@ -88,4 +90,27 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         get_char();
     }
     Ok(())
+}
+
+pub fn render_video(results: Vec<ImageProcessorResult>, config: Config) {
+    let frames = results.iter().map(|result| result.lines.join("\n"));
+    // Clear the screen
+    print!("\x1bc");
+    // calculate the delay
+    let delay = Duration::from_millis((1000 / config.fps) as _);
+    if config.loop_play {
+        for frame in frames.cycle() {
+            // Move the cursor to the first row and column
+            print!("\x1b[0;0H");
+            println!("{}", frame);
+            std::thread::sleep(delay);
+        }
+    } else {
+        for frame in frames {
+            // As same as above
+            print!("\x1b[0;0H");
+            println!("{}", frame);
+            std::thread::sleep(delay);
+        }
+    }
 }

@@ -1,8 +1,9 @@
 use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
-use crate::display::renderer::render;
+use crate::display::renderer::{render, render_video};
 use crate::image::processor::ImageProcessor;
+use crate::types::ImageType;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -21,26 +22,48 @@ pub fn err(err_msg: String) {
 
 pub fn run(config: Result<Config, String>) {
     match config {
-        Ok(config) => {
-            match ImageProcessor::from_config(config.clone()) {
-                Ok(mut image_processor) => {
-                    let result = image_processor.process();
-                    if let Err(e) = render(result, config) {
-                        eprintln!(
-                            "{}: {}",
-                            "error"
-                                .to_colored_text()
-                                .set_foreground_color(TerminalColor::Red),
-                            e.to_string()
-                        );
-                        std::process::exit(e.raw_os_error().unwrap_or(1))
-                    }
-                },
-                Err(e) => err(e)
+        Ok(config) => match ImageProcessor::from_config(config.clone()) {
+            Ok(mut image_processor) => {
+                let result = image_processor.process();
+                if let Err(e) = render(result, config) {
+                    eprintln!(
+                        "{}: {}",
+                        "error"
+                            .to_colored_text()
+                            .set_foreground_color(TerminalColor::Red),
+                        e.to_string()
+                    );
+                    std::process::exit(e.raw_os_error().unwrap_or(1))
+                }
             }
-            
+            Err(e) => err(e),
+        },
+        Err(e) => err(e),
+    }
+}
+
+pub fn run_video(config: Result<Config, String>) {
+    match config {
+        Ok(config) => {
+            let config_clone = config.clone();
+            match config.image {
+                ImageType::Gif(video) => {
+                    let mut frames = vec![];
+                    // Process the evey frame image
+                    for frame in video {
+                        let mut config = config_clone.clone();
+                        config.image = ImageType::Image(frame);
+                        match ImageProcessor::from_config(config) {
+                            Ok(mut image_processor) => frames.push(image_processor.process()),
+                            Err(e) => err(e),
+                        }
+                    }
+                    render_video(frames, config_clone);
+                }
+                _ => err(String::from("cannot init")),
+            }
         }
-        Err(e) => err(e)
+        Err(e) => err(e),
     }
 }
 

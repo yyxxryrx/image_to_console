@@ -53,7 +53,8 @@ impl ImageProcessor {
             Path(path) => {
                 let image = image::open(path).map_err(|e| e.to_string())?;
                 Ok(Self::new(image, option))
-            }
+            },
+            _ => Err(String::from("cannot init"))
         }
     }
 

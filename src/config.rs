@@ -1,5 +1,5 @@
 use crate::{
-    config::RunMode::{Multiple, Once},
+    config::RunMode::*,
     const_value::IMAGE_EXTS,
     types::{
         ClapResizeMode, DisplayMode,
@@ -15,6 +15,7 @@ use clap::{
     },
     Parser, Subcommand,
 };
+use image::{DynamicImage, Rgba};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use reqwest::blocking::Client;
@@ -104,6 +105,8 @@ pub enum Commands {
     File(FileArgs),
     #[clap(about = "Load all the images from a directory")]
     Directory(DirectoryArgs),
+    #[clap(about = "Load a gif from a file")]
+    Gif(GifArgs),
     #[clap(about = "Load an image from a base64")]
     Base64(Base64Args),
     #[clap(about = "Load an image from a url")]
@@ -127,6 +130,16 @@ pub struct DirectoryArgs {
     #[clap(long, help = "Read all images at once", default_value_t = false)]
     pub read_all: bool,
     #[clap(help = "Path of directory")]
+    pub path: String,
+}
+
+#[derive(Parser)]
+pub struct GifArgs {
+    #[clap(long, help = "Set the frames per second for gif playback", default_value = "10")]
+    pub fps: usize,
+    #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
+    pub loop_play: bool,
+    #[clap(help = "Gif file path")]
     pub path: String,
 }
 
@@ -171,9 +184,11 @@ impl Default for Cli {
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub fps: usize,
     pub pause: bool,
     pub center: bool,
     pub no_color: bool,
+    pub loop_play: bool,
     pub show_time: bool,
     pub image: ImageType,
     pub mode: DisplayMode,
@@ -191,20 +206,27 @@ pub struct Config {
 pub enum RunMode {
     Once(Result<Config, String>),
     Multiple(Vec<Result<Config, String>>),
+    Video(Result<Config, String>),
 }
 
 #[allow(dead_code)]
 impl RunMode {
-    pub fn is_once(&self) -> Result<Config, String> {
+    pub fn once(&self) -> Result<Config, String> {
         match self {
             Once(config) => config.clone(),
-            Multiple(_) => panic!("Cannot get the config in multiple mode"),
+            _ => panic!("Cannot get the config in other mode"),
         }
     }
-    pub fn is_multiple(&self) -> Vec<Result<Config, String>> {
+    pub fn multiple(&self) -> Vec<Result<Config, String>> {
         match self {
-            Once(_) => panic!("Cannot get the config in once mode"),
             Multiple(configs) => configs.clone(),
+            _ => panic!("Cannot get the config in other mode"),
+        }
+    }
+    pub fn video(&self) -> Result<Config, String> {
+        match self {
+            Video(config) => config.clone(),
+            _ => panic!("Cannot get the config in other mode"),
         }
     }
 }
@@ -213,9 +235,11 @@ pub fn parse() -> RunMode {
     let cli = Cli::parse();
     let resize_mode = ResizeMode::from_cli(&cli);
     let output_base = cli.output.clone();
-    let builder = |img, file_name, show_file_name| Config {
+    let builder = |img, file_name, show_file_name, fps, loop_play| Config {
+        fps,
         file_name,
-        image: Image(img),
+        loop_play,
+        image: img,
         resize_mode,
         show_file_name,
         pause: cli.pause,
@@ -244,9 +268,11 @@ pub fn parse() -> RunMode {
             }
             let img = image::open(&args.path).expect("Failed to open image");
             Once(Ok(builder(
-                img,
+                Image(img),
                 Some(path.file_name().unwrap().to_string_lossy().to_string()),
                 !args.hide_filename,
+                0,
+                false,
             )))
         }
         Commands::Directory(args) => {
@@ -298,9 +324,11 @@ pub fn parse() -> RunMode {
                                             cli.no_color,
                                             cli.protocol,
                                         ),
+                                        fps: 0,
                                         resize_mode,
                                         pause: false,
                                         file_name: None,
+                                        loop_play: false,
                                         show_time: false,
                                         center: cli.center,
                                         disable_info: true,
@@ -329,10 +357,49 @@ pub fn parse() -> RunMode {
                 .collect();
             Multiple(configs)
         }
+        Commands::Gif(args) => match std::fs::File::open(&args.path) {
+            Ok(file) => {
+                let mut decoder = gif::DecodeOptions::new();
+                decoder.set_color_output(gif::ColorOutput::RGBA);
+                match decoder.read_info(file) {
+                    Ok(mut decoder) => {
+                        let mut frames = vec![];
+                        loop {
+                            match decoder.read_next_frame() {
+                                Ok(frame) => match frame {
+                                    Some(frame) => {
+                                        let img = image::ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(
+                                            frame.width as u32,
+                                            frame.height as u32,
+                                            frame.buffer.to_vec(),
+                                        );
+                                        if let Some(img) = img {
+                                            frames.push(DynamicImage::from(img));
+                                        }
+                                    }
+                                    None => {
+                                        break Video(Ok(builder(
+                                            Gif(frames),
+                                            None,
+                                            false,
+                                            args.fps,
+                                            args.loop_play
+                                        )))
+                                    }
+                                },
+                                Err(err) => return Once(Err(err.to_string())),
+                            }
+                        }
+                    }
+                    Err(err) => Once(Err(err.to_string())),
+                }
+            }
+            Err(err) => Once(Err(err.to_string())),
+        },
         Commands::Base64(args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(builder(img, None, false))),
+                    Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false))),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -369,7 +436,7 @@ pub fn parse() -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => Once(Ok(builder(img, None, false))),
+                            Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false))),
                             Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
                         }
                     } else {
