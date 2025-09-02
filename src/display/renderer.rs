@@ -104,7 +104,11 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
             let time = std::time::Instant::now();
             print!("\x1b[0;0H");
             println!("{}", frame);
-            std::thread::sleep(Duration::from_micros(delay - (time.elapsed().as_micros() as u64) - config.fps.pow(2)));
+            std::thread::sleep(Duration::from_micros(
+                delay
+                    .saturating_sub(time.elapsed().as_micros() as u64)
+                    .saturating_sub(config.fps.pow(2)),
+            ));
         }
     } else {
         for frame in frames {
@@ -112,7 +116,11 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
             let time = std::time::Instant::now();
             print!("\x1b[0;0H");
             println!("{}", frame);
-            std::thread::sleep(Duration::from_micros(delay - (time.elapsed().as_micros() as u64) - config.fps.pow(2)));
+            std::thread::sleep(Duration::from_micros(
+                delay
+                    .saturating_sub(time.elapsed().as_micros() as u64)
+                    .saturating_sub(config.fps.pow(2)),
+            ));
         }
     }
 }
