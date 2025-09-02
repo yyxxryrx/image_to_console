@@ -17,6 +17,7 @@
 - ⌨️ **交互式暂停**: 可选择在显示后暂停，方便查看。
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty 和 iTerm2 图片协议。
+- 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
 
 ## 支持的协议
 - [x] WezTerm
@@ -53,6 +54,9 @@ image_to_console file path/to/image.jpg
 
 # 从目录加载所有图片
 image_to_console directory path/to/directory
+
+# 从 GIF 文件加载动画
+image_to_console gif path/to/animation.gif
 
 # 从 URL 加载图片
 image_to_console url https://example.com/image.png
@@ -133,6 +137,22 @@ image_to_console directory path/to/directory
 image_to_console --read-all directory path/to/directory
 ```
 
+### GIF 子命令选项
+
+```bash
+# 播放 GIF 动画（默认 10 FPS）
+image_to_console gif animation.gif
+
+# 播放 GIF 动画并设置帧率
+image_to_console gif --fps 24 animation.gif
+
+# 循环播放 GIF 动画
+image_to_console gif --loop animation.gif
+
+# 设置帧率并循环播放 GIF 动画
+image_to_console gif --fps 30 --loop animation.gif
+```
+
 ## 显示模式说明
 
 ### 彩色模式
@@ -173,6 +193,7 @@ image_to_console --read-all directory path/to/directory
 | [indicatif](https://crates.io/crates/indicatif) | 0.17.8 | MIT | 终端进度条 |
 | [terminal_size](https://crates.io/crates/terminal_size) | 0.4.0 | MIT | 检测终端尺寸 |
 | [reqwest](https://crates.io/crates/reqwest) | 0.12.9 | MIT / Apache-2.0 | 阻塞式 HTTP 客户端 |
+| [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF 动画解码 |
 
 ## License
 
