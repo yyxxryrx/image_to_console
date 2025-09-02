@@ -219,6 +219,13 @@ impl ImageConverter {
             let pixel = rgba_img.get_pixel(x, y);
             let color = PixelColor::from_channels(pixel.0);
             format!("{}▀", color.fg())
+        } else if let ProcessedImage::NoColor(luma_img) = &self.img{
+            let pixel = luma_img.get_pixel(x, y);
+            if pixel.0[0] > 128 {
+                "▀".to_string()
+            } else {
+                " ".to_string()
+            }
         } else {
             panic!("Invalid image type")
         }
