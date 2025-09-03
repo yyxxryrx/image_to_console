@@ -18,6 +18,7 @@
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty 和 iTerm2 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
+- 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
 
 ## 支持的协议
 - [x] WezTerm
@@ -151,6 +152,9 @@ image_to_console gif --loop animation.gif
 
 # 设置帧率并循环播放 GIF 动画
 image_to_console gif --fps 30 --loop animation.gif
+
+# 播放 GIF 动画并伴随音频
+image_to_console gif --audio audio.mp3 animation.gif
 ```
 
 ## 显示模式说明
@@ -195,6 +199,7 @@ image_to_console gif --fps 30 --loop animation.gif
 | [reqwest](https://crates.io/crates/reqwest) | 0.12.9 | MIT / Apache-2.0 | 阻塞式 HTTP 客户端 |
 | [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF 动画解码 |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | 跨线程通信 |
+| [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | 音频播放 |
 
 ## License
 
