@@ -3,6 +3,7 @@ use image::{DynamicImage, GrayImage, RgbaImage};
 
 mod converter;
 pub mod processor;
+pub mod gif_processor;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]

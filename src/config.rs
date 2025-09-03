@@ -1,3 +1,4 @@
+use crate::image::gif_processor::GifFrameProcessor;
 use crate::{
     config::RunMode::*,
     const_value::IMAGE_EXTS,
@@ -16,7 +17,7 @@ use clap::{
     Parser, Subcommand,
 };
 use crossbeam_channel::unbounded;
-use image::{DynamicImage, Rgba};
+use image::DynamicImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use reqwest::blocking::Client;
@@ -136,7 +137,11 @@ pub struct DirectoryArgs {
 
 #[derive(Parser)]
 pub struct GifArgs {
-    #[clap(long, help = "Set the frames per second for gif playback", default_value = "10")]
+    #[clap(
+        long,
+        help = "Set the frames per second for gif playback",
+        default_value = "10"
+    )]
     pub fps: u64,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
@@ -278,7 +283,7 @@ pub fn parse() -> RunMode {
                 !args.hide_filename,
                 0,
                 false,
-                None
+                None,
             )))
         }
         Commands::Directory(args) => {
@@ -367,25 +372,24 @@ pub fn parse() -> RunMode {
         Commands::Gif(args) => match std::fs::File::open(&args.path) {
             Ok(file) => {
                 let mut decoder = gif::DecodeOptions::new();
-                decoder.set_color_output(gif::ColorOutput::RGBA);
+                decoder.set_color_output(gif::ColorOutput::Indexed);
                 match decoder.read_info(file) {
                     Ok(mut decoder) => {
                         let (tx, rx) = unbounded::<Result<(DynamicImage, usize), String>>();
                         std::thread::spawn(move || {
                             let mut index: usize = 0;
+                            let mut gif_processor = GifFrameProcessor::new(
+                                decoder.width() as u32,
+                                decoder.height() as u32,
+                                decoder.global_palette().and_then(|p| Some(p.to_vec())),
+                            );
                             loop {
                                 match decoder.read_next_frame() {
                                     Ok(frame) => match frame {
                                         Some(frame) => {
-                                            let img = image::ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(
-                                                frame.width as u32,
-                                                frame.height as u32,
-                                                frame.buffer.to_vec(),
-                                            );
-                                            if let Some(img) = img {
-                                                tx.send(Ok((DynamicImage::from(img), index))).unwrap();
-                                                index += 1;
-                                            }
+                                            let img = gif_processor.process_frame(frame);
+                                            tx.send(Ok((DynamicImage::from(img), index))).unwrap();
+                                            index += 1;
                                         }
                                         None => {
                                             break;
@@ -401,7 +405,7 @@ pub fn parse() -> RunMode {
                             false,
                             args.fps,
                             args.loop_play,
-                            args.audio
+                            args.audio,
                         )))
                     }
                     Err(err) => Once(Err(err.to_string())),
