@@ -92,12 +92,23 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     Ok(())
 }
 
+#[allow(unused)]
 pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config) {
     let frames = results.iter().map(|result| result.0.lines.join("\n"));
+    // Load the audio if exists
+    let stream_handle =
+        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+    let audio = if let Some(audio_file) = config.audio {
+        let file = std::io::BufReader::new(std::fs::File::open(audio_file).unwrap());
+        Some(rodio::play(&stream_handle.mixer(), file).unwrap())
+    } else {
+        None
+    };
     // Clear the screen
     print!("\x1bc");
     // calculate the delay
     let delay = 1000000 / config.fps;
+    let start_time = std::time::Instant::now();
     if config.loop_play {
         for frame in frames.cycle() {
             // Move the cursor to the first row and column
@@ -107,7 +118,7 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
             std::thread::sleep(Duration::from_micros(
                 delay
                     .saturating_sub(time.elapsed().as_micros() as u64)
-                    .saturating_sub(config.fps.pow(2)),
+                    .saturating_sub(config.fps * 20u64.saturating_add(config.fps / 10)),
             ));
         }
     } else {
@@ -119,8 +130,25 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
             std::thread::sleep(Duration::from_micros(
                 delay
                     .saturating_sub(time.elapsed().as_micros() as u64)
-                    .saturating_sub(config.fps.pow(2)),
+                    .saturating_sub(config.fps * 20u64.saturating_add(config.fps / 10)),
             ));
         }
     }
+    println!(
+        "{} {}",
+        "Renderer in"
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::Green),
+        format_args!(
+            "{:02}:{:02}.{:03}",
+            start_time.elapsed().as_secs() / 60,
+            start_time.elapsed().as_secs() % 60,
+            start_time.elapsed().as_millis() % 1000
+        )
+        .to_string()
+        .to_colored_text()
+        .set_foreground_color(TerminalColor::LightGreen)
+    );
+    // quit the audio stream
+    std::mem::forget(stream_handle);
 }

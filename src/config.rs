@@ -140,6 +140,8 @@ pub struct GifArgs {
     pub fps: u64,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
+    #[clap(long, help = "Audio file path")]
+    pub audio: Option<String>,
     #[clap(help = "Gif file path")]
     pub path: String,
 }
@@ -197,6 +199,7 @@ pub struct Config {
     pub disable_print: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
+    pub audio: Option<String>,
     pub black_background: bool,
     pub output: Option<String>,
     pub resize_mode: ResizeMode,
@@ -236,8 +239,9 @@ pub fn parse() -> RunMode {
     let cli = Cli::parse();
     let resize_mode = ResizeMode::from_cli(&cli);
     let output_base = cli.output.clone();
-    let builder = |img, file_name, show_file_name, fps, loop_play| Config {
+    let builder = |img, file_name, show_file_name, fps, loop_play, audio| Config {
         fps,
+        audio,
         file_name,
         loop_play,
         image: img,
@@ -274,6 +278,7 @@ pub fn parse() -> RunMode {
                 !args.hide_filename,
                 0,
                 false,
+                None
             )))
         }
         Commands::Directory(args) => {
@@ -326,6 +331,7 @@ pub fn parse() -> RunMode {
                                             cli.protocol,
                                         ),
                                         fps: 0,
+                                        audio: None,
                                         resize_mode,
                                         pause: false,
                                         file_name: None,
@@ -394,7 +400,8 @@ pub fn parse() -> RunMode {
                             None,
                             false,
                             args.fps,
-                            args.loop_play
+                            args.loop_play,
+                            args.audio
                         )))
                     }
                     Err(err) => Once(Err(err.to_string())),
@@ -405,7 +412,7 @@ pub fn parse() -> RunMode {
         Commands::Base64(args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false))),
+                    Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false, None))),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -442,7 +449,7 @@ pub fn parse() -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false))),
+                            Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false, None))),
                             Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
                         }
                     } else {
