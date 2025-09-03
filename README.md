@@ -1,7 +1,7 @@
 # image_to_console
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Last Version](https://img.shields.io/github/v/release/yyxxryrx/image_to_console
-)](https://github.com/yyxxryrx/image_to_console/releases/latest)
+)](https://github.com/yyxxryrx/image_to_console/releases/latest) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yyxxryrx/image_to_console)
 
 一个用 Rust 编写的高性能终端图片查看工具。
 
