@@ -54,13 +54,13 @@ pub fn run_video(config: Result<Config, String>) {
                         .iter()
                         .par_bridge()
                         .flat_map(|frame| match frame {
-                            Ok((frame, index)) => {
+                            Ok((frame, index, delay)) => {
                                 let mut frame_config = config_clone.clone();
                                 frame_config.image = ImageType::Image(frame);
                                 match ImageProcessor::from_config(frame_config) {
                                     Ok(mut image_processor) => {
                                         print!("\rRendered {} frames", index + 1);
-                                        Some((image_processor.process(), index))
+                                        Some((image_processor.process(), index, delay as u64))
                                     }
                                     Err(e) => {
                                         err(e);
@@ -73,7 +73,7 @@ pub fn run_video(config: Result<Config, String>) {
                                 None
                             }
                         })
-                        .collect::<Vec<(ImageProcessorResult, usize)>>();
+                        .collect::<Vec<(ImageProcessorResult, usize, u64)>>();
                     frames.sort_by(|a, b| a.1.cmp(&b.1));
                     render_video(frames, config_clone);
                 }

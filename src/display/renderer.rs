@@ -4,6 +4,7 @@ use crate::image::processor::ImageProcessorResult;
 use crate::util::get_char;
 use std::io::Result;
 use std::io::Write;
+use std::ops::Mul;
 use std::time::Duration;
 use std::vec::Vec;
 
@@ -93,8 +94,10 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 }
 
 #[allow(unused)]
-pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config) {
-    let frames = results.iter().map(|result| result.0.lines.join("\n"));
+pub fn render_video(results: Vec<(ImageProcessorResult, usize, u64)>, config: Config) {
+    let frames = results
+        .iter()
+        .map(|result| (result.0.lines.join("\n"), result.1, result.2));
     // Load the audio if exists
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
@@ -107,45 +110,60 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize)>, config: Config)
     // Clear the screen
     print!("\x1bc");
     // calculate the delay
-    let delay = 1000000 / config.fps;
+    let delay = config.fps.and_then(|fps| Some(100 / fps));
     let start_time = std::time::Instant::now();
+    let mut other_timer = std::time::Instant::now();
+    let mut play_frame = |frame: String, index: usize, mut frame_delay: u64| {
+        if let Some(delay) = delay {
+            frame_delay = delay;
+        }
+        let system_call = other_timer.elapsed().as_micros();
+        // Move the cursor to the first row and column
+        let time = std::time::Instant::now();
+        print!("\x1b[0;0H");
+        println!("{}", frame);
+        let delay = frame_delay
+            .mul(10_000)
+            .saturating_sub(time.elapsed().as_micros() as u64);
+
+        // .saturating_sub(
+        //     frame_delay
+        //         .pow(2)
+        //         .mul(3)
+        //         .add(900)
+        //         .saturating_sub(frame_delay * 112),
+        // );
+        // .saturating_sub(900u64.saturating_sub(frame_delay * 100));
+        println!(
+            "\x1b[2K\rframe rate: {:.2} fps",
+            1_000_000f64 / delay as f64
+        );
+        println!("current frame: {index}");
+        std::thread::sleep(Duration::from_micros(delay.saturating_sub(
+            system_call as u64 * 10u64.saturating_sub(frame_delay).max(1),
+        )));
+        other_timer = std::time::Instant::now();
+    };
     if config.loop_play {
-        for frame in frames.cycle() {
-            // Move the cursor to the first row and column
-            let time = std::time::Instant::now();
-            print!("\x1b[0;0H");
-            println!("{}", frame);
-            std::thread::sleep(Duration::from_micros(
-                delay
-                    .saturating_sub(time.elapsed().as_micros() as u64)
-                    .saturating_sub(config.fps * 20u64.saturating_add(config.fps / 10)),
-            ));
+        for (frame, index, delay) in frames.cycle() {
+            play_frame(frame, index, delay);
         }
     } else {
-        for frame in frames {
-            // As same as above
-            let time = std::time::Instant::now();
-            print!("\x1b[0;0H");
-            println!("{}", frame);
-            std::thread::sleep(Duration::from_micros(
-                delay
-                    .saturating_sub(time.elapsed().as_micros() as u64)
-                    .saturating_sub(config.fps * 20u64.saturating_add(config.fps / 10)),
-            ));
+        for (frame, index, delay) in frames {
+            play_frame(frame, index, delay);
         }
     }
     println!(
         "{} {}",
-        "Renderer in"
+        "Render in"
             .to_colored_text()
             .set_foreground_color(TerminalColor::Green),
-        format_args!(
+        format!(
             "{:02}:{:02}.{:03}",
             start_time.elapsed().as_secs() / 60,
             start_time.elapsed().as_secs() % 60,
             start_time.elapsed().as_millis() % 1000
         )
-        .to_string()
         .to_colored_text()
         .set_foreground_color(TerminalColor::LightGreen)
     );

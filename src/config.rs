@@ -140,9 +140,8 @@ pub struct GifArgs {
     #[clap(
         long,
         help = "Set the frames per second for gif playback",
-        default_value = "10"
     )]
-    pub fps: u64,
+    pub fps: Option<u64>,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
     #[clap(long, help = "Audio file path")]
@@ -192,7 +191,7 @@ impl Default for Cli {
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub fps: u64,
+    pub fps: Option<u64>,
     pub pause: bool,
     pub center: bool,
     pub no_color: bool,
@@ -281,7 +280,7 @@ pub fn parse() -> RunMode {
                 Image(img),
                 Some(path.file_name().unwrap().to_string_lossy().to_string()),
                 !args.hide_filename,
-                0,
+                None,
                 false,
                 None,
             )))
@@ -335,7 +334,7 @@ pub fn parse() -> RunMode {
                                             cli.no_color,
                                             cli.protocol,
                                         ),
-                                        fps: 0,
+                                        fps: None,
                                         audio: None,
                                         resize_mode,
                                         pause: false,
@@ -375,7 +374,7 @@ pub fn parse() -> RunMode {
                 decoder.set_color_output(gif::ColorOutput::Indexed);
                 match decoder.read_info(file) {
                     Ok(mut decoder) => {
-                        let (tx, rx) = unbounded::<Result<(DynamicImage, usize), String>>();
+                        let (tx, rx) = unbounded::<Result<(DynamicImage, usize, u16), String>>();
                         std::thread::spawn(move || {
                             let mut index: usize = 0;
                             let mut gif_processor = GifFrameProcessor::new(
@@ -388,7 +387,7 @@ pub fn parse() -> RunMode {
                                     Ok(frame) => match frame {
                                         Some(frame) => {
                                             let img = gif_processor.process_frame(frame);
-                                            tx.send(Ok((DynamicImage::from(img), index))).unwrap();
+                                            tx.send(Ok((DynamicImage::from(img), index, frame.delay))).unwrap();
                                             index += 1;
                                         }
                                         None => {
@@ -416,7 +415,7 @@ pub fn parse() -> RunMode {
         Commands::Base64(args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false, None))),
+                    Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -453,7 +452,7 @@ pub fn parse() -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => Once(Ok(builder(Image(img), None, false, 0, false, None))),
+                            Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
                             Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
                         }
                     } else {

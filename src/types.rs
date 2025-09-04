@@ -100,7 +100,7 @@ impl DisplayMode {
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
-    Gif(Receiver<Result<(DynamicImage, usize), String>>)
+    Gif(Receiver<Result<(DynamicImage, usize, u16), String>>)
 }
 
 #[derive(Debug, Clone, Copy)]
