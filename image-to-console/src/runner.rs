@@ -2,13 +2,14 @@ use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
 use crate::display::renderer::{render, render_video};
-use crate::image::processor::{ImageProcessor, ImageProcessorResult};
+use image_to_console_core::processor::{ImageProcessor, ImageProcessorResult};
 use crate::types::ImageType;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 use std::time::Duration;
+use crate::util::CreateIPFromConfig;
 
 pub fn err(err_msg: String) {
     eprintln!(
@@ -23,7 +24,7 @@ pub fn err(err_msg: String) {
 
 pub fn run(config: Result<Config, String>) {
     match config {
-        Ok(config) => match ImageProcessor::from_config(config.clone()) {
+        Ok(config) => match ImageProcessor::from_config(&config) {
             Ok(mut image_processor) => {
                 let result = image_processor.process();
                 if let Err(e) = render(result, config) {
@@ -57,7 +58,7 @@ pub fn run_video(config: Result<Config, String>) {
                             Ok((frame, index, delay)) => {
                                 let mut frame_config = config_clone.clone();
                                 frame_config.image = ImageType::Image(frame);
-                                match ImageProcessor::from_config(frame_config) {
+                                match ImageProcessor::from_config(&frame_config) {
                                     Ok(mut image_processor) => {
                                         print!("\rRendered {} frames", index + 1);
                                         Some((image_processor.process(), index, delay as u64))

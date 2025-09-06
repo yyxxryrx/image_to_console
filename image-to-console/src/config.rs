@@ -1,11 +1,11 @@
-use crate::image::gif_processor::GifFrameProcessor;
+use image_to_console_core::{DisplayMode, ResizeMode, gif_processor::GifFrameProcessor};
 use crate::{
     config::RunMode::*,
     const_value::IMAGE_EXTS,
     types::{
-        ClapResizeMode, DisplayMode,
+        ClapResizeMode,
         ImageType::{self, *},
-        Protocol, ResizeMode,
+        Protocol,
     },
 };
 use base64::Engine;
@@ -22,6 +22,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use reqwest::blocking::Client;
 use std::{io::Write, path::Path};
+use crate::util::{CreateMDFromBool, CreateRMFromCli};
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))

@@ -1,6 +1,6 @@
 use crate::color::{colors::TerminalColor, prelude::ToColoredText};
 use crate::config::Config;
-use crate::image::processor::ImageProcessorResult;
+use image_to_console_core::processor::ImageProcessorResult;
 use crate::util::get_char;
 use std::io::Result;
 use std::io::Write;

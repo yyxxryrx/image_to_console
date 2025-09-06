@@ -1,37 +1,6 @@
-[package]
-name = "image_to_console"
-version = "0.1.12"
-edition = "2021"
-
-authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
-
-description = "A high-performance terminal image viewer written in Rust."
-license = "MIT"
-readme = "README.md"
-homepage = "https://github.com/yyxxryrx/image_to_console"
-repository = "https://github.com/yyxxryrx/image_to_console"
-
-keywords = ["image", "terminal", "console", "viewer"]
-categories = ["command-line-utilities", "development-tools", "multimedia::images"]
-
-[dependencies]
-gif = "0.13.3"
-rayon = "1.11.0"
-rodio = "0.21.1"
-image = "0.25.4"
-base64 = "0.22.1"
-num_cpus = "1.17.0"
-indicatif = "0.17.8"
-terminal_size = "0.4.0"
-crossbeam-channel = "0.5.15"
-
-[dependencies.clap]
-version = "4.5.20"
-features = ["derive"]
-
-[dependencies.reqwest]
-version = "0.12.9"
-features = ["blocking"]
+[workspace]
+members = ["image-to-console", "image-to-console-core"]
+resolver = "2"
 
 [profile.release]
 lto = true

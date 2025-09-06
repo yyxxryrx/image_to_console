@@ -1,11 +1,8 @@
-use crate::{
-    image::ProcessedImage,
-    types::DisplayMode::{self, *},
-};
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
+use crate::{ProcessedImage, DisplayMode::{self,*}};
 
 struct PixelColor {
     r: u8,

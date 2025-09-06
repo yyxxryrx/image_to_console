@@ -4,7 +4,6 @@ mod color;
 mod config;
 mod const_value;
 mod display;
-mod image;
 mod runner;
 mod types;
 mod util;

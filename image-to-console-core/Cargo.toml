@@ -1,0 +1,22 @@
+[package]
+name = "image_to_console_core"
+version = "0.1.12"
+edition = "2021"
+
+authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
+
+[lib]
+name = "image_to_console_core"
+crate-type = ["lib"]
+
+[dependencies]
+gif = "0.13.3"
+rayon = "1.11.0"
+base64 = "0.22.1"
+num_cpus = "1.17.0"
+terminal_size = "0.4.0"
+
+[dependencies.image]
+version = "0.25.4"
+default-features = false
+features = ["png", "jpeg"]

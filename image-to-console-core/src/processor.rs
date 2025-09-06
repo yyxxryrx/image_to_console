@@ -1,16 +1,7 @@
-use crate::{
-    config::Config,
-    image::{
-        converter::{ImageConverter, ImageConverterOption},
-        ProcessedImage,
-    },
-    types::{
-        DisplayMode,
-        ImageType::*,
-        ResizeMode::{self, *},
-    },
-};
 use image::{imageops::FilterType, GenericImageView};
+use crate::converter::{ImageConverter, ImageConverterOption};
+use crate::{DisplayMode, ProcessedImage, ResizeMode};
+use crate::ResizeMode::{Auto, Custom, None};
 
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
@@ -38,24 +29,6 @@ pub struct ImageProcessor {
 impl ImageProcessor {
     pub fn new(image: image::DynamicImage, option: ImageProcessorOptions) -> Self {
         Self { image, option }
-    }
-
-    pub fn from_config(config: Config) -> Result<Self, String> {
-        let option = ImageProcessorOptions {
-            mode: config.mode,
-            center: config.center,
-            full: config.full_resolution,
-            resize_mode: config.resize_mode,
-            black_background: config.black_background,
-        };
-        match config.image {
-            Image(image) => Ok(Self::new(image, option)),
-            Path(path) => {
-                let image = image::open(path).map_err(|e| e.to_string())?;
-                Ok(Self::new(image, option))
-            },
-            _ => Err(String::from("cannot init"))
-        }
     }
 
     pub fn process(&mut self) -> ImageProcessorResult {
