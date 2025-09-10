@@ -1,12 +1,13 @@
 use crate::color::{colors::TerminalColor, prelude::ToColoredText};
 use crate::config::Config;
+use crate::types::Frame;
 use crate::util::get_char;
+use crossbeam_channel::Receiver;
 use image_to_console_core::processor::ImageProcessorResult;
 use std::io::Result;
 use std::io::Write;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::vec::Vec;
 
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
@@ -94,30 +95,17 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 }
 
 #[allow(unused)]
-pub fn render_video(results: &Vec<(ImageProcessorResult, usize, u64)>, config: Config) {
-    #[derive(Clone)]
-    struct Frame {
-        index: usize,
-        frame: String,
-        delay: u64,
-    }
-
-    impl Frame {
-        pub fn unpacking(&self) -> (&str, usize, u64) {
-            (&self.frame, self.index, self.delay)
-        }
-    }
-
-    let mut frames = results
-        .iter()
-        .map(|result| {
-            (Frame {
-                index: result.1,
-                frame: result.0.lines.join("\n"),
-                delay: result.2,
-            })
-        })
-        .collect();
+pub fn render_video(results: Receiver<Frame>, config: Config) {
+    // let mut frames = results
+    //     .iter()
+    //     .map(|result| {
+    //         (Frame {
+    //             index: result.1,
+    //             frame: result.0.lines.join("\n"),
+    //             delay: result.2,
+    //         })
+    //     })
+    //     .collect();
     // Load the audio if exists
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
@@ -134,15 +122,16 @@ pub fn render_video(results: &Vec<(ImageProcessorResult, usize, u64)>, config: C
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     fn play_frame(
-        frames: Vec<Frame>,
+        frames: Receiver<Frame>,
         delay: Option<u64>,
         frame_index: usize,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
     ) {
-        if frame_index >= frames.len() {
+        let frame = frames.recv();
+        if frame.is_err() {
             return;
         }
-        let frame = frames[frame_index].clone();
+        let frame = unsafe { frame.unwrap_unchecked() };
         let (frame, index, mut frame_delay) = frame.unpacking();
         if let Some(delay) = delay {
             frame_delay = delay;
@@ -182,7 +171,7 @@ pub fn render_video(results: &Vec<(ImageProcessorResult, usize, u64)>, config: C
         // )));
     }
 
-    play_frame(frames, delay, 0, st);
+    play_frame(results, delay, 0, st);
 
     for task in rt.iter() {
         task.join().unwrap();

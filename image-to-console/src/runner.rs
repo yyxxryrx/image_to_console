@@ -2,14 +2,17 @@ use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
 use crate::display::renderer::{render, render_video};
+use crate::types::{Frame, ImageType};
+use crate::util::CreateIPFromConfig;
+#[allow(unused_imports)]
+use crossbeam_channel::{bounded, unbounded};
 use image_to_console_core::processor::{ImageProcessor, ImageProcessorResult};
-use crate::types::ImageType;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+#[allow(unused_imports)]
 use rayon::prelude::*;
 use std::time::Duration;
-use crate::util::CreateIPFromConfig;
 
 pub fn err(err_msg: String) {
     eprintln!(
@@ -48,35 +51,64 @@ pub fn run_video(config: Result<Config, String>) {
     match config {
         Ok(config) => {
             let config_clone = config.clone();
+            let config_clone2 = config.clone();
             match config.image {
                 ImageType::Gif(video) => {
                     // Process the evey frame image
-                    let mut frames = video
-                        .iter()
-                        .par_bridge()
-                        .flat_map(|frame| match frame {
-                            Ok((frame, index, delay)) => {
-                                let mut frame_config = config_clone.clone();
-                                frame_config.image = ImageType::Image(frame);
-                                match ImageProcessor::from_config(&frame_config) {
-                                    Ok(mut image_processor) => {
-                                        print!("\rRendered {} frames", index + 1);
-                                        Some((image_processor.process(), index, delay as u64))
-                                    }
-                                    Err(e) => {
-                                        err(e);
-                                        None
+                    // let mut frames = video
+                    //     .iter()
+                    //     .par_bridge()
+                    //     .flat_map(|frame| match frame {
+                    //         Ok((frame, index, delay)) => {
+                    //             let mut frame_config = config_clone.clone();
+                    //             frame_config.image = ImageType::Image(frame);
+                    //             match ImageProcessor::from_config(&frame_config) {
+                    //                 Ok(mut image_processor) => {
+                    //                     print!("\rRendered {} frames", index + 1);
+                    //                     Some((image_processor.process(), index, delay as u64))
+                    //                 }
+                    //                 Err(e) => {
+                    //                     err(e);
+                    //                     None
+                    //                 }
+                    //             }
+                    //         }
+                    //         Err(e) => {
+                    //             err(e);
+                    //             None
+                    //         }
+                    //     })
+                    //     .collect::<Vec<(ImageProcessorResult, usize, u64)>>();
+                    // frames.sort_by(|a, b| a.1.cmp(&b.1));
+                    let (st, rt) = bounded::<Frame>(config_clone.fps.unwrap_or(30) as _);
+                    let task = std::thread::spawn(move || {
+                        for frame in video.iter() {
+                            match frame {
+                                Ok((frame, index, delay)) => {
+                                    let mut frame_config = config_clone.clone();
+                                    frame_config.image = ImageType::Image(frame);
+                                    match ImageProcessor::from_config(&frame_config) {
+                                        Ok(mut image_processor) => st
+                                            .send(Frame {
+                                                index,
+                                                delay: delay as u64,
+                                                frame: image_processor.process().lines.join("\n"),
+                                            })
+                                            .map_err(|e| err(e.to_string()))
+                                            .unwrap(),
+                                        Err(e) => {
+                                            err(e);
+                                        }
                                     }
                                 }
+                                Err(e) => {
+                                    err(e);
+                                }
                             }
-                            Err(e) => {
-                                err(e);
-                                None
-                            }
-                        })
-                        .collect::<Vec<(ImageProcessorResult, usize, u64)>>();
-                    frames.sort_by(|a, b| a.1.cmp(&b.1));
-                    render_video(&frames, config_clone);
+                        }
+                    });
+                    render_video(rt, config_clone2);
+                    task.join().unwrap();
                 }
                 _ => err(String::from("cannot init")),
             }

@@ -32,13 +32,11 @@ impl ValueEnum for Protocol {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
-    Gif(Receiver<Result<(DynamicImage, usize, u16), String>>)
+    Gif(Receiver<Result<(DynamicImage, usize, u16), String>>),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -63,5 +61,18 @@ impl ValueEnum for ClapResizeMode {
             Self::Custom => PossibleValue::new("custom"),
             Self::None => PossibleValue::new("none"),
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct Frame {
+    pub index: usize,
+    pub frame: String,
+    pub delay: u64,
+}
+
+impl Frame {
+    pub fn unpacking(&self) -> (&str, usize, u64) {
+        (&self.frame, self.index, self.delay)
     }
 }

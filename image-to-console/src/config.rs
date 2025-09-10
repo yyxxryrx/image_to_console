@@ -16,7 +16,8 @@ use clap::{
     },
     Parser, Subcommand,
 };
-use crossbeam_channel::unbounded;
+#[allow(unused)]
+use crossbeam_channel::{bounded,unbounded};
 use image::DynamicImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
@@ -190,6 +191,7 @@ impl Default for Cli {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Config {
     pub fps: Option<u64>,
@@ -375,7 +377,7 @@ pub fn parse() -> RunMode {
                 decoder.set_color_output(gif::ColorOutput::Indexed);
                 match decoder.read_info(file) {
                     Ok(mut decoder) => {
-                        let (tx, rx) = unbounded::<Result<(DynamicImage, usize, u16), String>>();
+                        let (tx, rx) = bounded::<Result<(DynamicImage, usize, u16), String>>(6);
                         std::thread::spawn(move || {
                             let mut index: usize = 0;
                             let mut gif_processor = GifFrameProcessor::new(
