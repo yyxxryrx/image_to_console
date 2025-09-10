@@ -115,8 +115,8 @@ pub fn render_video(results: Receiver<Frame>, config: Config) {
     } else {
         None
     };
-    // Clear the screen
-    print!("\x1bc");
+    // Save current cursor position
+    print!("\x1b[s");
     // calculate the delay
     let delay = config.fps.and_then(|fps| Some(100 / fps));
     let start_time = std::time::Instant::now();
@@ -147,7 +147,8 @@ pub fn render_video(results: Receiver<Frame>, config: Config) {
 
         // Move the cursor to the first row and column
         let time = std::time::Instant::now();
-        print!("\x1b[0;0H");
+        // Back to the saved position
+        print!("\x1b[u");
         println!("{}", frame);
         // let delay = frame_delay
         //     .mul(10_000)
