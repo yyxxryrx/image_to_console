@@ -20,6 +20,7 @@
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty 和 iTerm2 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
+- 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性）。
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
 
 ## 支持的协议
@@ -42,7 +43,12 @@
 ```bash
 git clone https://github.com/yyxxryrx/image_to_console.git
 cd image_to_console
+
+# 编译基础版本（不包含视频支持）
 cargo build --release
+
+# 编译包含视频支持的版本
+cargo build --release --features video
 ```
 
 编译后的二进制文件位于 `target/release/image_to_console`。
@@ -66,6 +72,9 @@ image_to_console url https://example.com/image.png
 
 # 从 Base64 字符串加载图片
 image_to_console base64 <base64-encoded-image-data>
+
+# 从文件加载视频（需要启用 video 特性）
+image_to_console video path/to/video.mp4
 ```
 
 ### 命令行选项
@@ -159,6 +168,13 @@ image_to_console gif --fps 30 --loop animation.gif
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 
+### 视频子命令选项
+
+```bash
+# 播放视频文件（需要启用 video 特性）
+image_to_console video path/to/video.mp4
+```
+
 ## 显示模式说明
 
 ### 彩色模式
@@ -202,6 +218,8 @@ image_to_console gif --audio audio.mp3 animation.gif
 | [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF 动画解码 |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | 跨线程通信 |
 | [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | 音频播放 |
+| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | 视频处理（可选） |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next) | 7.1.0 | MIT | 视频处理（可选） |
 
 ## License
 

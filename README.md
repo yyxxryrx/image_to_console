@@ -19,6 +19,7 @@ English | [简体中文](README_zh-CN.md)
 - 🖥️ **Multiple Display Modes**: Support for full-resolution and half-resolution display modes
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, and iTerm2 image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
+- 🎥 **Video Playback Support**: Play video files in terminal (requires `video` feature)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations
 
 ## Supported Protocols
@@ -40,7 +41,12 @@ English | [简体中文](README_zh-CN.md)
 ```bash
 git clone https://github.com/yyxxryrx/image_to_console.git
 cd image_to_console
+
+# Build basic version (without video support)
 cargo build --release
+
+# Build version with video support
+cargo build --release --features video
 ```
 
 The compiled binary will be located at `target/release/image_to_console`.
@@ -64,6 +70,9 @@ image_to_console url https://example.com/image.png
 
 # Load image from Base64 string
 image_to_console base64 <base64-encoded-image-data>
+
+# Load video from file (requires video feature)
+image_to_console video path/to/video.mp4
 ```
 
 ### Command Line Options
@@ -157,6 +166,13 @@ image_to_console gif --fps 30 --loop animation.gif
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 
+### Video Subcommand Options
+
+```bash
+# Play video file (requires video feature)
+image_to_console video path/to/video.mp4
+```
+
 ## Display Mode Description
 
 ### Color Modes
@@ -200,6 +216,8 @@ Supports most common image formats, including but not limited to:
 | [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF animation decoding |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | Cross-thread communication |
 | [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | Audio playback |
+| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | Video processing (optional) |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next) | 7.1.0 | MIT | Video processing (optional) |
 
 ## License
 
