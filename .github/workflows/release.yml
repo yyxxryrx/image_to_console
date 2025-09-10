@@ -39,10 +39,10 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             name: image_to_console-linux-x86_64
-          - os: macos-latest
+          - os: macos-13
             target: x86_64-apple-darwin
             name: image_to_console-macos-x86_64
-          - os: macos-latest
+          - os: macos-14
             target: aarch64-apple-darwin
             name: image_to_console-macos-aarch64
           - os: windows-latest
@@ -66,8 +66,8 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             sudo apt-get update
-            sudo apt-get install libasound2-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev -y
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            sudo apt-get install libasound2-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev -y
+          elif [[ "${{ matrix.os }}" == "macos-13" ]] || [[ "${{ matrix.os }}" == "macos-14" ]]; then
             brew install ffmpeg
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             # Install vcpkg for ffmpeg
