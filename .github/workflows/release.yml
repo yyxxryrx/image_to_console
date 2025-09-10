@@ -66,7 +66,7 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             sudo apt-get update
-            sudo apt-get install libasound2-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev -y
+            sudo apt-get install libasound2-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev -y
           elif [[ "${{ matrix.os }}" == "macos-13" ]] || [[ "${{ matrix.os }}" == "macos-14" ]]; then
             brew install ffmpeg
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
