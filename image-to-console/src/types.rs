@@ -1,3 +1,4 @@
+#[cfg(feature = "video")]
 use std::path::PathBuf;
 use clap::builder::PossibleValue;
 use clap::ValueEnum;

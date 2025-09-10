@@ -7,6 +7,7 @@ use crossbeam_channel::Receiver;
 use image_to_console_core::processor::ImageProcessorResult;
 use std::io::Result;
 use std::io::Write;
+#[cfg(feature = "video")]
 use std::path::PathBuf;
 use std::thread::JoinHandle;
 use std::time::Duration;
