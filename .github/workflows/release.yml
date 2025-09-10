@@ -39,10 +39,10 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             name: image_to_console-linux-x86_64
-          - os: macos-13
+          - os: macos-latest
             target: x86_64-apple-darwin
             name: image_to_console-macos-x86_64
-          - os: macos-14
+          - os: macos-latest
             target: aarch64-apple-darwin
             name: image_to_console-macos-aarch64
           - os: windows-latest
@@ -61,57 +61,33 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Install system dependencies
+      - name: Install Alsa-sys
         shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             sudo apt-get update
-            sudo apt-get install libasound2-dev pkg-config libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev -y
-          elif [[ "${{ matrix.os }}" == "macos-13" ]] || [[ "${{ matrix.os }}" == "macos-14" ]]; then
-            brew install ffmpeg
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            # Install vcpkg for ffmpeg
-            git clone https://github.com/Microsoft/vcpkg.git
-            cd vcpkg
-            ./bootstrap-vcpkg.bat
-            ./vcpkg integrate install
-            ./vcpkg install ffmpeg:x64-windows
-            echo "VCPKG_ROOT=$(pwd)" >> $GITHUB_ENV
+            sudo apt-get install libasound2-dev pkg-config -y
           fi
 
-      - name: Build standard version
+      - name: Build
         env:
           OPENSSL_STATIC: 1
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Build video version
-        env:
-          OPENSSL_STATIC: 1
-        run: cargo build --release --features video --target ${{ matrix.target }}
-
       - name: Package
         shell: bash
         run: |
-          mkdir -p dist
-          
-          # Copy standard version
+          mkdir dist
           cp target/${{ matrix.target }}/release/image_to_console${{ matrix.os == 'windows-latest' && '.exe' || '' }} \
              dist/${{ matrix.name }}
-          
-          # Copy video version
-          cp target/${{ matrix.target }}/release/image_to_console${{ matrix.os == 'windows-latest' && '.exe' || '' }} \
-             dist/${{ matrix.name }}-video
-          
           cd dist
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             7z a ../${{ matrix.name }}.zip ${{ matrix.name }}
-            7z a ../${{ matrix.name }}-video.zip ${{ matrix.name }}-video
           else
             tar czf ../${{ matrix.name }}.tar.gz ${{ matrix.name }}
-            tar czf ../${{ matrix.name }}-video.tar.gz ${{ matrix.name }}-video
           fi
 
-      - name: Upload Release Assets
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -119,14 +95,4 @@ jobs:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ${{ matrix.name }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
           asset_name: ${{ matrix.name }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload Video Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ matrix.name }}-video.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
-          asset_name: ${{ matrix.name }}-video.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
           asset_content_type: application/octet-stream
