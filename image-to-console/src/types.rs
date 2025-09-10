@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use clap::builder::PossibleValue;
 use clap::ValueEnum;
 use crossbeam_channel::Receiver;
@@ -37,6 +38,9 @@ pub enum ImageType {
     Image(DynamicImage),
     Path(String),
     Gif(Receiver<Result<(DynamicImage, usize, u16), String>>),
+    #[cfg(feature = "video")]
+    /// The channel to receive video events
+    Video(Receiver<Result<VideoEvent, String>>)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -75,4 +79,16 @@ impl Frame {
     pub fn unpacking(&self) -> (&str, usize, u64) {
         (&self.frame, self.index, self.delay)
     }
+}
+
+/// The event type to of video parser
+#[cfg(feature = "video")]
+#[derive(Debug, Clone)]
+pub enum VideoEvent {
+    Starting,
+    /// The first one is the receiver of the video data
+    ///
+    /// The last one is the frame rate.
+    Initialized((Receiver<Result<(DynamicImage, usize), String>>, PathBuf, f32)),
+    Finished,
 }

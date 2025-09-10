@@ -14,6 +14,9 @@ repository = "https://github.com/yyxxryrx/image_to_console"
 keywords = ["image", "terminal", "console", "viewer"]
 categories = ["command-line-utilities", "development-tools", "multimedia::images"]
 
+[features]
+video = ["ffmpeg-next", "ez-ffmpeg"]
+
 [dependencies]
 gif = "0.13.3"
 rayon = "1.11.0"
@@ -30,6 +33,14 @@ features = ["derive"]
 [dependencies.reqwest]
 version = "0.12.9"
 features = ["blocking"]
+
+[dependencies.ez-ffmpeg]
+optional = true
+version = "0.5.3"
+
+[dependencies.ffmpeg-next]
+optional = true
+version = "7.1.0"
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"

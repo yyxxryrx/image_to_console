@@ -1,12 +1,12 @@
 use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
-use crate::display::renderer::{render, render_video};
+use crate::display::renderer::{render, render_gif};
 use crate::types::{Frame, ImageType};
 use crate::util::CreateIPFromConfig;
 #[allow(unused_imports)]
 use crossbeam_channel::{bounded, unbounded};
-use image_to_console_core::processor::{ImageProcessor, ImageProcessorResult};
+use image_to_console_core::processor::ImageProcessor;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -53,36 +53,11 @@ pub fn run_video(config: Result<Config, String>) {
             let config_clone = config.clone();
             let config_clone2 = config.clone();
             match config.image {
-                ImageType::Gif(video) => {
-                    // Process the evey frame image
-                    // let mut frames = video
-                    //     .iter()
-                    //     .par_bridge()
-                    //     .flat_map(|frame| match frame {
-                    //         Ok((frame, index, delay)) => {
-                    //             let mut frame_config = config_clone.clone();
-                    //             frame_config.image = ImageType::Image(frame);
-                    //             match ImageProcessor::from_config(&frame_config) {
-                    //                 Ok(mut image_processor) => {
-                    //                     print!("\rRendered {} frames", index + 1);
-                    //                     Some((image_processor.process(), index, delay as u64))
-                    //                 }
-                    //                 Err(e) => {
-                    //                     err(e);
-                    //                     None
-                    //                 }
-                    //             }
-                    //         }
-                    //         Err(e) => {
-                    //             err(e);
-                    //             None
-                    //         }
-                    //     })
-                    //     .collect::<Vec<(ImageProcessorResult, usize, u64)>>();
-                    // frames.sort_by(|a, b| a.1.cmp(&b.1));
+                ImageType::Gif(gif) => {
                     let (st, rt) = bounded::<Frame>(config_clone.fps.unwrap_or(30) as _);
+                    // Process the evey frame image
                     let task = std::thread::spawn(move || {
-                        for frame in video.iter() {
+                        for frame in gif {
                             match frame {
                                 Ok((frame, index, delay)) => {
                                     let mut frame_config = config_clone.clone();
@@ -107,8 +82,57 @@ pub fn run_video(config: Result<Config, String>) {
                             }
                         }
                     });
-                    render_video(rt, config_clone2);
+                    render_gif(rt, config_clone2);
                     task.join().unwrap();
+                }
+                #[cfg(feature = "video")]
+                ImageType::Video(video_event) => {
+                    use crate::types::VideoEvent::*;
+                    use crate::display::renderer::render_video;
+                    for event in video_event {
+                        match event {
+                            Ok(event) => {
+                                match event {
+                                    Starting => {
+                                        println!("正在初始化中...");
+                                    }
+                                    Initialized((vrx, audio_path, fps)) => {
+                                        let (st, rt) = bounded(fps.ceil() as usize);
+                                        let config_clone = config_clone.clone();
+                                        let task = std::thread::spawn(move || {
+                                            for frame in vrx {
+                                                match frame {
+                                                    Ok((frame, index)) => {
+                                                        let mut frame_config = config_clone.clone();
+                                                        frame_config.image = ImageType::Image(frame);
+                                                        match ImageProcessor::from_config(&frame_config) {
+                                                            Ok(mut image_processor) => st
+                                                                .send((image_processor.process().lines.join("\n"), index))
+                                                                .map_err(|e| err(e.to_string()))
+                                                                .unwrap(),
+                                                            Err(e) => {
+                                                                err(e);
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        err(e);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                        let render_task = std::thread::spawn(move || {
+                                            render_video(rt, audio_path, fps);
+                                        });
+                                        task.join().unwrap();
+                                        render_task.join().unwrap();
+                                    }
+                                    Finished => {}
+                                }
+                            }
+                            Err(e) => err(e),
+                        }
+                    }
                 }
                 _ => err(String::from("cannot init")),
             }
