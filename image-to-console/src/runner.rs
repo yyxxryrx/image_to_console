@@ -76,7 +76,7 @@ pub fn run_video(config: Result<Config, String>) {
                         })
                         .collect::<Vec<(ImageProcessorResult, usize, u64)>>();
                     frames.sort_by(|a, b| a.1.cmp(&b.1));
-                    render_video(frames, config_clone);
+                    render_video(&frames, config_clone);
                 }
                 _ => err(String::from("cannot init")),
             }

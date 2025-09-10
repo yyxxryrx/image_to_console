@@ -1,10 +1,10 @@
 use crate::color::{colors::TerminalColor, prelude::ToColoredText};
 use crate::config::Config;
-use image_to_console_core::processor::ImageProcessorResult;
 use crate::util::get_char;
+use image_to_console_core::processor::ImageProcessorResult;
 use std::io::Result;
 use std::io::Write;
-use std::ops::Mul;
+use std::thread::JoinHandle;
 use std::time::Duration;
 use std::vec::Vec;
 
@@ -94,10 +94,30 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 }
 
 #[allow(unused)]
-pub fn render_video(results: Vec<(ImageProcessorResult, usize, u64)>, config: Config) {
-    let frames = results
+pub fn render_video(results: &Vec<(ImageProcessorResult, usize, u64)>, config: Config) {
+    #[derive(Clone)]
+    struct Frame {
+        index: usize,
+        frame: String,
+        delay: u64,
+    }
+
+    impl Frame {
+        pub fn unpacking(&self) -> (&str, usize, u64) {
+            (&self.frame, self.index, self.delay)
+        }
+    }
+
+    let mut frames = results
         .iter()
-        .map(|result| (result.0.lines.join("\n"), result.1, result.2));
+        .map(|result| {
+            (Frame {
+                index: result.1,
+                frame: result.0.lines.join("\n"),
+                delay: result.2,
+            })
+        })
+        .collect();
     // Load the audio if exists
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
@@ -112,19 +132,37 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize, u64)>, config: Co
     // calculate the delay
     let delay = config.fps.and_then(|fps| Some(100 / fps));
     let start_time = std::time::Instant::now();
-    let mut other_timer = std::time::Instant::now();
-    let mut play_frame = |frame: String, index: usize, mut frame_delay: u64| {
+    let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
+    fn play_frame(
+        frames: Vec<Frame>,
+        delay: Option<u64>,
+        frame_index: usize,
+        st: crossbeam_channel::Sender<JoinHandle<()>>,
+    ) {
+        if frame_index >= frames.len() {
+            return;
+        }
+        let frame = frames[frame_index].clone();
+        let (frame, index, mut frame_delay) = frame.unpacking();
         if let Some(delay) = delay {
             frame_delay = delay;
         }
-        let system_call = other_timer.elapsed().as_micros();
+        // Create new thread and other works it takes about 800 µs time, so we need to subtract it.
+        let d = Duration::from_micros(frame_delay * 10_000 - 800);
+        let st2 = st.clone();
+        let task = std::thread::spawn(move || {
+            std::thread::sleep(d);
+            play_frame(frames, delay, index + 1, st2);
+        });
+        st.send(task).unwrap();
+
         // Move the cursor to the first row and column
         let time = std::time::Instant::now();
         print!("\x1b[0;0H");
         println!("{}", frame);
-        let delay = frame_delay
-            .mul(10_000)
-            .saturating_sub(time.elapsed().as_micros() as u64);
+        // let delay = frame_delay
+        //     .mul(10_000)
+        //     .saturating_sub(time.elapsed().as_micros() as u64);
 
         // .saturating_sub(
         //     frame_delay
@@ -134,25 +172,22 @@ pub fn render_video(results: Vec<(ImageProcessorResult, usize, u64)>, config: Co
         //         .saturating_sub(frame_delay * 112),
         // );
         // .saturating_sub(900u64.saturating_sub(frame_delay * 100));
-        println!(
-            "\x1b[2K\rframe rate: {:.2} fps",
-            1_000_000f64 / delay as f64
-        );
+        // println!(
+        //     "\x1b[2K\rframe rate: {:.2} fps",
+        //     1_000_000f64 / delay as f64
+        // );
         println!("current frame: {index}");
-        std::thread::sleep(Duration::from_micros(delay.saturating_sub(
-            system_call as u64 * 10u64.saturating_sub(frame_delay).max(1),
-        )));
-        other_timer = std::time::Instant::now();
-    };
-    if config.loop_play {
-        for (frame, index, delay) in frames.cycle() {
-            play_frame(frame, index, delay);
-        }
-    } else {
-        for (frame, index, delay) in frames {
-            play_frame(frame, index, delay);
-        }
+        // std::thread::sleep(Duration::from_micros(delay.saturating_sub(
+        //     system_call as u64 * 10u64.saturating_sub(frame_delay).max(1),
+        // )));
     }
+
+    play_frame(frames, delay, 0, st);
+
+    for task in rt.iter() {
+        task.join().unwrap();
+    }
+
     println!(
         "{} {}",
         "Render in"
