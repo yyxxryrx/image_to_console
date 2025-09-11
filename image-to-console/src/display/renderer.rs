@@ -200,9 +200,9 @@ pub fn render_video(vrx: Receiver<(String, usize)>, audio_path: PathBuf, fps: f3
         st.send(task).unwrap();
 
         // Save current cursor position
-        print!("\x1b[s");
+        // print!("\x1b[s");
 
-        println!("{}", frame);
+        println!("\r\x1b[s{}", frame);
         println!("current frame: {index}");
 
         // Back to the saved position
