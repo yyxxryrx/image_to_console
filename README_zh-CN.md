@@ -20,7 +20,7 @@
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty 和 iTerm2 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
-- 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性）。
+- 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
 
 ## 支持的协议
@@ -45,13 +45,20 @@ git clone https://github.com/yyxxryrx/image_to_console.git
 cd image_to_console
 
 # 编译基础版本（不包含视频支持）
+# 此版本不需要 FFmpeg
 cargo build --release
 
 # 编译包含视频支持的版本
+# 此版本需要 FFmpeg 库
 cargo build --release --features video
 ```
 
 编译后的二进制文件位于 `target/release/image_to_console`。
+
+如果要构建包含视频支持的版本，需要先安装 FFmpeg 库：
+- Ubuntu/Debian: `sudo apt-get install libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev`
+- macOS: `brew install ffmpeg`
+- Windows: 安装 FFmpeg 并确保 DLL 文件在您的 PATH 中
 
 ## 使用方法
 

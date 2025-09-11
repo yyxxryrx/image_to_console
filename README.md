@@ -19,7 +19,7 @@ English | [简体中文](README_zh-CN.md)
 - 🖥️ **Multiple Display Modes**: Support for full-resolution and half-resolution display modes
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, and iTerm2 image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
-- 🎥 **Video Playback Support**: Play video files in terminal (requires `video` feature)
+- 🎥 **Video Playback Support**: Play video files in terminal (requires `video` feature and FFmpeg)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations
 
 ## Supported Protocols
@@ -43,13 +43,20 @@ git clone https://github.com/yyxxryrx/image_to_console.git
 cd image_to_console
 
 # Build basic version (without video support)
+# No FFmpeg required for this version
 cargo build --release
 
 # Build version with video support
+# FFmpeg libraries required for this version
 cargo build --release --features video
 ```
 
 The compiled binary will be located at `target/release/image_to_console`.
+
+If you want to build with video support, you need to install FFmpeg libraries first:
+- Ubuntu/Debian: `sudo apt-get install libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev`
+- macOS: `brew install ffmpeg`
+- Windows: Install FFmpeg and ensure DLL files are in your PATH
 
 ## Usage
 
