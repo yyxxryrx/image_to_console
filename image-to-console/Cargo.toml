@@ -50,3 +50,4 @@ features = ["ndarray"]
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"
+features = ["gif"]

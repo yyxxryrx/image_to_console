@@ -1,4 +1,5 @@
 mod converter;
+#[cfg(feature = "gif")]
 pub mod gif_processor;
 pub mod processor;
 use image::{DynamicImage, GrayImage, RgbaImage};
