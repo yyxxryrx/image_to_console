@@ -180,6 +180,9 @@ image_to_console gif --audio audio.mp3 animation.gif
 ```bash
 # 播放视频文件（需要启用 video 特性）
 image_to_console video path/to/video.mp4
+
+# 播放视频文件并指定音频轨道（需要启用 video 特性）
+image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
 ## 显示模式说明
@@ -210,7 +213,7 @@ image_to_console video path/to/video.mp4
 - TIFF
 - WebP
 
-## Dependencies
+## 依赖库
 
 | Crate | Version | License | Purpose |
 |-------|---------|---------|---------|
@@ -226,7 +229,8 @@ image_to_console video path/to/video.mp4
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | 跨线程通信 |
 | [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | 音频播放 |
 | [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | 视频处理（可选） |
-| [ffmpeg-next](https://crates.io/crates/ffmpeg-next) | 7.1.0 | MIT | 视频处理（可选） |
+| [video-rs](https://crates.io/crates/video-rs) | 0.10.3 | MIT | 视频处理（可选） |
+| [ndarray](https://crates.io/crates/ndarray) | 0.16.1 | MIT | N维数组（可选） |
 
 ## License
 

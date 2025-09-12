@@ -178,6 +178,9 @@ image_to_console gif --audio audio.mp3 animation.gif
 ```bash
 # Play video file (requires video feature)
 image_to_console video path/to/video.mp4
+
+# Play video file with custom audio track (requires video feature)
+image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
 ## Display Mode Description
@@ -224,7 +227,8 @@ Supports most common image formats, including but not limited to:
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | Cross-thread communication |
 | [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | Audio playback |
 | [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | Video processing (optional) |
-| [ffmpeg-next](https://crates.io/crates/ffmpeg-next) | 7.1.0 | MIT | Video processing (optional) |
+| [video-rs](https://crates.io/crates/video-rs) | 0.10.3 | MIT | Video processing (optional) |
+| [ndarray](https://crates.io/crates/ndarray) | 0.16.1 | MIT | N-dimensional array (optional) |
 
 ## License
 
