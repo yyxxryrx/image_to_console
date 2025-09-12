@@ -508,7 +508,6 @@ pub fn parse() -> RunMode {
                 use image::Rgb;
 
                 // create frame channel
-                let (vtx, vrx) = bounded(100);
 
                 // Open the video file
                 let mut video = match video_rs::Decoder::new(Path::new(&args.path)) {
@@ -519,6 +518,7 @@ pub fn parse() -> RunMode {
                     }
                 };
                 let (width, height) = video.size();
+                let (vtx, vrx) = bounded(video.frame_rate().ceil() as usize);
 
                 // tell the channel
                 etx.send(Ok(Initialized((vrx, audio_path, video.frame_rate()))))

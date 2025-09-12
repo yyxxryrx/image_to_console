@@ -2,7 +2,7 @@ use clap::builder::PossibleValue;
 use clap::ValueEnum;
 use crossbeam_channel::Receiver;
 use image::DynamicImage;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 #[cfg(feature = "video")]
 use std::path::PathBuf;
 
