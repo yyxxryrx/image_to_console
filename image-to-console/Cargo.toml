@@ -1,6 +1,6 @@
 [package]
 name = "image_to_console"
-version = "0.1.13"
+version = "0.1.14"
 edition = "2021"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
