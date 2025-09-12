@@ -167,6 +167,8 @@ pub struct UrlArgs {
 #[cfg(feature = "video")]
 #[derive(Parser)]
 pub struct VideoArgs {
+    #[clap(long, help = "Audio file path")]
+    pub audio: Option<String>,
     #[clap(help = "Path to the video")]
     pub path: String,
 }
@@ -481,119 +483,90 @@ pub fn parse() -> RunMode {
             // decode the audio and video in another thread
             std::thread::spawn(move || {
                 etx.send(Ok(Starting)).unwrap();
-                // First, extract the audio to temp folder
-                let path = Path::new(&args.path);
-                let audio_path = std::env::temp_dir()
-                    .join(path.file_stem().unwrap().to_str().unwrap().to_owned() + "-tmp.aac");
-                ez_ffmpeg::FfmpegContext::builder()
-                    .input(args.path.as_str())
-                    .output(audio_path.to_str().unwrap())
-                    .build()
-                    .unwrap()
-                    .start()
-                    .unwrap()
-                    .wait()
-                    .unwrap();
+                let audio_path = if args.audio.is_none() {
+                    // First, extract the audio to temp folder
+                    let path = Path::new(&args.path);
+                    let audio_path = std::env::temp_dir()
+                        .join(path.file_stem().unwrap().to_str().unwrap().to_owned() + "-tmp.aac");
+                    ez_ffmpeg::FfmpegContext::builder()
+                        .input(args.path.as_str())
+                        .output(audio_path.to_str().unwrap())
+                        .build()
+                        .unwrap()
+                        .start()
+                        .unwrap()
+                        .wait()
+                        .unwrap();
+                    audio_path
+                } else {
+                    Path::new(&args.audio.unwrap()).to_path_buf()
+                };
                 // And then, extract the video
                 // We will to use ffmpeg-next lib to do this
-                use crate::types::VideoEvent::*;
-                use ffmpeg_next::{codec, format, media};
+                use crate::{errors::FrameError, types::VideoEvent::*};
+
                 use image::Rgb;
 
-                let mut input = match format::input(&args.path) {
-                    Ok(input) => input,
-                    Err(err) => {
-                        etx.send(Err(format!("Failed to open the video: {}", err)))
-                            .unwrap();
-                        return;
-                    }
-                };
-                // find the best video stream and record its index
-                let video_stream = match input.streams().best(media::Type::Video) {
-                    Some(stream) => stream,
-                    None => {
-                        etx.send(Err("No video stream found".to_string())).unwrap();
-                        return;
-                    }
-                };
-                let video_index = video_stream.index();
-
-                // get the video information
-                let rate = video_stream.rate();
-                let video_fps = rate.0 as f32 / rate.1 as f32;
-
-                // create channels
+                // create frame channel
                 let (vtx, vrx) = bounded(100);
-                // create the video decoder context
-                let video_context =
-                    match codec::context::Context::from_parameters(video_stream.parameters()) {
-                        Ok(context) => context,
-                        Err(err) => {
-                            etx.send(Err(err.to_string())).unwrap();
-                            return;
-                        }
-                    };
 
-                let mut video_decoder = video_context.decoder().video().unwrap();
+                // Open the video file
+                let mut video = match video_rs::Decoder::new(Path::new(&args.path)) {
+                    Ok(video) => video,
+                    Err(err) => {
+                        etx.send(Err(err.to_string())).unwrap();
+                        return;
+                    }
+                };
+                let (width, height) = video.size();
 
-                // create the video scaler (to convert the format)
-                let mut video_scaler = ffmpeg_next::software::scaling::Context::get(
-                    video_decoder.format(),
-                    video_decoder.width(),
-                    video_decoder.height(),
-                    format::Pixel::RGB24,
-                    video_decoder.width(),
-                    video_decoder.height(),
-                    ffmpeg_next::software::scaling::Flags::BILINEAR,
-                )
-                .unwrap();
-                // create the video frame
-                let mut decoded_frame = ffmpeg_next::frame::Video::empty();
-                let mut rgb_frame = ffmpeg_next::frame::Video::empty();
-                let mut frame_counter = 0;
-                // tell the runner function that it's ready now
-                etx.send(Ok(Initialized((vrx, audio_path, video_fps)))).unwrap();
-                // loop through all the packets
-                for (stream, packet) in input.packets() {
-                    // if the stream is the video stream
-                    if stream.index() == video_index {
-                        // decode the frame
-                        if let Err(e) = video_decoder.send_packet(&packet) {
-                            vtx.send(Err(format!(
-                                "Failed to send packet to video decoder: {}",
-                                e
-                            )))
-                            .unwrap();
-                            continue;
-                        }
-                        // convert frame data to rgb image
-                        while video_decoder.receive_frame(&mut decoded_frame).is_ok() {
-                            if let Err(e) = video_scaler.run(&decoded_frame, &mut rgb_frame) {
-                                vtx.send(Err(format!("Failed to scale video frame: {}", e)))
-                                    .unwrap();
-                                continue;
-                            }
-                            let buffer = rgb_frame.data(0);
-                            let width = rgb_frame.width();
-                            let height = rgb_frame.height();
-                            let img = match image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
-                                width,
-                                height,
-                                buffer.to_vec(),
-                            ) {
-                                Some(img) => img,
-                                None => {
-                                    vtx.send(Err("Failed to convert image".to_string()))
-                                        .unwrap();
-                                    continue;
+                // tell the channel
+                etx.send(Ok(Initialized((vrx, audio_path, video.frame_rate()))))
+                    .unwrap();
+                std::thread::spawn(move || {
+                    let mut frame_counter = 0usize;
+                    for frame in video.decode_iter() {
+                        match frame {
+                            Ok((_, frame)) => {
+                                let data = frame
+                                    .slice(ndarray::s![.., .., ..])
+                                    .to_slice()
+                                    .and_then(|data| Some(data.to_vec()));
+                                match data {
+                                    Some(data) => {
+                                        let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
+                                            width, height, data,
+                                        )
+                                        .and_then(|img| Some(DynamicImage::from(img)));
+                                        match img {
+                                            Some(img) => {
+                                                vtx.send(Ok((img, frame_counter))).unwrap()
+                                            }
+                                            None => vtx
+                                                .send(Err(FrameError::Other(
+                                                    "Failed to create the image".to_string(),
+                                                )))
+                                                .unwrap(),
+                                        }
+                                        frame_counter += 1;
+                                    }
+                                    // None => {},
+                                    None => vtx.send(Err(FrameError::DecodeError)).unwrap(),
                                 }
-                            };
-                            vtx.send(Ok((DynamicImage::from(img), frame_counter)))
-                                .unwrap();
-                            frame_counter += 1;
+                            }
+                            // EOF
+                            Err(
+                                video_rs::error::Error::ReadExhausted
+                                | video_rs::error::Error::DecodeExhausted,
+                            ) => break,
+                            // Other errors
+                            Err(err) => vtx.send(Err(FrameError::Other(err.to_string()))).unwrap(),
                         }
                     }
-                }
+                    vtx.send(Err(FrameError::EOF)).unwrap();
+                })
+                .join()
+                .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(builder(

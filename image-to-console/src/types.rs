@@ -1,9 +1,10 @@
-#[cfg(feature = "video")]
-use std::path::PathBuf;
 use clap::builder::PossibleValue;
 use clap::ValueEnum;
 use crossbeam_channel::Receiver;
 use image::DynamicImage;
+use std::fmt::{Debug, Display};
+#[cfg(feature = "video")]
+use std::path::PathBuf;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,6 +91,7 @@ pub enum VideoEvent {
     /// The first one is the receiver of the video data
     ///
     /// The last one is the frame rate.
-    Initialized((Receiver<Result<(DynamicImage, usize), String>>, PathBuf, f32)),
+    Initialized((Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, PathBuf, f32)),
     Finished,
 }
+

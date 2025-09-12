@@ -108,8 +108,6 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
     } else {
         None
     };
-    // Save current cursor position
-    print!("\x1b[s");
     // calculate the delay
     let delay = config.fps.and_then(|fps| Some(100 / fps));
     let start_time = std::time::Instant::now();
@@ -124,7 +122,7 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
         if frame.is_err() {
             return;
         }
-        let frame = unsafe { frame.unwrap_unchecked() };
+        let frame = frame.unwrap();
         let (frame, index, mut frame_delay) = frame.unpacking();
         if let Some(delay) = delay {
             frame_delay = delay;
@@ -139,6 +137,10 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
         st.send(task).unwrap();
 
         let time = std::time::Instant::now();
+        // Save current cursor position
+        // print!("\x1b[s");
+        println!("\r\x1b[s{}", frame);
+        println!("Current frame: {index}");
         // Back to the saved position
         print!("\x1b[u");
     }
@@ -188,10 +190,10 @@ pub fn render_video(vrx: Receiver<(String, usize)>, audio_path: PathBuf, fps: f3
         if frame.is_err() {
             return;
         }
-        let frame = unsafe { frame.unwrap_unchecked() };
+        let frame = frame.unwrap();
         let (frame, index) = frame;
-        // Create new thread and other works it takes about 800 µs time, so we need to subtract it.
-        let d = Duration::from_micros((1_000_000f32 / delay).round() as u64 - 800);
+        // Create new thread and other works it takes about 700 µs time, so we need to subtract it.
+        let d = Duration::from_micros((1_000_000f32 / delay).round() as u64 - 700);
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);

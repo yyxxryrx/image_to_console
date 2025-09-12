@@ -7,6 +7,8 @@ mod display;
 mod runner;
 mod types;
 mod util;
+#[allow(unused)]
+mod errors;
 
 use crate::runner::{run, run_multiple, run_video};
 use config::RunMode::*;

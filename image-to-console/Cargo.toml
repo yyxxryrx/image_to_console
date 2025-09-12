@@ -15,7 +15,7 @@ keywords = ["image", "terminal", "console", "viewer"]
 categories = ["command-line-utilities", "development-tools", "multimedia::images"]
 
 [features]
-video = ["ffmpeg-next", "ez-ffmpeg"]
+video = ["ndarray", "video-rs", "ez-ffmpeg"]
 
 [dependencies]
 gif = "0.13.3"
@@ -38,9 +38,15 @@ features = ["blocking"]
 optional = true
 version = "0.5.3"
 
-[dependencies.ffmpeg-next]
+[dependencies.ndarray]
 optional = true
-version = "7.1.0"
+version = "0.16.1"
+
+[dependencies.video-rs]
+optional = true
+version = "0.10.3"
+features = ["ndarray"]
+
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"

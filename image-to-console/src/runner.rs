@@ -87,49 +87,68 @@ pub fn run_video(config: Result<Config, String>) {
                 }
                 #[cfg(feature = "video")]
                 ImageType::Video(video_event) => {
-                    use crate::types::VideoEvent::*;
                     use crate::display::renderer::render_video;
+                    use crate::types::VideoEvent::*;
+                    use crate::errors::FrameError::*;
                     for event in video_event {
                         match event {
-                            Ok(event) => {
-                                match event {
-                                    Starting => {
-                                        println!("正在初始化中...");
-                                    }
-                                    Initialized((vrx, audio_path, fps)) => {
-                                        let (st, rt) = bounded(fps.ceil() as usize);
-                                        let config_clone = config_clone.clone();
-                                        let task = std::thread::spawn(move || {
-                                            for frame in vrx {
-                                                match frame {
-                                                    Ok((frame, index)) => {
-                                                        let mut frame_config = config_clone.clone();
-                                                        frame_config.image = ImageType::Image(frame);
-                                                        match ImageProcessor::from_config(&frame_config) {
-                                                            Ok(mut image_processor) => st
-                                                                .send((image_processor.process().lines.join("\n"), index))
-                                                                .map_err(|e| err(e.to_string()))
-                                                                .unwrap(),
-                                                            Err(e) => {
-                                                                err(e);
-                                                            }
-                                                        }
-                                                    }
-                                                    Err(e) => {
-                                                        err(e);
-                                                    }
+                            Ok(event) => match event {
+                                Starting => {
+                                    println!("正在初始化中...");
+                                }
+                                Initialized((vrx, audio_path, fps)) => {
+                                    let (st, rt) = bounded(fps.ceil() as usize);
+                                    let config_clone = config_clone.clone();
+                                    let mut disconnected = false;
+                                    let task = std::thread::spawn(move || loop {
+                                        match vrx.try_recv() {
+                                            Err(crossbeam_channel::TryRecvError::Empty) => {
+                                                // Check if the channel is disconnected
+                                                if disconnected {
+                                                    err("channel was closed!".to_string());
+                                                    break;
                                                 }
                                             }
-                                        });
-                                        let render_task = std::thread::spawn(move || {
-                                            render_video(rt, audio_path, fps);
-                                        });
-                                        task.join().unwrap();
-                                        render_task.join().unwrap();
-                                    }
-                                    Finished => {}
+                                            Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                                                disconnected = true
+                                            }
+                                            Ok(frame) => match frame {
+                                                Ok((frame, index)) => {
+                                                    let mut frame_config = config_clone.clone();
+                                                    frame_config.image = ImageType::Image(frame);
+                                                    match ImageProcessor::from_config(&frame_config)
+                                                    {
+                                                        Ok(mut image_processor) => st
+                                                            .send((
+                                                                image_processor
+                                                                    .process()
+                                                                    .lines
+                                                                    .join("\n"),
+                                                                index,
+                                                            ))
+                                                            .map_err(|e| err(e.to_string()))
+                                                            .unwrap(),
+                                                        Err(e) => {
+                                                            err(e);
+                                                        }
+                                                    }
+                                                }
+                                                Err(EOF) => break,
+                                                Err(DecodeError) => {
+                                                    err("cannot decode this frame".to_string())
+                                                }
+                                                Err(Other(e)) => err(format!("Other decode error: {e}")),
+                                            },
+                                        }
+                                    });
+                                    let render_task = std::thread::spawn(move || {
+                                        render_video(rt, audio_path, fps);
+                                    });
+                                    task.join().unwrap();
+                                    render_task.join().unwrap();
                                 }
-                            }
+                                Finished => {}
+                            },
                             Err(e) => err(e),
                         }
                     }
