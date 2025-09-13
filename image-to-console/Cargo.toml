@@ -15,22 +15,30 @@ keywords = ["image", "terminal", "console", "viewer"]
 categories = ["command-line-utilities", "development-tools", "multimedia::images"]
 
 [features]
-video = ["ndarray", "video-rs", "ez-ffmpeg"]
+default = ["reqwest", "gif_player"]
+video_player = ["ndarray", "video-rs", "ez-ffmpeg", "rodio", "crossbeam-channel"]
+gif_player = ["gif", "image_to_console_core/gif", "rodio", "crossbeam-channel"]
 
 [dependencies]
-gif = "0.13.3"
 rayon = "1.11.0"
-rodio = "0.21.1"
 image = "0.25.4"
 base64 = "0.22.1"
 indicatif = "0.17.8"
-crossbeam-channel = "0.5.15"
+
+[dependencies.gif]
+optional = true
+version = "0.13.3"
 
 [dependencies.clap]
 version = "4.5.20"
 features = ["derive"]
 
+[dependencies.rodio]
+optional = true
+version = "0.21.1"
+
 [dependencies.reqwest]
+optional = true
 version = "0.12.9"
 features = ["blocking"]
 
@@ -47,7 +55,9 @@ optional = true
 version = "0.10.3"
 features = ["ndarray"]
 
+[dependencies.crossbeam-channel]
+optional = true
+version = "0.5.15"
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"
-features = ["gif"]

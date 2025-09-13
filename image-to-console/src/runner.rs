@@ -1,11 +1,8 @@
 use crate::color::colors::TerminalColor;
 use crate::color::prelude::ToColoredText;
 use crate::config::Config;
-use crate::display::renderer::{render, render_gif};
-use crate::types::{Frame, ImageType};
+use crate::display::renderer::{render};
 use crate::util::CreateIPFromConfig;
-#[allow(unused_imports)]
-use crossbeam_channel::{bounded, unbounded};
 use image_to_console_core::processor::ImageProcessor;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
@@ -47,13 +44,21 @@ pub fn run(config: Result<Config, String>) {
     }
 }
 
+#[cfg(any(feature = "video_player", feature = "gif_player"))]
 pub fn run_video(config: Result<Config, String>) {
+    use crate::types::ImageType;
+    #[allow(unused_imports)]
+    use crossbeam_channel::{bounded, unbounded};
     match config {
         Ok(config) => {
             let config_clone = config.clone();
+            #[allow(unused)]
             let config_clone2 = config.clone();
             match config.image {
+                #[cfg(feature = "gif_player")]
                 ImageType::Gif(gif) => {
+                    use crate::types::Frame;
+                    use crate::display::renderer::render_gif;
                     let (st, rt) = bounded::<Frame>(config_clone.fps.unwrap_or(30) as _);
                     // Process the evey frame image
                     let task = std::thread::spawn(move || {
@@ -85,7 +90,7 @@ pub fn run_video(config: Result<Config, String>) {
                     render_gif(rt, config_clone2);
                     task.join().unwrap();
                 }
-                #[cfg(feature = "video")]
+                #[cfg(feature = "video_player")]
                 ImageType::Video(video_event) => {
                     use crate::display::renderer::render_video;
                     use crate::types::VideoEvent::*;

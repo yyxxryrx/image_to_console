@@ -1,16 +1,16 @@
-use std::fs::File;
 use crate::color::{colors::TerminalColor, prelude::ToColoredText};
 use crate::config::Config;
+#[cfg(feature = "gif_player")]
 use crate::types::Frame;
 use crate::util::get_char;
-use crossbeam_channel::Receiver;
 use image_to_console_core::processor::ImageProcessorResult;
+use std::fs::File;
 use std::io::Result;
 use std::io::Write;
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 use std::path::PathBuf;
+#[cfg(any(feature = "video_player", feature = "gif_player"))]
 use std::thread::JoinHandle;
-use std::time::Duration;
 
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
@@ -86,7 +86,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         }
     }
     if let Some(filename) = config.output {
-        let mut file = std::fs::File::create(filename)?;
+        let mut file = File::create(filename)?;
         file.write_all(output.as_ref())?;
     }
     if config.pause {
@@ -98,7 +98,8 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 }
 
 #[allow(unused)]
-pub fn render_gif(results: Receiver<Frame>, config: Config) {
+#[cfg(feature = "gif_player")]
+pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
@@ -113,7 +114,7 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     fn play_frame(
-        frames: Receiver<Frame>,
+        frames: crossbeam_channel::Receiver<Frame>,
         delay: Option<u64>,
         frame_index: usize,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
@@ -128,7 +129,7 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
             frame_delay = delay;
         }
         // Create new thread and other works it takes about 800 µs time, so we need to subtract it.
-        let d = Duration::from_micros(frame_delay * 10_000 - 800);
+        let d = std::time::Duration::from_micros(frame_delay * 10_000 - 800);
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
@@ -170,8 +171,12 @@ pub fn render_gif(results: Receiver<Frame>, config: Config) {
 }
 
 #[allow(unused)]
-#[cfg(feature = "video")]
-pub fn render_video(vrx: Receiver<(String, usize)>, audio_path: PathBuf, fps: f32) {
+#[cfg(feature = "video_player")]
+pub fn render_video(
+    vrx: crossbeam_channel::Receiver<(String, usize)>,
+    audio_path: PathBuf,
+    fps: f32,
+) {
     // Load the audio if exists
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
@@ -182,7 +187,7 @@ pub fn render_video(vrx: Receiver<(String, usize)>, audio_path: PathBuf, fps: f3
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     fn play_frame(
-        frames: Receiver<(String, usize)>,
+        frames: crossbeam_channel::Receiver<(String, usize)>,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
     ) {
@@ -193,7 +198,7 @@ pub fn render_video(vrx: Receiver<(String, usize)>, audio_path: PathBuf, fps: f3
         let frame = frame.unwrap();
         let (frame, index) = frame;
         // Create new thread and other works it takes about 700 µs time, so we need to subtract it.
-        let d = Duration::from_micros((1_000_000f32 / delay).round() as u64 - 700);
+        let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64 - 700);
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);

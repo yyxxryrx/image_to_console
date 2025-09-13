@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use std::fmt::{Debug, Display};
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 #[derive(Clone)]
 pub enum FrameError {
     EOF,
@@ -8,7 +8,7 @@ pub enum FrameError {
     Other(String),
 }
 
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 impl Debug for FrameError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -19,7 +19,7 @@ impl Debug for FrameError {
     }
 }
 
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 impl Display for FrameError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -1,9 +1,8 @@
 use clap::builder::PossibleValue;
 use clap::ValueEnum;
-use crossbeam_channel::Receiver;
 use image::DynamicImage;
 use std::fmt::Debug;
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 use std::path::PathBuf;
 
 #[allow(dead_code)]
@@ -39,10 +38,11 @@ impl ValueEnum for Protocol {
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
-    Gif(Receiver<Result<(DynamicImage, usize, u16), String>>),
-    #[cfg(feature = "video")]
+    #[cfg(feature = "gif_player")]
+    Gif(crossbeam_channel::Receiver<Result<(DynamicImage, usize, u16), String>>),
+    #[cfg(feature = "video_player")]
     /// The channel to receive video events
-    Video(Receiver<Result<VideoEvent, String>>)
+    Video(crossbeam_channel::Receiver<Result<VideoEvent, String>>)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -70,13 +70,14 @@ impl ValueEnum for ClapResizeMode {
     }
 }
 
+#[cfg(feature = "gif_player")]
 #[derive(Clone)]
 pub struct Frame {
     pub index: usize,
     pub frame: String,
     pub delay: u64,
 }
-
+#[cfg(feature = "gif_player")]
 impl Frame {
     pub fn unpacking(&self) -> (&str, usize, u64) {
         (&self.frame, self.index, self.delay)
@@ -84,14 +85,14 @@ impl Frame {
 }
 
 /// The event type to of video parser
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 #[derive(Debug, Clone)]
 pub enum VideoEvent {
     Starting,
     /// The first one is the receiver of the video data
     ///
     /// The last one is the frame rate.
-    Initialized((Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, PathBuf, f32)),
+    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, PathBuf, f32)),
     Finished,
 }
 

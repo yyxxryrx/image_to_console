@@ -10,14 +10,15 @@ mod util;
 #[allow(unused)]
 mod errors;
 
-use crate::runner::{run, run_multiple, run_video};
+use crate::runner::{run, run_multiple};
 use config::RunMode::*;
 
 fn main() {
     let config = config::parse();
     match config {
         Once(config) => run(config),
-        Video(config) => run_video(config),
         Multiple(configs) => run_multiple(configs),
+        #[cfg(any(feature = "video_player", feature = "gif_player"))]
+        Video(config) => crate::runner::run_video(config),
     }
 }

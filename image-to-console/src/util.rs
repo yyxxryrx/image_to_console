@@ -30,6 +30,7 @@ impl CreateIPFromConfig for ImageProcessor {
                 let image = image::open(path).map_err(|e| e.to_string())?;
                 Ok(Self::new(image, option))
             }
+            #[cfg(any(feature = "gif_player", feature = "video_player"))]
             _ => Err(String::from("cannot init")),
         }
     }

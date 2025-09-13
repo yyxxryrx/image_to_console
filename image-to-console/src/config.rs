@@ -4,7 +4,7 @@ use crate::{
     const_value::IMAGE_EXTS,
     types::{
         ClapResizeMode,
-        ImageType::{self, Gif, Image},
+        ImageType::{self, Image},
         Protocol,
     },
 };
@@ -17,13 +17,11 @@ use clap::{
     Parser, Subcommand,
 };
 #[allow(unused)]
+#[cfg(any(feature = "gif_player", feature = "video_player"))]
 use crossbeam_channel::{bounded, unbounded};
-use image::DynamicImage;
-use image_to_console_core::{gif_processor::GifFrameProcessor, DisplayMode, ResizeMode};
-use indicatif::{ProgressBar, ProgressStyle};
+use image_to_console_core::{DisplayMode, ResizeMode};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
-use reqwest::blocking::Client;
-use std::{io::Write, path::Path};
+use std::path::Path;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -109,13 +107,15 @@ pub enum Commands {
     File(FileArgs),
     #[clap(about = "Load all the images from a directory")]
     Directory(DirectoryArgs),
+    #[cfg(feature = "gif_player")]
     #[clap(about = "Load a gif from a file")]
     Gif(GifArgs),
     #[clap(about = "Load an image from a base64")]
     Base64(Base64Args),
+    #[cfg(feature = "reqwest")]
     #[clap(about = "Load an image from a url")]
     Url(UrlArgs),
-    #[cfg(feature = "video")]
+    #[cfg(feature = "video_player")]
     #[clap(about = "Load a video from a file")]
     Video(VideoArgs),
 }
@@ -140,6 +140,7 @@ pub struct DirectoryArgs {
     pub path: String,
 }
 
+#[cfg(feature = "gif_player")]
 #[derive(Parser)]
 pub struct GifArgs {
     #[clap(long, help = "Set the frames per second for gif playback")]
@@ -158,13 +159,14 @@ pub struct Base64Args {
     pub base64: String,
 }
 
+#[cfg(feature = "reqwest")]
 #[derive(Parser)]
 pub struct UrlArgs {
     #[clap(help = "Url to the image")]
     pub url: String,
 }
 
-#[cfg(feature = "video")]
+#[cfg(feature = "video_player")]
 #[derive(Parser)]
 pub struct VideoArgs {
     #[clap(long, help = "Audio file path")]
@@ -226,6 +228,7 @@ pub struct Config {
 pub enum RunMode {
     Once(Result<Config, String>),
     Multiple(Vec<Result<Config, String>>),
+    #[cfg(any(feature = "video_player", feature = "gif_player"))]
     Video(Result<Config, String>),
 }
 
@@ -243,6 +246,7 @@ impl RunMode {
             _ => panic!("Cannot get the config in other mode"),
         }
     }
+    #[cfg(any(feature = "video_player", feature = "gif_player"))]
     pub fn video(&self) -> Result<Config, String> {
         match self {
             Video(config) => config.clone(),
@@ -380,8 +384,12 @@ pub fn parse() -> RunMode {
                 .collect();
             Multiple(configs)
         }
+        #[cfg(feature = "gif_player")]
         Commands::Gif(args) => match std::fs::File::open(&args.path) {
             Ok(file) => {
+                use image::DynamicImage;
+                use crate::types::ImageType::Gif;
+                use image_to_console_core::gif_processor::GifFrameProcessor;
                 let mut decoder = gif::DecodeOptions::new();
                 decoder.set_color_output(gif::ColorOutput::Indexed);
                 match decoder.read_info(file) {
@@ -433,7 +441,11 @@ pub fn parse() -> RunMode {
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
             }
         }
+        #[cfg(feature = "reqwest")]
         Commands::Url(args) => {
+            use std::io::Write;
+            use reqwest::blocking::Client;
+            use indicatif::{ProgressBar, ProgressStyle};
             println!("Downloading the image from: {}", args.url);
             let client = Client::new();
             match client.get(&args.url).send() {
@@ -476,7 +488,7 @@ pub fn parse() -> RunMode {
                 Err(e) => Once(Err(format!("Failed to download the image: {}", e))),
             }
         }
-        #[cfg(feature = "video")]
+        #[cfg(feature = "video_player")]
         Commands::Video(args) => {
             let (etx, erx) = bounded(1);
 
@@ -505,7 +517,7 @@ pub fn parse() -> RunMode {
                 // We will to use ffmpeg-next lib to do this
                 use crate::{errors::FrameError, types::VideoEvent::*};
 
-                use image::Rgb;
+                use image::{DynamicImage, Rgb};
 
                 // create frame channel
 
