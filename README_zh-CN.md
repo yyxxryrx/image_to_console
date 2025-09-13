@@ -24,10 +24,19 @@
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
 
 ## 支持的协议
+
 - [x] WezTerm
 - [x] Kitty
 - [x] iTerm2
 - [ ] Sixel
+
+## 特性说明
+
+| 特性           | 依赖                                                        | 描述           | 是否默认启用                              |
+|--------------|-----------------------------------------------------------|--------------|-------------------------------------|
+| reqwest      | reqwest                                                   | HTTP 请求库     | <span style="color: green">✓</span> |
+| gif_player   | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画 | <span style="color: green">✓</span> |
+| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频      | <span style="color: red">✗</span>   |
 
 ## 安装
 
@@ -36,7 +45,6 @@
 1. 访问 [GitHub Release 页面](https://github.com/yyxxryrx/image_to_console/releases)
 2. 下载适用于您操作系统的预编译二进制文件
 3. 解压并将二进制文件添加到系统 PATH 中
-
 
 ### 从源码编译
 
@@ -50,12 +58,13 @@ cargo build --release
 
 # 编译包含视频支持的版本
 # 此版本需要 FFmpeg 库
-cargo build --release --features video
+cargo build --release --features video_player
 ```
 
 编译后的二进制文件位于 `target/release/image_to_console`。
 
 如果要构建包含视频支持的版本，需要先安装 FFmpeg 库：
+
 - Ubuntu/Debian: `sudo apt-get install libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev`
 - macOS: `brew install ffmpeg`
 - Windows: 安装 FFmpeg 并确保 DLL 文件在您的 PATH 中
@@ -158,6 +167,8 @@ image_to_console --read-all directory path/to/directory
 
 ### GIF 子命令选项
 
+> **注意**：此功能需要启用 `gif_player` 特性。
+
 ```bash
 # 播放 GIF 动画（默认 10 FPS）
 image_to_console gif animation.gif
@@ -177,17 +188,20 @@ image_to_console gif --audio audio.mp3 animation.gif
 
 ### 视频子命令选项
 
+> **注意**：此功能需要启用 `video_player` 特性及 FFmpeg 库。
+
 ```bash
-# 播放视频文件（需要启用 video 特性）
+# 播放视频文件（需要启用 video_player 特性）
 image_to_console video path/to/video.mp4
 
-# 播放视频文件并指定音频轨道（需要启用 video 特性）
+# 播放视频文件并指定音频轨道（需要启用 video_player 特性）
 image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
 ## 显示模式说明
 
 ### 彩色模式
+
 - **半分辨率彩色模式**（默认）：使用背景色块显示，每个字符代表一个像素点
 - **全分辨率彩色模式**（-f）：使用上下半色块显示，每个字符代表两个像素点
 - **WezTerm 模式**（--protocol wezterm）：使用 WezTerm 的内联图片协议直接显示原图
@@ -195,6 +209,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **iTerm2 模式** (--protocol iterm2) ：使用 iTerm2 的内联图片协议直接显示原图
 
 ### 灰度模式
+
 - **灰度模式**（--no-color）：将图片转换为灰度字符艺术显示
 - 使用不同的 Unicode 字符（如 █、▀、▄、.、, 等）表示不同的灰度级别
 - **黑色背景**（-b）：在灰度模式下使用黑色背景显示图片
@@ -205,6 +220,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ## 支持的图片格式
 
 支持大多数常见的图片格式，包括但不限于：
+
 - JPEG
 - PNG
 - GIF
@@ -215,23 +231,23 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 ## 依赖库
 
-| Crate | Version | License | Purpose |
-|-------|---------|---------|---------|
-| [clap](https://crates.io/crates/clap) | 4.5.20 | MIT / Apache-2.0 | 命令行参数解析 |
-| [rayon](https://crates.io/crates/rayon) | 1.11.0 | MIT / Apache-2.0 | 数据并行计算 |
-| [num_cpus](https://crates.io/crates/num_cpus) | 1.17.0 | MIT | 获取逻辑 CPU 核心数 |
-| [image](https://crates.io/crates/image) | 0.25.4 | MIT | 图像编解码与处理 |
-| [base64](https://crates.io/crates/base64) | 0.22.1 | MIT / Apache-2.0 | Base64 编解码 |
-| [indicatif](https://crates.io/crates/indicatif) | 0.17.8 | MIT | 终端进度条 |
-| [terminal_size](https://crates.io/crates/terminal_size) | 0.4.0 | MIT | 检测终端尺寸 |
-| [reqwest](https://crates.io/crates/reqwest) | 0.12.9 | MIT / Apache-2.0 | 阻塞式 HTTP 客户端 |
-| [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF 动画解码 |
-| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | 跨线程通信 |
-| [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | 音频播放 |
-| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | 视频处理（可选） |
-| [video-rs](https://crates.io/crates/video-rs) | 0.10.3 | MIT | 视频处理（可选） |
-| [ndarray](https://crates.io/crates/ndarray) | 0.16.1 | MIT | N维数组（可选） |
+| Crate                                                           | Version | License          | Purpose          |
+|-----------------------------------------------------------------|---------|------------------|------------------|
+| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | 命令行参数解析          |
+| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | 数据并行计算           |
+| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | 获取逻辑 CPU 核心数     |
+| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | 图像编解码与处理         |
+| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 编解码       |
+| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | 终端进度条            |
+| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | 检测终端尺寸           |
+| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
+| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
+| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
+| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）         |
+| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | 视频处理（可选）         |
+| [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | 视频处理（可选）         |
+| [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N维数组（可选）         |
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+本项目采用 MIT 许可证 - 详情请见 [LICENSE](LICENSE) 文件。

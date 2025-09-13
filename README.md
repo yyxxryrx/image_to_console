@@ -19,7 +19,7 @@ English | [简体中文](README_zh-CN.md)
 - 🖥️ **Multiple Display Modes**: Support for full-resolution and half-resolution display modes
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, and iTerm2 image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
-- 🎥 **Video Playback Support**: Play video files in terminal (requires `video` feature and FFmpeg)
+- 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations
 
 ## Supported Protocols
@@ -27,6 +27,13 @@ English | [简体中文](README_zh-CN.md)
 - [x] Kitty
 - [x] iTerm2
 - [ ] Sixel
+
+## Features
+| Feature      | Dependencies                                              | Description                                                      | Is Default                          |
+|--------------|-----------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
+| reqwest      | reqwest                                                   | HTTP client library                                              | <span style="color: green">✓</span> |
+| gif_player   | gif, rodio, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
+| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
 
 ## Installation
 
@@ -48,7 +55,7 @@ cargo build --release
 
 # Build version with video support
 # FFmpeg libraries required for this version
-cargo build --release --features video
+cargo build --release --features video_player
 ```
 
 The compiled binary will be located at `target/release/image_to_console`.
@@ -155,6 +162,7 @@ image_to_console --read-all directory path/to/directory
 ```
 
 ### GIF Subcommand Options
+> **requires `gif_player` feature**
 
 ```bash
 # Play GIF animation (default 10 FPS)
@@ -173,13 +181,14 @@ image_to_console gif --fps 30 --loop animation.gif
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 
-### Video Subcommand Options
+### Video Subcommand Options 
+> **requires `video_player` feature**
 
 ```bash
-# Play video file (requires video feature)
+# Play video file (requires video_player feature)
 image_to_console video path/to/video.mp4
 
-# Play video file with custom audio track (requires video feature)
+# Play video file with custom audio track (requires video_player feature)
 image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
@@ -213,22 +222,22 @@ Supports most common image formats, including but not limited to:
 
 ## Dependencies
 
-| Crate | Version | License | Purpose |
-|-------|---------|---------|---------|
-| [clap](https://crates.io/crates/clap) | 4.5.20 | MIT / Apache-2.0 | Command line argument parsing |
-| [rayon](https://crates.io/crates/rayon) | 1.11.0 | MIT / Apache-2.0 | Data parallel computing |
-| [num_cpus](https://crates.io/crates/num_cpus) | 1.17.0 | MIT | Get logical CPU core count |
-| [image](https://crates.io/crates/image) | 0.25.4 | MIT | Image encoding/decoding and processing |
-| [base64](https://crates.io/crates/base64) | 0.22.1 | MIT / Apache-2.0 | Base64 encoding/decoding |
-| [indicatif](https://crates.io/crates/indicatif) | 0.17.8 | MIT | Terminal progress bars |
-| [terminal_size](https://crates.io/crates/terminal_size) | 0.4.0 | MIT | Detect terminal size |
-| [reqwest](https://crates.io/crates/reqwest) | 0.12.9 | MIT / Apache-2.0 | Blocking HTTP client |
-| [gif](https://crates.io/crates/gif) | 0.13.3 | MIT | GIF animation decoding |
-| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15 | MIT / Apache-2.0 | Cross-thread communication |
-| [rodio](https://crates.io/crates/rodio) | 0.21.1 | MIT / Apache-2.0 | Audio playback |
-| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg) | 0.5.3 | MIT | Video processing (optional) |
-| [video-rs](https://crates.io/crates/video-rs) | 0.10.3 | MIT | Video processing (optional) |
-| [ndarray](https://crates.io/crates/ndarray) | 0.16.1 | MIT | N-dimensional array (optional) |
+| Crate                                                           | Version | License          | Purpose                                 |
+|-----------------------------------------------------------------|---------|------------------|-----------------------------------------|
+| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | Command line argument parsing           |
+| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | Data parallel computing                 |
+| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | Get logical CPU core count              |
+| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | Image encoding/decoding and processing  |
+| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
+| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | Terminal progress bars                  |
+| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | Detect terminal size                    |
+| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
+| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF animation decoding (optional)       |
+| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | Cross-thread communication   (optional) |
+| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
+| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | Video processing (optional)             |
+| [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | Video processing (optional)             |
+| [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N-dimensional array (optional)          |
 
 ## License
 
