@@ -28,7 +28,7 @@
 - [x] WezTerm
 - [x] Kitty
 - [x] iTerm2
-- [ ] Sixel
+- [x] Sixel
 
 ## 特性说明
 

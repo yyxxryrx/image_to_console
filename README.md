@@ -26,7 +26,7 @@ English | [简体中文](README_zh-CN.md)
 - [x] WezTerm
 - [x] Kitty
 - [x] iTerm2
-- [ ] Sixel
+- [x] Sixel
 
 ## Features
 | Feature      | Dependencies                                              | Description                                                      | Is Default                          |
