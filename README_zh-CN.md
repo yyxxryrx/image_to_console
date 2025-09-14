@@ -18,7 +18,7 @@
 - 📏 **自适应尺寸**: 自动缩放图片以适应终端窗口。
 - ⌨️ **交互式暂停**: 可选择在显示后暂停，方便查看。
 - 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
-- 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty 和 iTerm2 图片协议。
+- 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty、iTerm2 和 Sixel 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
 - 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
@@ -32,11 +32,12 @@
 
 ## 特性说明
 
-| 特性           | 依赖                                                        | 描述           | 是否默认启用                              |
-|--------------|-----------------------------------------------------------|--------------|-------------------------------------|
-| reqwest      | reqwest                                                   | HTTP 请求库     | <span style="color: green">✓</span> |
-| gif_player   | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画 | <span style="color: green">✓</span> |
-| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频      | <span style="color: red">✗</span>   |
+| 特性           | 依赖                                                        | 描述                             | 是否默认启用                              |
+|--------------|-----------------------------------------------------------|----------------------------------|-------------------------------------|
+| reqwest      | reqwest                                                   | HTTP 请求库                        | <span style="color: green">✓</span> |
+| gif_player   | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画                  | <span style="color: green">✓</span> |
+| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频                       | <span style="color: red">✗</span>   |
+| sixel_support| quantette, nohash-hasher                                  | 使用 Sixel 协议显示图像              | <span style="color: green">✓</span> |
 
 ## 安装
 
@@ -143,6 +144,12 @@ image_to_console --protocol kitty file image.jpg
 
 # 使用 iTerm2 图片协议显示图片
 image_to_console --protocol iterm2 file image.jpg
+
+# 使用 Sixel 协议显示图片
+image_to_console --protocol sixel file image.jpg
+
+# 使用 Sixel 协议显示图片并设置最大颜色数
+image_to_console --protocol sixel --max-colors 128 file image.jpg
 ```
 
 ### 文件子命令选项
@@ -207,6 +214,8 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **WezTerm 模式**（--protocol wezterm）：使用 WezTerm 的内联图片协议直接显示原图
 - **Kitty 模式**（--protocol kitty）：使用 Kitty 的内联图片协议直接显示原图
 - **iTerm2 模式** (--protocol iterm2) ：使用 iTerm2 的内联图片协议直接显示原图
+- **Sixel 模式** (--protocol sixel) ：使用 Sixel 协议在支持的终端中显示图像
+- **全分辨率 Sixel 模式** (--protocol sixel --full-resolution) ：使用 Sixel 协议在支持的终端中显示图像，并使用全分辨率显示图片
 
 ### 灰度模式
 
@@ -247,6 +256,8 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 | [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | 视频处理（可选）         |
 | [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | 视频处理（可选）         |
 | [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N维数组（可选）         |
+| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel 图像量化（可选）   |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel 快速哈希（可选）   |
 
 ## License
 

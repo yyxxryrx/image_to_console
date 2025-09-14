@@ -17,7 +17,7 @@ English | [简体中文](README_zh-CN.md)
 - 📏 **Adaptive Sizing**: Automatically scale images to fit terminal window
 - ⌨️ **Interactive Pause**: Optional pause after display for convenient viewing
 - 🖥️ **Multiple Display Modes**: Support for full-resolution and half-resolution display modes
-- 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, and iTerm2 image protocols
+- 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, iTerm2 and Sixel image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations
@@ -34,6 +34,7 @@ English | [简体中文](README_zh-CN.md)
 | reqwest      | reqwest                                                   | HTTP client library                                              | <span style="color: green">✓</span> |
 | gif_player   | gif, rodio, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
 | video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
+| sixel_support| quantette, nohash-hasher                                  | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
 
 ## Installation
 
@@ -139,6 +140,12 @@ image_to_console --protocol kitty file image.jpg
 
 # Display image using iTerm2 image protocol
 image_to_console --protocol iterm2 file image.jpg
+
+# Display image using Sixel protocol
+image_to_console --protocol sixel file image.jpg
+
+# Display image using Sixel protocol with custom max colors
+image_to_console --protocol sixel --max-colors 128 file image.jpg
 ```
 
 ### File Subcommand Options
@@ -200,6 +207,8 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **WezTerm mode** (--protocol wezterm): Use WezTerm's inline image protocol to display original image directly
 - **Kitty mode** (--protocol kitty): Use Kitty's inline image protocol to display original image directly
 - **iTerm2 mode** (--protocol iterm2): Use iTerm2's inline image protocol to display original image directly
+- **Sixel mode** (--protocol sixel): Use Sixel protocol to display images in supported terminals
+- **Full-resolution Sixel mode** (--protocol sixel --full-resolution): Use Sixel protocol to display images in supported terminals with full resolution
 
 ### Grayscale Modes
 - **Grayscale mode** (--no-color): Convert image to grayscale character art display
@@ -238,6 +247,8 @@ Supports most common image formats, including but not limited to:
 | [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | Video processing (optional)             |
 | [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | Video processing (optional)             |
 | [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N-dimensional array (optional)          |
+| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel image quantization (optional)     |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel Fast Hash (Optional)              |
 
 ## License
 
