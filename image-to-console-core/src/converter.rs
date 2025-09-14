@@ -1,8 +1,11 @@
+use crate::{
+    DisplayMode::{self, *},
+    ProcessedImage,
+};
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
-use crate::{ProcessedImage, DisplayMode::{self,*}};
 
 struct PixelColor {
     r: u8,
@@ -89,6 +92,8 @@ pub struct ImageConverterOption {
     pub line_init: String,
     pub mode: DisplayMode,
     pub black_background: bool,
+    #[cfg(feature = "sixel")]
+    pub max_colors: u16,
 }
 
 pub struct ImageConverter {
@@ -111,6 +116,8 @@ impl ImageConverter {
             Kitty | KittyNoColor => self.kitty_convert(),
             Iterm2 | Iterm2NoColor => self.iterm2_convert(),
             WezTerm | WezTermNoColor => self.wezterm_convert(),
+            #[cfg(feature = "sixel")]
+            SixelHalf | SixelFull => self.sixel_convert(),
             _ => {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
 
@@ -216,7 +223,7 @@ impl ImageConverter {
             let pixel = rgba_img.get_pixel(x, y);
             let color = PixelColor::from_channels(pixel.0);
             format!("{}▀", color.fg())
-        } else if let ProcessedImage::NoColor(luma_img) = &self.img{
+        } else if let ProcessedImage::NoColor(luma_img) = &self.img {
             let pixel = luma_img.get_pixel(x, y);
             if pixel.0[0] > 128 {
                 "▀".to_string()
@@ -366,5 +373,89 @@ impl ImageConverter {
             image_data.len(),
             STANDARD.encode(image_data)
         )]
+    }
+
+    #[cfg(feature = "sixel")]
+    fn sixel_convert(&self) -> Vec<String> {
+        use crate::indexed_image::IndexedImage;
+
+        // Some tool functions
+        fn get_sixel(style: &[u8; 6]) -> String {
+            let mut v = 0u8;
+            for i in 0..6 {
+                v |= style[i] << i;
+            }
+            ((v + 63) as char).to_string()
+        }
+
+        fn get_color(r: u8, g: u8, b: u8) -> String {
+            format!(
+                "{:.0};{:.0};{:.0}",
+                r as f32 / 255f32 * 100f32,
+                g as f32 / 255f32 * 100f32,
+                b as f32 / 255f32 * 100f32
+            )
+        }
+
+        let img = self.img.rgb().unwrap();
+        let img = IndexedImage::from_image(img, self.option.max_colors).unwrap();
+        let styles = [
+            get_sixel(&[1, 0, 0, 0, 0, 0]),
+            get_sixel(&[0, 1, 0, 0, 0, 0]),
+            get_sixel(&[0, 0, 1, 0, 0, 0]),
+            get_sixel(&[0, 0, 0, 1, 0, 0]),
+            get_sixel(&[0, 0, 0, 0, 1, 0]),
+            get_sixel(&[0, 0, 0, 0, 0, 1]),
+        ];
+        let mid = if self.full { "" } else { "!2" };
+        let get_pixel = |x, y: u32, dy: u32| {
+            format!(
+                "#{}{}{}",
+                img.get_pixel(x, y + dy),
+                mid,
+                &styles[dy as usize]
+            )
+        };
+        let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
+        let palette = img
+            .palette
+            .iter()
+            .enumerate()
+            .map(|(index, color)| {
+                format!(
+                    "#{};2;{}",
+                    index,
+                    get_color(color.red, color.green, color.blue)
+                )
+            })
+            .collect::<String>();
+        let pixels = (0..=self.option.height / 6)
+            .into_par_iter()
+            .map(move |y| {
+                let mut line = (0..6)
+                    .flat_map(move |dy| {
+                        if y * 6 + dy >= self.option.height {
+                            return None;
+                        }
+                        let mut line = String::from("$");
+                        line.push_str(
+                            &(0..self.option.width)
+                                .into_par_iter()
+                                .map(move |x| get_pixel(x, y * 6, dy))
+                                .collect::<String>(),
+                        );
+                        Some(line)
+                    })
+                    .collect::<String>();
+                line.push_str("-");
+                line
+            })
+            .collect::<String>();
+        result.push_str(&palette);
+        result.push_str(&pixels);
+        result.push_str("\x1b\\");
+        let mut lines = vec![String::from(" "); 2];
+        lines[0] = result;
+        lines
     }
 }

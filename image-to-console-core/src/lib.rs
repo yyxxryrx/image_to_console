@@ -2,7 +2,11 @@ mod converter;
 #[cfg(feature = "gif")]
 pub mod gif_processor;
 pub mod processor;
-use image::{DynamicImage, GrayImage, RgbaImage};
+#[cfg(feature = "sixel")]
+pub mod indexed_image;
+
+#[allow(unused_imports)]
+use image::{DynamicImage, GrayImage, RgbImage, RgbaImage};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,6 +21,10 @@ pub enum DisplayMode {
     KittyNoColor,
     Iterm2,
     Iterm2NoColor,
+    #[cfg(feature = "sixel")]
+    SixelHalf,
+    #[cfg(feature = "sixel")]
+    SixelFull,
 }
 #[allow(dead_code)]
 impl Default for DisplayMode {
@@ -27,13 +35,22 @@ impl Default for DisplayMode {
 #[allow(dead_code)]
 impl DisplayMode {
     pub fn is_full(&self) -> bool {
-        !matches!(self, Self::HalfColor | Self::Ascii)
+        #[cfg(feature = "sixel")]
+        return matches!(self, Self::HalfColor | Self::Ascii | Self::SixelFull);
+        #[cfg(not(feature = "sixel"))]
+        return !matches!(self, Self::HalfColor | Self::Ascii);
     }
     pub fn is_color(&self) -> bool {
-        matches!(
+        #[cfg(feature = "sixel")]
+        return matches!(
+            self,
+            Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2 | Self::SixelHalf | Self::SixelFull
+        );
+        #[cfg(not(feature = "sixel"))]
+        return matches!(
             self,
             Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
-        )
+        );
     }
 
     pub fn is_normal(&self) -> bool {
@@ -48,6 +65,7 @@ impl DisplayMode {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProcessedImage {
     Color(RgbaImage),
+    Color2(RgbImage),
     NoColor(GrayImage),
     Both(RgbaImage, GrayImage),
 }
@@ -66,12 +84,23 @@ impl ProcessedImage {
             DisplayMode::Iterm2NoColor => Self::NoColor(img.to_luma8()),
             DisplayMode::WezTermNoColor => Self::NoColor(img.to_luma8()),
             DisplayMode::FullColor => Self::Both(img.to_rgba8(), img.to_luma8()),
+            #[cfg(feature = "sixel")]
+            DisplayMode::SixelHalf => Self::Color2(img.to_rgb8()),
+            #[cfg(feature = "sixel")]
+            DisplayMode::SixelFull => Self::Color2(img.to_rgb8()),
         }
     }
     pub fn rgba(&self) -> Option<&RgbaImage> {
         match self {
             Self::Color(img) => Some(img),
             Self::Both(img, _) => Some(img),
+            _ => None,
+        }
+    }
+
+    pub fn rgb(&self) -> Option<&RgbImage> {
+        match self {
+            Self::Color2(img) => Some(img),
             _ => None,
         }
     }

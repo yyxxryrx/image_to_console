@@ -102,20 +102,14 @@ pub fn run_video(config: Result<Config, String>) {
                                     println!("正在初始化中...");
                                 }
                                 Initialized((vrx, audio_path, fps)) => {
-                                    let (st, rt) = bounded(fps.ceil() as usize);
+                                    let (st, rt) = bounded(10);
                                     let config_clone = config_clone.clone();
-                                    let mut disconnected = false;
                                     let task = std::thread::spawn(move || loop {
-                                        match vrx.try_recv() {
-                                            Err(crossbeam_channel::TryRecvError::Empty) => {
-                                                // Check if the channel is disconnected
-                                                if disconnected {
-                                                    err("channel was closed!".to_string());
-                                                    break;
-                                                }
-                                            }
-                                            Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                                                disconnected = true
+                                        // 使用阻塞接收确保不丢失帧
+                                        match vrx.recv() {
+                                            Err(_) => {
+                                                // Channel disconnected
+                                                break;
                                             }
                                             Ok(frame) => match frame {
                                                 Ok((frame, index)) => {

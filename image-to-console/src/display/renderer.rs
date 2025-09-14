@@ -128,8 +128,8 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         if let Some(delay) = delay {
             frame_delay = delay;
         }
-        // Create new thread and other works it takes about 800 µs time, so we need to subtract it.
-        let d = std::time::Duration::from_micros(frame_delay * 10_000 - 800);
+        // Create new thread and other works it takes about 700 µs time, so we need to subtract it.
+        let d = std::time::Duration::from_micros(frame_delay * 10_000 - 700);
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);

@@ -23,6 +23,8 @@ impl CreateIPFromConfig for ImageProcessor {
             full: config.full_resolution,
             resize_mode: config.resize_mode,
             black_background: config.black_background,
+            #[cfg(feature = "sixel_support")]
+            max_colors: config.max_colors,
         };
         match config.image.clone() {
             Image(image) => Ok(Self::new(image, option)),
@@ -81,6 +83,11 @@ impl CreateMDFromBool for DisplayMode {
             Protocol::ITerm2 => match no_color {
                 true => Self::Iterm2NoColor,
                 false => Self::Iterm2,
+            },
+            #[cfg(feature = "sixel_support")]
+            Protocol::Sixel => match full {
+                true => Self::SixelFull,
+                false => Self::SixelHalf,
             },
         }
     }

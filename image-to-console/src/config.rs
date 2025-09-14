@@ -97,6 +97,9 @@ pub struct Cli {
         default_value_t = false
     )]
     pub without_resize_height: bool,
+    #[cfg(feature = "sixel_support")]
+    #[clap(long, help = "Max colors (Only run in sixel mode)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
+    pub max_colors: u16,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -198,6 +201,8 @@ impl Default for Cli {
                 hide_filename: false,
                 path: "".to_string(),
             }),
+            #[cfg(feature = "sixel_support")]
+            max_colors: 256,
         }
     }
 }
@@ -222,6 +227,8 @@ pub struct Config {
     pub output: Option<String>,
     pub resize_mode: ResizeMode,
     pub file_name: Option<String>,
+    #[cfg(feature = "sixel_support")]
+    pub max_colors: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -281,6 +288,8 @@ pub fn parse() -> RunMode {
             cli.no_color,
             cli.protocol,
         ),
+        #[cfg(feature = "sixel_support")]
+        max_colors: cli.max_colors,
     };
     match cli.command {
         Commands::File(args) => {
@@ -370,6 +379,8 @@ pub fn parse() -> RunMode {
                                         } else {
                                             ImageType::Path(path.to_str().unwrap().to_string())
                                         },
+                                        #[cfg(feature = "sixel_support")]
+                                        max_colors: cli.max_colors
                                     }))
                                 }
                                 None => None,

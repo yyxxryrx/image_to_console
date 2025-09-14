@@ -10,6 +10,8 @@ pub struct ImageProcessorOptions {
     pub mode: DisplayMode,
     pub black_background: bool,
     pub resize_mode: ResizeMode,
+    #[cfg(feature = "sixel")]
+    pub max_colors: u16,
 }
 
 pub struct ImageProcessorResult {
@@ -104,6 +106,8 @@ impl ImageProcessor {
                 line_init,
                 mode: self.option.mode,
                 black_background: self.option.black_background,
+                #[cfg(feature = "sixel")]
+                max_colors: self.option.max_colors,
             },
         );
         ImageProcessorResult {

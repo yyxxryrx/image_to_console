@@ -12,6 +12,8 @@ pub enum Protocol {
     WezTerm,
     Kitty,
     ITerm2,
+    #[cfg(feature = "sixel_support")]
+    Sixel,
 }
 #[allow(dead_code)]
 impl Default for Protocol {
@@ -21,7 +23,10 @@ impl Default for Protocol {
 }
 impl ValueEnum for Protocol {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2]
+        #[cfg(not(feature = "sixel_support"))]
+        return &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2];
+        #[cfg(feature = "sixel_support")]
+        &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2, Self::Sixel]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
@@ -30,6 +35,8 @@ impl ValueEnum for Protocol {
             Self::WezTerm => PossibleValue::new("wezterm"),
             Self::Kitty => PossibleValue::new("kitty"),
             Self::ITerm2 => PossibleValue::new("iterm2"),
+            #[cfg(feature = "sixel_support")]
+            Self::Sixel => PossibleValue::new("sixel"),
         })
     }
 }
