@@ -141,7 +141,10 @@ pub fn run_video(config: Result<Config, String>) {
                                         }
                                     });
                                     let render_task = std::thread::spawn(move || {
-                                        render_video(rt, audio_path, fps);
+                                        #[cfg(feature = "sixel_support")]
+                                        render_video(rt, audio_path, fps, config.mode.is_sixel());
+                                        #[cfg(not(feature = "sixel_support"))]
+                                        render_video(rt, audio_path, fps, false);
                                     });
                                     task.join().unwrap();
                                     render_task.join().unwrap();
