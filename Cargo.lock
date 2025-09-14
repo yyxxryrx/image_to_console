@@ -1202,7 +1202,7 @@ dependencies = [
 
 [[package]]
 name = "image_to_console"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "base64",
  "clap",

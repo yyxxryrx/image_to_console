@@ -105,7 +105,6 @@ pub fn run_video(config: Result<Config, String>) {
                                     let (st, rt) = bounded(10);
                                     let config_clone = config_clone.clone();
                                     let task = std::thread::spawn(move || loop {
-                                        // 使用阻塞接收确保不丢失帧
                                         match vrx.recv() {
                                             Err(_) => {
                                                 // Channel disconnected
