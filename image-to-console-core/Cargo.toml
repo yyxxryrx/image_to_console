@@ -1,6 +1,6 @@
 [package]
 name = "image_to_console_core"
-version = "0.1.14"
+version = "0.1.15"
 edition = "2021"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
@@ -10,7 +10,7 @@ name = "image_to_console_core"
 crate-type = ["lib"]
 
 [features]
-sixel = ["quantette"]
+sixel = ["quantette", "nohash-hasher"]
 
 [dependencies]
 rayon = "1.11.0"
@@ -26,6 +26,10 @@ version = "0.13.3"
 version = "0.25.4"
 default-features = false
 features = ["png", "jpeg"]
+
+[dependencies.nohash-hasher]
+optional = true
+version = "0.2.0"
 
 [dependencies.quantette]
 optional = true

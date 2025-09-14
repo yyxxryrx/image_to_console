@@ -378,6 +378,8 @@ impl ImageConverter {
     #[cfg(feature = "sixel")]
     fn sixel_convert(&self) -> Vec<String> {
         use crate::indexed_image::IndexedImage;
+        use nohash_hasher::BuildNoHashHasher;
+        use std::collections::HashMap;
 
         // Some tool functions
         fn get_sixel(style: &[u8; 6]) -> String {
@@ -397,25 +399,33 @@ impl ImageConverter {
             )
         }
 
+        fn render_same(index: Option<u8>, times: usize, char: &str) -> String {
+            match index {
+                Some(index) => {
+                    if times == 0 {
+                        String::new()
+                    } else if times == 1 {
+                        format!("#{}{}", index, char)
+                    } else {
+                        format!("#{}!{}{}", index, times, char)
+                    }
+                }
+                None => {
+                    if times == 0 {
+                        String::new()
+                    } else if times == 1 {
+                        format!("{}", char)
+                    } else {
+                        format!("!{}{}", times, char)
+                    }
+                }
+            }
+        }
+
+        const AIR_STYLE: &[u8; 6] = &[0u8; 6];
+
         let img = self.img.rgb().unwrap();
         let img = IndexedImage::from_image(img, self.option.max_colors).unwrap();
-        let styles = [
-            get_sixel(&[1, 0, 0, 0, 0, 0]),
-            get_sixel(&[0, 1, 0, 0, 0, 0]),
-            get_sixel(&[0, 0, 1, 0, 0, 0]),
-            get_sixel(&[0, 0, 0, 1, 0, 0]),
-            get_sixel(&[0, 0, 0, 0, 1, 0]),
-            get_sixel(&[0, 0, 0, 0, 0, 1]),
-        ];
-        let mid = if self.full { "" } else { "!2" };
-        let get_pixel = |x, y: u32, dy: u32| {
-            format!(
-                "#{}{}{}",
-                img.get_pixel(x, y + dy),
-                mid,
-                &styles[dy as usize]
-            )
-        };
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
         let palette = img
             .palette
@@ -429,25 +439,110 @@ impl ImageConverter {
                 )
             })
             .collect::<String>();
-        let pixels = (0..=self.option.height / 6)
+        let (width, height) = (self.option.width, self.option.height);
+        let pixels = (0..=height / 6)
             .into_par_iter()
-            .map(move |y| {
-                let mut line = (0..6)
-                    .flat_map(move |dy| {
-                        if y * 6 + dy >= self.option.height {
-                            return None;
+            .map(|y| {
+                let mut line = String::new();
+                let mut col: HashMap<u32, (usize, usize), BuildNoHashHasher<u32>> =
+                    (0..width).map(|i| (i, (0, 0))).collect();
+                let mut col_indexs: Vec<[i16; 6]> = vec![[-1; 6]; width as usize];
+                while col.len() > 0 {
+                    line.push_str("$");
+                    let mut skip_count = 0;
+                    let mut same_count = 0;
+                    let mut same_index = 0;
+                    let mut same_style = [0u8; 6];
+                    (0..width).for_each(|x| {
+                        if !col.contains_key(&x) {
+                            if same_count > 0 {
+                                line.push_str(&render_same(
+                                    Some(same_index),
+                                    same_count,
+                                    &get_sixel(&same_style),
+                                ));
+                                same_count = 0;
+                            }
+                            skip_count += 1;
+                            return;
                         }
-                        let mut line = String::from("$");
-                        line.push_str(
-                            &(0..self.option.width)
-                                .into_par_iter()
-                                .map(move |x| get_pixel(x, y * 6, dy))
-                                .collect::<String>(),
-                        );
-                        Some(line)
-                    })
-                    .collect::<String>();
+                        if skip_count > 0 {
+                            line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE)));
+                            skip_count = 0;
+                        }
+                        let y = y * 6;
+                        // Get the information for this colum
+                        let (mut cur_sum, mut cur_head) = col[&x];
+                        let mut cur_indexs = col_indexs[x as usize];
+                        // Get current color index
+                        let cur_index = img.get_pixel(x, y + cur_head as u32);
+                        // Update the indexs for this colum
+                        cur_indexs[cur_head] = cur_index as i16;
+                        // Init some variable
+                        let mut style = [0u8; 6];
+                        let mut is_head = true;
+                        // Get the style and next head
+                        for dy in cur_head as u32..6 {
+                            if y + dy >= height {
+                                break;
+                            }
+                            let index = img.get_pixel(x, y + dy);
+                            if index == cur_index {
+                                cur_sum += 1;
+                                style[dy as usize] = 1;
+                            } else if is_head && !cur_indexs.contains(&(index as i16)) {
+                                // update the cur_head
+                                is_head = false;
+                                cur_head = dy as usize;
+                            }
+                        }
+                        // remove it if cur_sum >= 6, else update it
+                        if cur_sum >= 6 {
+                            col.remove(&x);
+                        } else {
+                            col.insert(x, (cur_sum, cur_head));
+                            col_indexs[x as usize] = cur_indexs;
+                        }
+                        // counter add 1 if is the same style and color index when the counter is not zero
+                        if same_count > 0 && same_index == cur_index && same_style == style {
+                            same_count += 1;
+                        } else {
+                            // This is not a simple style or color, we need write the last style and color into this line
+                            // And update this color and style to the same style and color
+                            if same_count > 0 {
+                                line.push_str(&render_same(
+                                    Some(same_index),
+                                    same_count,
+                                    &get_sixel(&same_style),
+                                ))
+                            }
+                            // Set the counter to 1
+                            same_count = 1;
+                            // update other information
+                            same_index = cur_index;
+                            same_style = style;
+                        }
+                    });
+                    // maybe some data in the same counter is not written
+                    // so we should check the same_count here
+                    // write into this line if the counter is not zero
+                    if same_count > 0 {
+                        line.push_str(&render_same(
+                            Some(same_index),
+                            same_count,
+                            &get_sixel(&same_style),
+                        ));
+                    }
+                    // And maybe some data in the skip_count is not written
+                    // so we also should check the skip_count here
+                    if skip_count > 0 {
+                        line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE)));
+                    }
+                }
+                // This line is finished
+                // Goto the next line
                 line.push_str("-");
+                // Return this line to collect
                 line
             })
             .collect::<String>();

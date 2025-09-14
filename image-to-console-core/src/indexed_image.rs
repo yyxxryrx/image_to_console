@@ -1,6 +1,6 @@
-use quantette::AboveMaxLen;
 use quantette::palette::encoding::Srgb;
 use quantette::palette::rgb::Rgb;
+use quantette::AboveMaxLen;
 
 #[derive(Clone)]
 pub struct IndexedImage {
