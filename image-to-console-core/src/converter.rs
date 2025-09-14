@@ -439,10 +439,13 @@ impl ImageConverter {
                 )
             })
             .collect::<String>();
-        let (width, height) = (self.option.width, self.option.height);
+        let (width, height) = (img.width, img.height);
         let pixels = (0..=height / 6)
             .into_par_iter()
             .map(|y| {
+                if y * 6 >= height {
+                    return String::new();
+                }
                 let mut line = String::new();
                 let mut col: HashMap<u32, (usize, usize), BuildNoHashHasher<u32>> =
                     (0..width).map(|i| (i, (0, 0))).collect();

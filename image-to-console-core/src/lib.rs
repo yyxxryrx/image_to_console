@@ -59,6 +59,11 @@ impl DisplayMode {
             Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor
         )
     }
+    
+    #[cfg(feature = "sixel")]
+    pub fn is_sixel(&self) -> bool {
+        matches!(self, Self::SixelHalf | Self::SixelFull)
+    }
 }
 
 #[allow(dead_code)]
