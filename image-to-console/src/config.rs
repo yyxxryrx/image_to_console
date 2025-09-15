@@ -99,8 +99,10 @@ pub struct Cli {
     )]
     pub without_resize_height: bool,
     #[cfg(feature = "sixel_support")]
-    #[clap(long, help = "Max colors (Only run in sixel mode)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
+    #[clap(long, help = "Max colors (Only run in sixel protocol)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
     pub max_colors: u16,
+    #[clap(long, help = "Enable compression (Only run in normal protocol)", default_value_t = false)]
+    pub enable_compression: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -196,6 +198,7 @@ impl Default for Cli {
             disable_print: false,
             full_resolution: false,
             black_background: false,
+            enable_compression: false,
             protocol: Protocol::Normal,
             without_resize_width: false,
             without_resize_height: false,
@@ -229,6 +232,7 @@ pub struct Config {
     pub black_background: bool,
     pub output: Option<String>,
     pub resize_mode: ResizeMode,
+    pub enable_compression: bool,
     pub file_name: Option<String>,
     #[cfg(feature = "sixel_support")]
     pub max_colors: u16,
@@ -285,6 +289,7 @@ pub fn parse() -> RunMode {
         disable_info: cli.disable_info,
         disable_print: cli.disable_print,
         black_background: cli.black_background,
+        enable_compression: cli.enable_compression,
         full_resolution: cli.full_resolution || cli.no_color,
         mode: DisplayMode::from_bool(
             cli.full_resolution || cli.no_color,
@@ -375,6 +380,7 @@ pub fn parse() -> RunMode {
                                         show_file_name: false,
                                         no_color: cli.no_color,
                                         black_background: cli.black_background,
+                                        enable_compression: cli.enable_compression,
                                         full_resolution: cli.full_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
                                         image: if args.read_all {

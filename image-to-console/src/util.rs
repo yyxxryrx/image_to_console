@@ -23,6 +23,7 @@ impl CreateIPFromConfig for ImageProcessor {
             full: config.full_resolution,
             resize_mode: config.resize_mode,
             black_background: config.black_background,
+            enable_compression: config.enable_compression,
             #[cfg(feature = "sixel_support")]
             max_colors: config.max_colors,
         };

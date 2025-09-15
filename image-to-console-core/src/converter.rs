@@ -7,6 +7,7 @@ use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
 
+#[derive(Copy, Clone)]
 struct PixelColor {
     r: u8,
     g: u8,
@@ -92,6 +93,7 @@ pub struct ImageConverterOption {
     pub line_init: String,
     pub mode: DisplayMode,
     pub black_background: bool,
+    pub enable_compression: bool,
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
 }
@@ -122,8 +124,8 @@ impl ImageConverter {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
 
                 let convert_pixel = |x, y| match self.option.mode {
-                    FullColor => self.full_convert(x, y),
-                    HalfColor => self.unfull_convert(x, y),
+                    FullColor => self.full_convert(x, y, false),
+                    HalfColor => self.unfull_convert(x, y, false),
                     FullNoColor => self.no_color_convert(x, y),
                     _ => String::new(),
                 };
@@ -173,23 +175,34 @@ impl ImageConverter {
         }
     }
 
-    fn unfull_convert(&self, x: u32, y: u32) -> String {
+    fn unfull_convert(&self, x: u32, y: u32, only_color: bool) -> String {
         if let ProcessedImage::Color(rgba_img) = &self.img {
             let pixel = rgba_img.get_pixel(x, y);
             let color = PixelColor::from_channels(pixel.0);
-            let mut c = if color.a >= 128 {
+            let cur_color = if color.a >= 128 {
                 color.bg()
             } else {
                 "\x1b[0m".to_string()
             };
-            c.push_str("  ");
-            c
+            if only_color {
+                return cur_color;
+            }
+            let last_color = if x > 0 && self.option.enable_compression {
+                self.unfull_convert(x - 1, y, true)
+            } else {
+                String::new()
+            };
+            if last_color == cur_color {
+                "  ".to_string()
+            } else {
+                format!("{}  ", cur_color)
+            }
         } else {
             panic!("Invalid image type")
         }
     }
 
-    fn full_convert(&self, x: u32, y: u32) -> String {
+    fn full_convert(&self, x: u32, y: u32, only_color: bool) -> String {
         if let ProcessedImage::Both(rgba_img, luma_img) = &self.img {
             let pixel1 = rgba_img.get_pixel(x, y * 2);
             let pixel2 = rgba_img.get_pixel(x, y * 2 + 1);
@@ -197,21 +210,44 @@ impl ImageConverter {
             let p2 = luma_img.get_pixel(x, y * 2 + 1).0[0];
             let pixel1_color = PixelColor::from_channels(pixel1.0);
             let pixel2_color = PixelColor::from_channels(pixel2.0);
-            if pixel1_color.a < 128 && pixel2_color.a < 128 {
-                return "\x1b[0m".to_string();
-            }
-            if pixel1_color.a < 128 {
-                return format!("\x1b[0m{}▄", pixel2_color.fg());
-            }
-            if pixel2_color.a < 128 {
-                return format!("\x1b[0m{}▀", pixel1_color.fg());
-            }
-            if p1 > p2 {
-                format!("{}{}▀", pixel1_color.fg(), pixel2_color.bg())
+            let cur_color = if pixel1_color.a < 128 && pixel2_color.a < 128 {
+                "\x1b[0m".to_string()
+            } else if pixel1_color.a < 128 {
+                format!("\x1b[0m{}", pixel2_color.fg())
+            } else if pixel2_color.a < 128 {
+                format!("\x1b[0m{}", pixel1_color.fg())
+            } else if p1 > p2 {
+                format!("{}{}", pixel1_color.fg(), pixel2_color.bg())
             } else if p2 > p1 {
-                format!("{}{}▄", pixel1_color.bg(), pixel2_color.fg())
+                format!("{}{}", pixel1_color.bg(), pixel2_color.fg())
             } else {
-                format!("{}█", pixel1_color.fg())
+                format!("{}", pixel1_color.fg())
+            };
+            if only_color {
+                return cur_color;
+            }
+            let last_color = if x > 0 && self.option.enable_compression {
+                self.full_convert(x - 1, y, true)
+            } else {
+                String::new()
+            };
+            let cur_char = if pixel1_color.a < 128 && pixel2_color.a < 128 {
+                " "
+            } else if pixel1_color.a < 128 {
+                "▄"
+            } else if pixel2_color.a < 128 {
+                "▀"
+            } else if p1 > p2 {
+                "▀"
+            } else if p2 > p1 {
+                "▄"
+            } else {
+                "█"
+            };
+            if cur_color == last_color {
+                cur_char.to_string()
+            } else {
+                format!("{}{}", cur_color, cur_char)
             }
         } else {
             panic!("Invalid image type")
@@ -405,7 +441,6 @@ impl ImageConverter {
             }
             match index {
                 Some(index) => {
-
                     if times == 0 {
                         String::new()
                     } else if times == 1 {
@@ -476,7 +511,12 @@ impl ImageConverter {
                             return;
                         }
                         if skip_count > 0 {
-                            line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE), is_full));
+                            line.push_str(&render_same(
+                                None,
+                                skip_count,
+                                &get_sixel(AIR_STYLE),
+                                is_full,
+                            ));
                             skip_count = 0;
                         }
                         let y = y * 6;
@@ -547,7 +587,12 @@ impl ImageConverter {
                     // And maybe some data in the skip_count is not written
                     // so we also should check the skip_count here
                     if skip_count > 0 {
-                        line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE), is_full));
+                        line.push_str(&render_same(
+                            None,
+                            skip_count,
+                            &get_sixel(AIR_STYLE),
+                            is_full,
+                        ));
                     }
                 }
                 // This line is finished

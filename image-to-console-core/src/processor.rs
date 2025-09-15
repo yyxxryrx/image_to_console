@@ -10,6 +10,7 @@ pub struct ImageProcessorOptions {
     pub mode: DisplayMode,
     pub black_background: bool,
     pub resize_mode: ResizeMode,
+    pub enable_compression: bool,
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
 }
@@ -106,6 +107,7 @@ impl ImageProcessor {
                 line_init,
                 mode: self.option.mode,
                 black_background: self.option.black_background,
+                enable_compression: self.option.enable_compression,
                 #[cfg(feature = "sixel")]
                 max_colors: self.option.max_colors,
             },
