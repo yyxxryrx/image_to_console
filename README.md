@@ -16,7 +16,7 @@ English | [简体中文](README_zh-CN.md)
 - ⚡ **Parallel Processing**: Fast conversion using Rayon library for parallel computation
 - 📏 **Adaptive Sizing**: Automatically scale images to fit terminal window
 - ⌨️ **Interactive Pause**: Optional pause after display for convenient viewing
-- 🖥️ **Multiple Display Modes**: Support for full-resolution and half-resolution display modes
+- 🖥️ **Multiple Display Modes**: Support for full-resolution (default) and half-resolution display modes
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, iTerm2 and Sixel image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
@@ -109,8 +109,8 @@ image_to_console --pause file image.jpg
 # Show processing time
 image_to_console -t file image.jpg
 
-# Full resolution display
-image_to_console -f file image.jpg
+# Half resolution display
+image_to_console --half-resolution file image.jpg
 
 # Grayscale mode display
 image_to_console --no-color file image.jpg
@@ -210,13 +210,12 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ## Display Mode Description
 
 ### Color Modes
-- **Half-resolution color mode** (default): Display using background color blocks, each character represents one pixel
-- **Full-resolution color mode** (-f): Display using upper/lower half-blocks, each character represents two pixels
+- **Full-resolution color mode** (default): Display using upper/lower half-blocks, each character represents two pixels
+- **Half-resolution color mode** (--half-resolution): Display using background color blocks, each character represents one pixel
 - **WezTerm mode** (--protocol wezterm): Use WezTerm's inline image protocol to display original image directly
 - **Kitty mode** (--protocol kitty): Use Kitty's inline image protocol to display original image directly
 - **iTerm2 mode** (--protocol iterm2): Use iTerm2's inline image protocol to display original image directly
 - **Sixel mode** (--protocol sixel): Use Sixel protocol to display images in supported terminals
-- **Full-resolution Sixel mode** (--protocol sixel --full-resolution): Use Sixel protocol to display images in supported terminals with full resolution
 
 ### Grayscale Modes
 - **Grayscale mode** (--no-color): Convert image to grayscale character art display

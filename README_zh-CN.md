@@ -17,7 +17,7 @@
 - ⚡ **并行处理**: 使用 Rayon 库进行并行计算，转换速度快。
 - 📏 **自适应尺寸**: 自动缩放图片以适应终端窗口。
 - ⌨️ **交互式暂停**: 可选择在显示后暂停，方便查看。
-- 🖥️ **多种显示模式**: 支持全分辨率和半分辨率显示模式。
+- 🖥️ **多种显示模式**: 支持全分辨率（默认）和半分辨率显示模式。
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty、iTerm2 和 Sixel 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
 - 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
@@ -113,8 +113,8 @@ image_to_console --pause file image.jpg
 # 显示处理时间
 image_to_console -t file image.jpg
 
-# 全分辨率显示
-image_to_console -f file image.jpg
+# 半分辨率显示
+image_to_console --half-resolution file image.jpg
 
 # 灰度模式显示
 image_to_console --no-color file image.jpg
@@ -217,13 +217,13 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 ### 彩色模式
 
-- **半分辨率彩色模式**（默认）：使用背景色块显示，每个字符代表一个像素点
-- **全分辨率彩色模式**（-f）：使用上下半色块显示，每个字符代表两个像素点
+- **全分辨率彩色模式**（默认）：使用上下半色块显示，每个字符代表两个像素点
+- **半分辨率彩色模式**（--half-resolution）：使用背景色块显示，每个字符代表一个像素点
 - **WezTerm 模式**（--protocol wezterm）：使用 WezTerm 的内联图片协议直接显示原图
 - **Kitty 模式**（--protocol kitty）：使用 Kitty 的内联图片协议直接显示原图
 - **iTerm2 模式** (--protocol iterm2) ：使用 iTerm2 的内联图片协议直接显示原图
 - **Sixel 模式** (--protocol sixel) ：使用 Sixel 协议在支持的终端中显示图像
-- **全分辨率 Sixel 模式** (--protocol sixel --full-resolution) ：使用 Sixel 协议在支持的终端中显示图像，并使用全分辨率显示图片
+- **半分辨率 Sixel 模式** (--protocol sixel --half-resolution) ：使用 Sixel 协议在支持的终端中显示图像，并使用全分辨率显示图片
 
 ### 灰度模式
 
