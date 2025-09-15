@@ -51,12 +51,11 @@ pub struct Cli {
     #[clap(short, long, help = "Output file path")]
     pub output: Option<String>,
     #[clap(
-        short,
         long,
-        help = "Operates at full resolution",
+        help = "Operates at half resolution",
         default_value_t = false
     )]
-    pub full_resolution: bool,
+    pub half_resolution: bool,
     #[clap(long, help = "Disable the print", default_value_t = false)]
     pub disable_print: bool,
     #[clap(long, help = "Disable display info", default_value_t = false)]
@@ -196,7 +195,7 @@ impl Default for Cli {
             no_resize: false,
             disable_info: false,
             disable_print: false,
-            full_resolution: false,
+            half_resolution: false,
             black_background: false,
             enable_compression: false,
             protocol: Protocol::Normal,
@@ -290,9 +289,9 @@ pub fn parse() -> RunMode {
         disable_print: cli.disable_print,
         black_background: cli.black_background,
         enable_compression: cli.enable_compression,
-        full_resolution: cli.full_resolution || cli.no_color,
+        full_resolution: !cli.half_resolution || cli.no_color,
         mode: DisplayMode::from_bool(
-            cli.full_resolution || cli.no_color,
+            !cli.half_resolution || cli.no_color,
             cli.no_color,
             cli.protocol,
         ),
@@ -363,7 +362,7 @@ pub fn parse() -> RunMode {
                                     };
                                     Some(Ok(Config {
                                         mode: DisplayMode::from_bool(
-                                            cli.full_resolution || cli.no_color,
+                                            !cli.half_resolution || cli.no_color,
                                             cli.no_color,
                                             cli.protocol,
                                         ),
@@ -381,7 +380,7 @@ pub fn parse() -> RunMode {
                                         no_color: cli.no_color,
                                         black_background: cli.black_background,
                                         enable_compression: cli.enable_compression,
-                                        full_resolution: cli.full_resolution || cli.no_color,
+                                        full_resolution: !cli.half_resolution || cli.no_color,
                                         output: Some(output.to_str().unwrap().to_string() + ".txt"),
                                         image: if args.read_all {
                                             Image(image::open(&path).unwrap())
