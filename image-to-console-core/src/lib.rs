@@ -36,7 +36,7 @@ impl Default for DisplayMode {
 impl DisplayMode {
     pub fn is_full(&self) -> bool {
         #[cfg(feature = "sixel")]
-        return matches!(self, Self::HalfColor | Self::Ascii | Self::SixelFull);
+        return !matches!(self, Self::HalfColor | Self::Ascii | Self::SixelHalf);
         #[cfg(not(feature = "sixel"))]
         return !matches!(self, Self::HalfColor | Self::Ascii);
     }
