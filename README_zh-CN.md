@@ -9,7 +9,7 @@
 
 ## 功能特点
 
-- 🖼️ **多种来源**: 支持从文件、URL 和 Base64 字符串加载图片。
+- 🖼️ **多种来源**: 支持从文件、URL、Base64 字符串和标准输入加载图片。
 - 📁 **目录处理**: 支持批量处理整个目录中的图片文件。
 - 🎨 **真彩支持**: 在支持的终端中显示彩色图片。
 - ⚫ **灰度模式**: 支持将彩色图片转换为灰度字符艺术显示。
@@ -22,6 +22,7 @@
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
 - 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
+- 🗜️ **压缩支持**: 在普通协议模式下支持输出压缩。
 
 ## 支持的协议
 
@@ -90,6 +91,9 @@ image_to_console url https://example.com/image.png
 # 从 Base64 字符串加载图片
 image_to_console base64 <base64-encoded-image-data>
 
+# 从标准输入加载图片字节
+cat image.jpg | image_to_console bytes
+
 # 从文件加载视频（需要启用 video 特性）
 image_to_console video path/to/video.mp4
 ```
@@ -150,6 +154,10 @@ image_to_console --protocol sixel file image.jpg
 
 # 使用 Sixel 协议显示图片并设置最大颜色数
 image_to_console --protocol sixel --max-colors 128 file image.jpg
+
+# 启用压缩（仅在普通协议下可用）
+image_to_console --enable-compression file image.jpg
+
 ```
 
 ### 文件子命令选项

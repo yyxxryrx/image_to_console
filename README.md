@@ -8,7 +8,7 @@ English | [简体中文](README_zh-CN.md)
 
 ## Features
 
-- 🖼️ **Multiple Sources**: Load images from files, URLs, and Base64 strings
+- 🖼️ **Multiple Sources**: Load images from files, URLs, Base64 strings and standard input
 - 📁 **Directory Processing**: Batch process entire directories of image files
 - 🎨 **True Color Support**: Display colored images in supported terminals
 - ⚫ **Grayscale Mode**: Convert color images to grayscale character art
@@ -21,6 +21,7 @@ English | [简体中文](README_zh-CN.md)
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations
+- 🗜️ **Compression Support**: Compress output in normal protocol mode
 
 ## Supported Protocols
 - [x] WezTerm
@@ -86,6 +87,9 @@ image_to_console url https://example.com/image.png
 # Load image from Base64 string
 image_to_console base64 <base64-encoded-image-data>
 
+# Load image from standard input bytes
+cat image.jpg | image_to_console bytes
+
 # Load video from file (requires video feature)
 image_to_console video path/to/video.mp4
 ```
@@ -146,6 +150,10 @@ image_to_console --protocol sixel file image.jpg
 
 # Display image using Sixel protocol with custom max colors
 image_to_console --protocol sixel --max-colors 128 file image.jpg
+
+# Enable compression (only in normal protocol)
+image_to_console --enable-compression file image.jpg
+
 ```
 
 ### File Subcommand Options
