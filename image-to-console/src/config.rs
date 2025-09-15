@@ -1,3 +1,4 @@
+use std::io::Read;
 use crate::util::{CreateMDFromBool, CreateRMFromCli};
 use crate::{
     config::RunMode::*,
@@ -108,16 +109,18 @@ pub struct Cli {
 pub enum Commands {
     #[clap(about = "Load an image from a file")]
     File(FileArgs),
-    #[clap(about = "Load all the images from a directory")]
-    Directory(DirectoryArgs),
-    #[cfg(feature = "gif_player")]
-    #[clap(about = "Load a gif from a file")]
-    Gif(GifArgs),
+    #[clap(about = "Load an image from input bytes")]
+    Bytes,
     #[clap(about = "Load an image from a base64")]
     Base64(Base64Args),
+    #[clap(about = "Load all the images from a directory")]
+    Directory(DirectoryArgs),
     #[cfg(feature = "reqwest")]
     #[clap(about = "Load an image from a url")]
     Url(UrlArgs),
+    #[cfg(feature = "gif_player")]
+    #[clap(about = "Load a gif from a file")]
+    Gif(GifArgs),
     #[cfg(feature = "video_player")]
     #[clap(about = "Load a video from a file")]
     Video(VideoArgs),
@@ -451,7 +454,19 @@ pub fn parse() -> RunMode {
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
             }
-        }
+        },
+        Commands::Bytes => {
+            let mut buffer = Vec::new();
+            match std::io::stdin().lock().read_to_end(&mut buffer) {
+                Ok(_) => {
+                    match image::load_from_memory(&buffer) {
+                        Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
+                        Err(e) => Once(Err(e.to_string())),
+                    }
+                },
+                Err(e) => Once(Err(e.to_string()))
+            }
+        },
         #[cfg(feature = "reqwest")]
         Commands::Url(args) => {
             use std::io::Write;
