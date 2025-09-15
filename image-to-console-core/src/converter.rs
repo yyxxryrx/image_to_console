@@ -399,12 +399,13 @@ impl ImageConverter {
             )
         }
 
-        fn render_same(index: Option<u8>, times: usize, char: &str, is_full: bool) -> String {
+        fn render_same(index: Option<u8>, mut times: usize, char: &str, is_full: bool) -> String {
+            if !is_full {
+                times *= 2;
+            }
             match index {
-                Some(mut index) => {
-                    if !is_full {
-                        index *= 2;
-                    }
+                Some(index) => {
+
                     if times == 0 {
                         String::new()
                     } else if times == 1 {
