@@ -129,9 +129,9 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         if let Some(delay) = delay {
             frame_delay = delay;
         }
-        // Create new thread and other works it takes about 700 µs(sixel mode is 900 µs), so we need to subtract it.
+        // Create new thread and other works it takes about 700 µs(sixel mode is 1000 µs), so we need to subtract it.
         let d = std::time::Duration::from_micros(frame_delay * 10_000 - if is_sixel {
-            900
+            1000
         } else {
             700
         });
@@ -207,9 +207,9 @@ pub fn render_video(
         }
         let frame = frame.unwrap();
         let (frame, index) = frame;
-        // Create new thread and other works it takes about 700 µs(sixel mode is 900 µs) time, so we need to subtract it.
+        // Create new thread and other works it takes about 700 µs(sixel mode is 840 µs) time, so we need to subtract it.
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64 - if is_sixel {
-            900
+            840
         } else {
             700
         });

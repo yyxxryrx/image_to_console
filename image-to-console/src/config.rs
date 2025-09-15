@@ -1,4 +1,3 @@
-use std::io::Read;
 use crate::util::{CreateMDFromBool, CreateRMFromCli};
 use crate::{
     config::RunMode::*,
@@ -22,6 +21,7 @@ use clap::{
 use crossbeam_channel::{bounded, unbounded};
 use image_to_console_core::{DisplayMode, ResizeMode};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
+use std::io::Read;
 use std::path::Path;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
@@ -100,7 +100,11 @@ pub struct Cli {
     #[cfg(feature = "sixel_support")]
     #[clap(long, help = "Max colors (Only run in sixel protocol)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
     pub max_colors: u16,
-    #[clap(long, help = "Enable compression (Only run in normal protocol)", default_value_t = false)]
+    #[clap(
+        long,
+        help = "Enable compression (Only run in normal protocol)",
+        default_value_t = false
+    )]
     pub enable_compression: bool,
     #[clap(subcommand)]
     pub command: Commands,
@@ -388,7 +392,7 @@ pub fn parse() -> RunMode {
                                             ImageType::Path(path.to_str().unwrap().to_string())
                                         },
                                         #[cfg(feature = "sixel_support")]
-                                        max_colors: cli.max_colors
+                                        max_colors: cli.max_colors,
                                     }))
                                 }
                                 None => None,
@@ -406,8 +410,8 @@ pub fn parse() -> RunMode {
         #[cfg(feature = "gif_player")]
         Commands::Gif(args) => match std::fs::File::open(&args.path) {
             Ok(file) => {
-                use image::DynamicImage;
                 use crate::types::ImageType::Gif;
+                use image::DynamicImage;
                 use image_to_console_core::gif_processor::GifFrameProcessor;
                 let mut decoder = gif::DecodeOptions::new();
                 decoder.set_color_output(gif::ColorOutput::Indexed);
@@ -459,24 +463,22 @@ pub fn parse() -> RunMode {
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
             }
-        },
+        }
         Commands::Bytes => {
             let mut buffer = Vec::new();
             match std::io::stdin().lock().read_to_end(&mut buffer) {
-                Ok(_) => {
-                    match image::load_from_memory(&buffer) {
-                        Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
-                        Err(e) => Once(Err(e.to_string())),
-                    }
+                Ok(_) => match image::load_from_memory(&buffer) {
+                    Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
+                    Err(e) => Once(Err(e.to_string())),
                 },
-                Err(e) => Once(Err(e.to_string()))
+                Err(e) => Once(Err(e.to_string())),
             }
-        },
+        }
         #[cfg(feature = "reqwest")]
         Commands::Url(args) => {
-            use std::io::Write;
-            use reqwest::blocking::Client;
             use indicatif::{ProgressBar, ProgressStyle};
+            use reqwest::blocking::Client;
+            use std::io::Write;
             println!("Downloading the image from: {}", args.url);
             let client = Client::new();
             match client.get(&args.url).send() {
