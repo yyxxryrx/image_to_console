@@ -221,7 +221,7 @@ impl ImageConverter {
             } else if p2 > p1 {
                 format!("{}{}", pixel1_color.bg(), pixel2_color.fg())
             } else {
-                format!("{}", pixel1_color.fg())
+                format!("{}", pixel1_color.bg())
             };
             if only_color {
                 return cur_color;
@@ -241,10 +241,14 @@ impl ImageConverter {
                 "▀"
             } else if p2 > p1 {
                 "▄"
+            } else if self.option.enable_compression {
+                " "
             } else {
                 "█"
             };
             if cur_color == last_color {
+                cur_char.to_string()
+            } else if cur_char == " " && last_color.contains(&cur_color) {
                 cur_char.to_string()
             } else {
                 format!("{}{}", cur_color, cur_char)
@@ -628,15 +632,16 @@ impl ImageConverter {
         let palette = index_counter
             .iter()
             .enumerate()
-            .map(|(index, &(i,_))| {
+            .map(|(index, &(i, _))| {
                 let rgb = img.palette[i];
                 format!("#{index};2;{}", get_color(rgb.red, rgb.green, rgb.blue))
             })
             .collect::<String>();
-        let pixels = pixels.into_par_iter()
+        let pixels = pixels
+            .into_par_iter()
             .map(|(index, char)| match index {
                 Some(index) => format!("#{}{}", index_mapping[&(index as usize)], char),
-                None => char
+                None => char,
             })
             .collect::<String>();
 
