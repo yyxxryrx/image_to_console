@@ -435,27 +435,34 @@ impl ImageConverter {
             )
         }
 
-        fn render_same(index: Option<u8>, mut times: usize, char: &str, is_full: bool) -> String {
+        fn render_same(
+            index: Option<u8>,
+            mut times: usize,
+            char: &str,
+            is_full: bool,
+            counter: &mut Vec<usize>,
+        ) -> (Option<u8>, String) {
             if !is_full {
                 times *= 2;
             }
             match index {
                 Some(index) => {
+                    counter[index as usize] += times;
                     if times == 0 {
-                        String::new()
-                    } else if times == 1 {
-                        format!("#{}{}", index, char)
+                        (Some(index), String::new())
+                    } else if times < 3 {
+                        (Some(index), char.repeat(times))
                     } else {
-                        format!("#{}!{}{}", index, times, char)
+                        (Some(index), format!("!{}{}", times, char))
                     }
                 }
                 None => {
                     if times == 0 {
-                        String::new()
+                        (None, String::new())
                     } else if times < 3 {
-                        char.repeat(times)
+                        (None, char.repeat(times))
                     } else {
-                        format!("!{}{}", times, char)
+                        (None, format!("!{}{}", times, char))
                     }
                 }
             }
@@ -467,31 +474,23 @@ impl ImageConverter {
         let img = self.img.rgb().unwrap();
         let img = IndexedImage::from_image(img, self.option.max_colors).unwrap();
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
-        let palette = img
-            .palette
-            .iter()
-            .enumerate()
-            .map(|(index, color)| {
-                format!(
-                    "#{};2;{}",
-                    index,
-                    get_color(color.red, color.green, color.blue)
-                )
-            })
-            .collect::<String>();
+        let palette_count = img.palette.len();
         let (width, height) = (img.width, img.height);
-        let pixels = (0..=height / 6)
+        let index_counter = vec![0usize; palette_count];
+        let ptr = std::sync::Arc::new(std::sync::Mutex::new(index_counter));
+        let pixels: Vec<(Option<u8>, String)> = (0..=height / 6)
             .into_par_iter()
             .map(|y| {
                 if y * 6 >= height {
-                    return String::new();
+                    return vec![];
                 }
-                let mut line = String::new();
+                let mut line: Vec<(Option<u8>, String)> = vec![];
                 let mut col: HashMap<u32, (usize, usize), BuildNoHashHasher<u32>> =
                     (0..width).map(|i| (i, (0, 0))).collect();
                 let mut col_indexs: Vec<[i16; 6]> = vec![[-1; 6]; width as usize];
+                let mut col_index_counter = vec![0usize; palette_count];
                 while col.len() > 0 {
-                    line.push_str("$");
+                    line.push((None, "$".to_string()));
                     let mut skip_count = 0;
                     let mut same_count = 0;
                     let mut same_index = 0;
@@ -499,11 +498,12 @@ impl ImageConverter {
                     (0..width).for_each(|x| {
                         if !col.contains_key(&x) {
                             if same_count > 0 {
-                                line.push_str(&render_same(
+                                line.push(render_same(
                                     Some(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
+                                    &mut col_index_counter,
                                 ));
                                 same_count = 0;
                             }
@@ -511,11 +511,12 @@ impl ImageConverter {
                             return;
                         }
                         if skip_count > 0 {
-                            line.push_str(&render_same(
+                            line.push(render_same(
                                 None,
                                 skip_count,
                                 &get_sixel(AIR_STYLE),
                                 is_full,
+                                &mut col_index_counter,
                             ));
                             skip_count = 0;
                         }
@@ -559,11 +560,12 @@ impl ImageConverter {
                             // This is not a simple style or color, we need write the last style and color into this line
                             // And update this color and style to the same style and color
                             if same_count > 0 {
-                                line.push_str(&render_same(
+                                line.push(render_same(
                                     Some(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
+                                    &mut col_index_counter,
                                 ))
                             }
                             // Set the counter to 1
@@ -577,31 +579,67 @@ impl ImageConverter {
                     // so we should check the same_count here
                     // write into this line if the counter is not zero
                     if same_count > 0 {
-                        line.push_str(&render_same(
+                        line.push(render_same(
                             Some(same_index),
                             same_count,
                             &get_sixel(&same_style),
                             is_full,
+                            &mut col_index_counter,
                         ));
                     }
                     // And maybe some data in the skip_count is not written
                     // so we also should check the skip_count here
                     if skip_count > 0 {
-                        line.push_str(&render_same(
+                        line.push(render_same(
                             None,
                             skip_count,
                             &get_sixel(AIR_STYLE),
                             is_full,
+                            &mut col_index_counter,
                         ));
                     }
                 }
                 // This line is finished
                 // Goto the next line
-                line.push_str("-");
+                line.push((None, "-".to_string()));
+                let mut r = ptr.lock().unwrap();
+                for (index, count) in col_index_counter.iter().enumerate() {
+                    r[index] += *count;
+                }
                 // Return this line to collect
                 line
             })
+            .flatten_iter()
+            .into_par_iter()
+            .collect::<Vec<(Option<u8>, String)>>();
+        let mut index_counter = ptr
+            .lock()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(index, &count)| (index, count))
+            .collect::<Vec<(usize, usize)>>();
+        index_counter.sort_by(|a, b| b.1.cmp(&a.1));
+        let index_mapping: HashMap<usize, usize, BuildNoHashHasher<usize>> = index_counter
+            .iter()
+            .enumerate()
+            .map(|(index, &(i, _))| (i, index))
+            .collect();
+        let palette = index_counter
+            .iter()
+            .enumerate()
+            .map(|(index, &(i,_))| {
+                let rgb = img.palette[i];
+                format!("#{index};2;{}", get_color(rgb.red, rgb.green, rgb.blue))
+            })
             .collect::<String>();
+        let pixels = pixels.into_par_iter()
+            .map(|(index, char)| match index {
+                Some(index) => format!("#{}{}", index_mapping[&(index as usize)], char),
+                None => char
+            })
+            .collect::<String>();
+
         result.push_str(&palette);
         result.push_str(&pixels);
         result.push_str("\x1b\\");
