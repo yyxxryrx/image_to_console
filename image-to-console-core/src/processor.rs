@@ -1,7 +1,7 @@
-use image::{imageops::FilterType, GenericImageView};
 use crate::converter::{ImageConverter, ImageConverterOption};
-use crate::{DisplayMode, ProcessedImage, ResizeMode};
 use crate::ResizeMode::{Auto, Custom, None};
+use crate::{DisplayMode, ProcessedImage, ResizeMode};
+use image::{imageops::FilterType, GenericImageView};
 
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
@@ -42,27 +42,54 @@ impl ImageProcessor {
         let (width, height) = terminal_size::terminal_size().unwrap();
         match self.option.resize_mode {
             Auto(option) => {
-                if option.width {
-                    if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
-                        let new_img = self.image.resize(
-                            (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 }).round()
-                                as u32,
-                            h,
-                            FilterType::Lanczos3,
-                        );
-                        (w, h) = new_img.dimensions();
-                        self.image = new_img;
+                if self.option.mode.is_normal() {
+                    if option.width {
+                        if w > (width.0 / if self.option.full { 1 } else { 2 }) as u32 {
+                            let new_img = self.image.resize(
+                                (width.0 as f32 / if self.option.full { 1f32 } else { 2f32 })
+                                    .round() as u32,
+                                h,
+                                FilterType::Lanczos3,
+                            );
+                            (w, h) = new_img.dimensions();
+                            self.image = new_img;
+                        }
+                    }
+                    if option.height {
+                        if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
+                            let new_img = self.image.resize(
+                                w,
+                                (height.0 * if self.option.full { 2 } else { 1 }) as u32,
+                                FilterType::Lanczos3,
+                            );
+                            (w, h) = new_img.dimensions();
+                            self.image = new_img;
+                        }
                     }
                 }
-                if option.height {
-                    if h > (height.0 * if self.option.full { 2 } else { 1 }) as u32 {
-                        let new_img = self.image.resize(
-                            w,
-                            (height.0 * if self.option.full { 2 } else { 1 }) as u32,
-                            FilterType::Lanczos3,
-                        );
-                        (w, h) = new_img.dimensions();
-                        self.image = new_img;
+                #[cfg(feature = "sixel")]
+                if self.option.mode.is_sixel() {
+                    if option.width {
+                        if w > width.0 as u32 * if self.option.full { 12 } else { 6 } {
+                            let new_img = self.image.resize(
+                                width.0 as u32 * if self.option.full { 12 } else { 6 },
+                                h,
+                                FilterType::Lanczos3,
+                            );
+                            (w, h) = new_img.dimensions();
+                            self.image = new_img;
+                        }
+                    }
+                    if option.height {
+                        if h > height.0 as u32 * if self.option.full { 21 } else { 10 } {
+                            let new_img = self.image.resize(
+                                w,
+                                height.0 as u32 * if self.option.full { 21 } else { 10 },
+                                FilterType::Lanczos3,
+                            );
+                            (w, h) = new_img.dimensions();
+                            self.image = new_img;
+                        }
                     }
                 }
             }
@@ -79,24 +106,22 @@ impl ImageProcessor {
         }
         let mut line_init = String::new();
         if self.option.center {
-            if !self.option.full && h < height.0 as u32
-                || self.option.full && h < height.0 as u32 / 2
-            {
-                for _ in 0..(height.0 / 2) as u32 - h / if self.option.full { 4 } else { 2 } {
-                    arr.push(String::new());
-                    air_line += 1;
+            if self.option.mode.is_normal() {
+                if !self.option.full && h < height.0 as u32
+                    || self.option.full && h < height.0 as u32 / 2
+                {
+                    for _ in 0..(height.0 / 2) as u32 - h / if self.option.full { 4 } else { 2 } {
+                        arr.push(String::new());
+                        air_line += 1;
+                    }
                 }
-            }
 
-            if !self.option.full && w < (width.0 / 2) as u32
-                || self.option.full && w < width.0 as u32
-            {
-                let len = (width.0 as f32 / 2f32
-                    - w as f32 / if self.option.full { 2f32 } else { 1f32 })
-                .round() as usize;
-                let mut lst = Vec::new();
-                lst.resize(len, " ");
-                line_init.push_str(&lst.join(""));
+                if w < width.0 as u32 / if self.option.full { 1 } else { 2 } {
+                    let len = (width.0 as f32 / 2f32
+                        - w as f32 / if self.option.full { 2f32 } else { 1f32 })
+                    .round() as usize;
+                    line_init.push_str(&" ".repeat(len));
+                }
             }
         }
         let converter = ImageConverter::new(
