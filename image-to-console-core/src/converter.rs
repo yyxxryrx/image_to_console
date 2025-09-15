@@ -399,9 +399,12 @@ impl ImageConverter {
             )
         }
 
-        fn render_same(index: Option<u8>, times: usize, char: &str) -> String {
+        fn render_same(index: Option<u8>, times: usize, char: &str, is_full: bool) -> String {
             match index {
-                Some(index) => {
+                Some(mut index) => {
+                    if !is_full {
+                        index *= 2;
+                    }
                     if times == 0 {
                         String::new()
                     } else if times == 1 {
@@ -413,8 +416,8 @@ impl ImageConverter {
                 None => {
                     if times == 0 {
                         String::new()
-                    } else if times == 1 {
-                        format!("{}", char)
+                    } else if times < 3 {
+                        char.repeat(times)
                     } else {
                         format!("!{}{}", times, char)
                     }
@@ -423,6 +426,7 @@ impl ImageConverter {
         }
 
         const AIR_STYLE: &[u8; 6] = &[0u8; 6];
+        let is_full = self.full;
 
         let img = self.img.rgb().unwrap();
         let img = IndexedImage::from_image(img, self.option.max_colors).unwrap();
@@ -463,6 +467,7 @@ impl ImageConverter {
                                     Some(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
+                                    is_full,
                                 ));
                                 same_count = 0;
                             }
@@ -470,7 +475,7 @@ impl ImageConverter {
                             return;
                         }
                         if skip_count > 0 {
-                            line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE)));
+                            line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE), is_full));
                             skip_count = 0;
                         }
                         let y = y * 6;
@@ -517,6 +522,7 @@ impl ImageConverter {
                                     Some(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
+                                    is_full,
                                 ))
                             }
                             // Set the counter to 1
@@ -534,12 +540,13 @@ impl ImageConverter {
                             Some(same_index),
                             same_count,
                             &get_sixel(&same_style),
+                            is_full,
                         ));
                     }
                     // And maybe some data in the skip_count is not written
                     // so we also should check the skip_count here
                     if skip_count > 0 {
-                        line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE)));
+                        line.push_str(&render_same(None, skip_count, &get_sixel(AIR_STYLE), is_full));
                     }
                 }
                 // This line is finished
