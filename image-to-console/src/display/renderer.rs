@@ -15,7 +15,7 @@ use std::thread::JoinHandle;
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
     if !config.disable_print {
-        if config.mode.is_normal() {
+        if config.clear {
             print!("\x1bc");
         }
         for _ in 0..result.air_lines {
@@ -102,7 +102,9 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
-    let stream_handle = config.audio.clone().and_then(|_|Some(rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream")));
+    let stream_handle = config.audio.clone().and_then(|_| {
+        Some(rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream"))
+    });
     #[cfg(feature = "rodio")]
     let audio = if let Some(audio_file) = config.audio {
         let file = std::io::BufReader::new(File::open(audio_file).unwrap());
@@ -119,7 +121,8 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         delay: Option<u64>,
         frame_index: usize,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
-        is_sixel: bool
+        is_sixel: bool,
+        back_top: bool,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -131,31 +134,37 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
             frame_delay = delay;
         }
         // Create new thread and other works it takes about 700 µs(sixel mode is 1000 µs), so we need to subtract it.
-        let d = std::time::Duration::from_micros(frame_delay * 10_000 - if is_sixel {
-            1000
-        } else {
-            700
-        });
+        let d = std::time::Duration::from_micros(
+            frame_delay * 10_000 - if is_sixel { 1000 } else { 700 },
+        );
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
-            play_frame(frames, delay, index + 1, st2, is_sixel);
+            play_frame(frames, delay, index + 1, st2, is_sixel, back_top);
         });
         st.send(task).unwrap();
 
         let time = std::time::Instant::now();
-        // Save current cursor position
-        // print!("\x1b[s");
-        println!("\x1b[1;1H{}", frame);
+        if back_top {
+            print!("\x1b[1;1H");
+        } else {
+            // Save current cursor position
+            print!("\r\x1b[s");
+        }
+        println!("{}", frame);
         println!("Current frame: {index}");
-        // Back to the saved position
-        // print!("\x1b[u");
+        if !back_top {
+            // Back to the saved position
+            print!("\x1b[u");
+        }
     }
-    print!("\x1bc");
+    if config.clear {
+        print!("\x1bc");
+    }
     #[cfg(feature = "sixel_support")]
-    play_frame(results, delay, 0, st, config.mode.is_sixel());
+    play_frame(results, delay, 0, st, config.mode.is_sixel(), config.clear);
     #[cfg(not(feature = "sixel_support"))]
-    play_frame(results, delay, 0, st, false);
+    play_frame(results, delay, 0, st, false, config.clear);
 
     for task in rt.iter() {
         task.join().unwrap();
@@ -193,6 +202,7 @@ pub fn render_video(
     audio_path: PathBuf,
     fps: f32,
     is_sixel: bool,
+    clear: bool,
 ) {
     // Load the audio if exists
     let stream_handle =
@@ -208,6 +218,7 @@ pub fn render_video(
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
+        back_top: bool,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -216,29 +227,33 @@ pub fn render_video(
         let frame = frame.unwrap();
         let (frame, index) = frame;
         // Create new thread and other works it takes about 700 µs(sixel mode is 840 µs) time, so we need to subtract it.
-        let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64 - if is_sixel {
-            840
-        } else {
-            700
-        });
+        let d = std::time::Duration::from_micros(
+            (1_000_000f32 / delay).round() as u64 - if is_sixel { 840 } else { 700 },
+        );
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
-            play_frame(frames, delay, st2, is_sixel);
+            play_frame(frames, delay, st2, is_sixel, back_top);
         });
         st.send(task).unwrap();
 
-        // Save current cursor position
-        // print!("\x1b[s");
+        if back_top {
+            print!("\x1b[1;1H");
+        } else {
+            // Save current cursor position
+            print!("\r\x1b[s");
+        }
 
-        println!("\r\x1b[s{}", frame);
+        println!("{}", frame);
         println!("current frame: {index}");
 
-        // Back to the saved position
-        print!("\x1b[u");
+        if !back_top {
+            // Back to the saved position
+            print!("\x1b[u");
+        }
     }
 
-    play_frame(vrx, fps, st, is_sixel);
+    play_frame(vrx, fps, st, is_sixel, clear);
 
     for task in rt.iter() {
         task.join().unwrap();

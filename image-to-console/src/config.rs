@@ -39,6 +39,8 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 pub struct Cli {
     #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
     pub center: bool,
+    #[clap(long, help="Clear the screen", default_value_t = false)]
+    pub clear: bool,
     #[clap(long, help = "Pause at the end", default_value_t = false)]
     pub pause: bool,
     #[clap(
@@ -98,7 +100,8 @@ pub struct Cli {
     )]
     pub without_resize_height: bool,
     #[cfg(feature = "sixel_support")]
-    #[clap(long, help = "Max colors (Only run in sixel protocol)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
+    #[clap(long, help = "Max colors (Only run in sixel protocol)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256)
+    )]
     pub max_colors: u16,
     #[clap(
         long,
@@ -193,6 +196,7 @@ impl Default for Cli {
             width: None,
             height: None,
             output: None,
+            clear: false,
             pause: false,
             center: false,
             no_color: false,
@@ -220,13 +224,14 @@ impl Default for Cli {
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub fps: Option<u64>,
+    pub clear: bool,
     pub pause: bool,
     pub center: bool,
     pub no_color: bool,
     pub loop_play: bool,
     pub show_time: bool,
     pub image: ImageType,
+    pub fps: Option<u64>,
     pub mode: DisplayMode,
     pub disable_info: bool,
     pub disable_print: bool,
@@ -288,6 +293,7 @@ pub fn parse() -> RunMode {
         image: img,
         resize_mode,
         show_file_name,
+        clear: cli.clear,
         pause: cli.pause,
         center: cli.center,
         output: cli.output,
@@ -382,6 +388,7 @@ pub fn parse() -> RunMode {
                                         file_name: None,
                                         loop_play: false,
                                         show_time: false,
+                                        clear:  cli.clear,
                                         center: cli.center,
                                         disable_info: true,
                                         disable_print: true,
@@ -590,7 +597,7 @@ pub fn parse() -> RunMode {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                        .and_then(|img| Some(DynamicImage::from(img)));
+                                            .and_then(|img| Some(DynamicImage::from(img)));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()
@@ -618,8 +625,8 @@ pub fn parse() -> RunMode {
                     }
                     vtx.send(Err(FrameError::EOF)).unwrap();
                 })
-                .join()
-                .unwrap();
+                    .join()
+                    .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(builder(
