@@ -101,11 +101,12 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 #[cfg(feature = "gif_player")]
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
-    let stream_handle =
-        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+    #[cfg(feature = "rodio")]
+    let stream_handle = config.audio.clone().and_then(|_|Some(rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream")));
+    #[cfg(feature = "rodio")]
     let audio = if let Some(audio_file) = config.audio {
         let file = std::io::BufReader::new(File::open(audio_file).unwrap());
-        Some(rodio::play(&stream_handle.mixer(), file).unwrap())
+        Some(rodio::play(stream_handle.as_ref().unwrap().mixer(), file).unwrap())
     } else {
         None
     };
@@ -145,12 +146,12 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         let time = std::time::Instant::now();
         // Save current cursor position
         // print!("\x1b[s");
-        println!("\r\x1b[s{}", frame);
+        println!("\x1b[1;1H{}", frame);
         println!("Current frame: {index}");
         // Back to the saved position
-        print!("\x1b[u");
+        // print!("\x1b[u");
     }
-
+    print!("\x1bc");
     #[cfg(feature = "sixel_support")]
     play_frame(results, delay, 0, st, config.mode.is_sixel());
     #[cfg(not(feature = "sixel_support"))]
@@ -175,7 +176,14 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         .set_foreground_color(TerminalColor::LightGreen)
     );
     // quit the audio stream
-    std::mem::forget(stream_handle);
+    #[cfg(feature = "rodio")]
+    if let Some(audio) = audio {
+        audio.stop();
+    }
+    #[cfg(feature = "rodio")]
+    if let Some(stream_handle) = stream_handle {
+        std::mem::forget(stream_handle);
+    }
 }
 
 #[allow(unused)]

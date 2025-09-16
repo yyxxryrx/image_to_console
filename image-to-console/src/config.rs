@@ -158,6 +158,7 @@ pub struct GifArgs {
     pub fps: Option<u64>,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
+    #[cfg(feature = "rodio")]
     #[clap(long, help = "Audio file path")]
     pub audio: Option<String>,
     #[clap(help = "Gif file path")]
@@ -231,6 +232,7 @@ pub struct Config {
     pub disable_print: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
+    #[cfg(feature = "rodio")]
     pub audio: Option<String>,
     pub black_background: bool,
     pub output: Option<String>,
@@ -276,8 +278,10 @@ pub fn parse() -> RunMode {
     let cli = Cli::parse();
     let resize_mode = ResizeMode::from_cli(&cli);
     let output_base = cli.output.clone();
-    let builder = |img, file_name, show_file_name, fps, loop_play, audio| Config {
+    #[allow(unused)]
+    let builder = |img, file_name, show_file_name, fps, loop_play, audio: Option<String>| Config {
         fps,
+        #[cfg(feature = "rodio")]
         audio,
         file_name,
         loop_play,
@@ -371,6 +375,7 @@ pub fn parse() -> RunMode {
                                             cli.protocol,
                                         ),
                                         fps: None,
+                                        #[cfg(feature = "rodio")]
                                         audio: None,
                                         resize_mode,
                                         pause: false,
@@ -447,7 +452,10 @@ pub fn parse() -> RunMode {
                             false,
                             args.fps,
                             args.loop_play,
+                            #[cfg(feature = "rodio")]
                             args.audio,
+                            #[cfg(not(feature = "rodio"))]
+                            None,
                         )))
                     }
                     Err(err) => Once(Err(err.to_string())),
