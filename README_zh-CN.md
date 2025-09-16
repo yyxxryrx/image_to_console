@@ -21,7 +21,7 @@
 - 🖥️ **多种终端协议支持**: 支持 WezTerm、Kitty、iTerm2 和 Sixel 图片协议。
 - 🎞️ **GIF 动画支持**: 支持在终端中播放 GIF 动画。
 - 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
-- 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道。
+- 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道（需要启用 `rodio` 特性）。
 - 🗜️ **压缩支持**: 在普通协议模式下支持输出压缩。
 
 ## 支持的协议
@@ -34,11 +34,12 @@
 ## 特性说明
 
 | 特性           | 依赖                                                        | 描述                             | 是否默认启用                              |
-|--------------|-----------------------------------------------------------|----------------------------------|-------------------------------------|
-| reqwest      | reqwest                                                   | HTTP 请求库                        | <span style="color: green">✓</span> |
-| gif_player   | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画                  | <span style="color: green">✓</span> |
-| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频                       | <span style="color: red">✗</span>   |
-| sixel_support| quantette, nohash-hasher                                  | 使用 Sixel 协议显示图像              | <span style="color: green">✓</span> |
+|---------------|-----------------------------------------------------------|----------------------------------|-------------------------------------|
+| reqwest       | reqwest                                                   | HTTP 请求库                        | <span style="color: green">✓</span> |
+| rodio         | rodio                                                     | 音频库                            | <span style="color: red">✗</span>   |
+| gif_player    | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画                  | <span style="color: green">✓</span> |
+| video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频                       | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                                  | 使用 Sixel 协议显示图像              | <span style="color: green">✓</span> |
 
 ## 安装
 
@@ -197,7 +198,7 @@ image_to_console gif --loop animation.gif
 # 设置帧率并循环播放 GIF 动画
 image_to_console gif --fps 30 --loop animation.gif
 
-# 播放 GIF 动画并伴随音频
+# 播放 GIF 动画并伴随音频（需要启用 rodio 特性）
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 

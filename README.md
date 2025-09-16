@@ -20,7 +20,7 @@ English | [简体中文](README_zh-CN.md)
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, iTerm2 and Sixel image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
-- 🔊 **Audio Support**: Add audio tracks to GIF animations
+- 🔊 **Audio Support**: Add audio tracks to GIF animations(requires `rodio` feature)
 - 🗜️ **Compression Support**: Compress output in normal protocol mode
 
 ## Supported Protocols
@@ -30,12 +30,13 @@ English | [简体中文](README_zh-CN.md)
 - [x] Sixel
 
 ## Features
-| Feature      | Dependencies                                              | Description                                                      | Is Default                          |
-|--------------|-----------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
-| reqwest      | reqwest                                                   | HTTP client library                                              | <span style="color: green">✓</span> |
-| gif_player   | gif, rodio, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
-| video_player | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
-| sixel_support| quantette, nohash-hasher                                  | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
+| Feature       | Dependencies                                              | Description                                                      | Is Default                          |
+|---------------|-----------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
+| reqwest       | reqwest                                                   | HTTP client library                                              | <span style="color: green">✓</span> |
+| rodio         | rodio                                                     | Audio library                                                    | <span style="color: red">✗</span>   |
+| gif_player    | gif, rodio, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
+| video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                                  | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
 
 ## Installation
 
@@ -178,6 +179,8 @@ image_to_console --read-all directory path/to/directory
 
 ### GIF Subcommand Options
 > **requires `gif_player` feature**
+> 
+> **audio support requires `rodio` feature**
 
 ```bash
 # Play GIF animation (default 10 FPS)
@@ -192,7 +195,7 @@ image_to_console gif --loop animation.gif
 # Set frame rate and loop GIF animation
 image_to_console gif --fps 30 --loop animation.gif
 
-# Play GIF animation with audio
+# Play GIF animation with audio (requires rodio feature)
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 
