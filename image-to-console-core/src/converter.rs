@@ -221,7 +221,14 @@ impl ImageConverter {
             } else if p2 > p1 {
                 format!("{}{}", pixel1_color.bg(), pixel2_color.fg())
             } else {
-                format!("{}", pixel1_color.bg())
+                format!(
+                    "{}",
+                    if self.option.enable_compression {
+                        pixel1_color.bg()
+                    } else {
+                        pixel1_color.fg()
+                    }
+                )
             };
             if only_color {
                 return cur_color;
@@ -248,7 +255,10 @@ impl ImageConverter {
             };
             if cur_color == last_color {
                 cur_char.to_string()
-            } else if cur_char == " " && last_color.contains(&cur_color) {
+            } else if cur_char == " "
+                && last_color.contains(&cur_color)
+                && self.option.enable_compression
+            {
                 cur_char.to_string()
             } else {
                 format!("{}{}", cur_color, cur_char)
