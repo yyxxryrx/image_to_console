@@ -15,7 +15,7 @@ keywords = ["image", "terminal", "console", "viewer"]
 categories = ["command-line-utilities", "development-tools", "multimedia::images"]
 
 [features]
-default = ["reqwest", "gif_player", "sixel_support"]
+default = ["reqwest", "gif_player", "sixel_support", "crossterm"]
 video_player = ["ndarray", "video-rs", "ez-ffmpeg", "rodio", "crossbeam-channel"]
 gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel"]
 sixel_support = ["image_to_console_core/sixel"]
@@ -42,6 +42,10 @@ version = "0.21.1"
 optional = true
 version = "0.12.9"
 features = ["blocking"]
+
+[dependencies.crossterm]
+optional = true
+version = "0.29.0"
 
 [dependencies.ez-ffmpeg]
 optional = true

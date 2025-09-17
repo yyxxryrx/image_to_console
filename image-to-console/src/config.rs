@@ -78,7 +78,7 @@ pub struct Cli {
         default_value_t = false
     )]
     pub no_resize: bool,
-    #[clap(short, long, help = "Protocol to use", default_value = "normal")]
+    #[clap(short, long, help = "Protocol to use", default_value = "auto")]
     pub protocol: Protocol,
     #[clap(short, long, help = "Set image resize mode", default_value = "auto")]
     pub resize_mode: ClapResizeMode,

@@ -8,6 +8,7 @@ use std::path::PathBuf;
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Protocol {
+    Auto,
     Normal,
     WezTerm,
     Kitty,
@@ -26,11 +27,12 @@ impl ValueEnum for Protocol {
         #[cfg(not(feature = "sixel_support"))]
         return &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2];
         #[cfg(feature = "sixel_support")]
-        &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2, Self::Sixel]
+        &[Self::Auto, Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2, Self::Sixel]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         Some(match self {
+            Self::Auto => PossibleValue::new("auto"),
             Self::Normal => PossibleValue::new("normal"),
             Self::WezTerm => PossibleValue::new("wezterm"),
             Self::Kitty => PossibleValue::new("kitty"),

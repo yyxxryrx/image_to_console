@@ -1,9 +1,9 @@
 use crate::config::{Cli, Config};
-use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
-use std::io::Read;
-use image_to_console_core::{AutoResizeOption, CustomResizeOption, DisplayMode, ResizeMode};
-use crate::types::{ClapResizeMode, Protocol};
 use crate::types::ImageType::{Image, Path};
+use crate::types::{ClapResizeMode, Protocol};
+use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
+use image_to_console_core::{AutoResizeOption, CustomResizeOption, DisplayMode, ResizeMode};
+use std::io::{Read, Write};
 
 pub fn get_char() -> char {
     let mut buf = vec![0; 1];
@@ -11,8 +11,66 @@ pub fn get_char() -> char {
     buf[0] as char
 }
 
+pub fn get_terminal_protocol() -> Protocol {
+    let term_program = std::env::var("TERM_PROGRAM")
+        .unwrap_or_default()
+        .to_lowercase();
+    let term = std::env::var("TERM").unwrap_or_default().to_lowercase();
+    if term_program.contains("wezterm") || term.contains("wezterm") {
+        std::io::stdout().flush().unwrap();
+        Protocol::WezTerm
+    } else if term_program.contains("kitty") || term.contains("kitty") {
+        Protocol::Kitty
+    } else if term_program.contains("iterm")
+        || term.contains("iterm")
+        || std::env::var("ITERM_SESSION").is_ok()
+    {
+        Protocol::ITerm2
+    } else {
+        #[cfg(feature = "crossterm")]
+        {
+            use std::io::BufRead;
+            crossterm::terminal::enable_raw_mode().unwrap();
+            std::io::stdout().write_all(b"\x1b[>c").unwrap();
+            std::io::stdout().flush().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            let (st, rt) = std::sync::mpsc::channel::<String>();
+            std::thread::spawn(move || {
+                let mut buffer = Vec::new();
+                std::io::stdin()
+                    .lock()
+                    .read_until(b'c', &mut buffer)
+                    .unwrap();
+                st.send(String::from_utf8(buffer).unwrap()).unwrap();
+            });
+            let p = match rt.recv_timeout(std::time::Duration::from_millis(100)) {
+                Ok(s) => {
+                    let s = s.chars().skip(3).take_while(|&c| c != 'c').collect::<String>();
+                    let args = s.split(";").collect::<Vec<&str>>();
+                    if args.len() <= 2 {
+                        Protocol::Normal
+                    } else if args.last().unwrap().parse::<u8>().unwrap_or(0) & 1 == 1 {
+                        Protocol::Sixel
+                    } else {
+                        Protocol::Normal
+                    }
+                }
+                Err(_) => {
+                    Protocol::Normal
+                }
+            };
+            crossterm::terminal::disable_raw_mode().unwrap();
+            p
+        }
+        #[cfg(not(feature = "crossterm"))]
+        Protocol::Normal
+    }
+}
+
 pub trait CreateIPFromConfig {
-    fn from_config(config: &Config) -> Result<Self, String> where Self: Sized;
+    fn from_config(config: &Config) -> Result<Self, String>
+    where
+        Self: Sized;
 }
 
 impl CreateIPFromConfig for ImageProcessor {
@@ -38,7 +96,6 @@ impl CreateIPFromConfig for ImageProcessor {
         }
     }
 }
-
 
 pub trait CreateRMFromCli {
     fn from_cli(cli: &Cli) -> Self;
@@ -67,6 +124,7 @@ pub trait CreateMDFromBool {
 impl CreateMDFromBool for DisplayMode {
     fn from_bool(full: bool, no_color: bool, protocol: Protocol) -> Self {
         match protocol {
+            Protocol::Auto => Self::from_bool(full, no_color, get_terminal_protocol()),
             Protocol::Normal => match (full, no_color) {
                 (true, true) => Self::FullNoColor,
                 (true, false) => Self::FullColor,
