@@ -20,7 +20,7 @@ English | [简体中文](README_zh-CN.md)
 - 🖥️ **Multiple Terminal Protocol Support**: Support for WezTerm, Kitty, iTerm2 and Sixel image protocols
 - 🎞️ **GIF Animation Support**: Play GIF animations in terminal
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
-- 🔊 **Audio Support**: Add audio tracks to GIF animations(requires `rodio` feature)
+- 🔊 **Audio Support**: Add audio tracks to GIF animations (requires `rodio` feature)
 - 🗜️ **Compression Support**: Compress output in normal protocol mode
 
 ## Supported Protocols
@@ -34,6 +34,7 @@ English | [简体中文](README_zh-CN.md)
 |---------------|-----------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
 | reqwest       | reqwest                                                   | HTTP client library                                              | <span style="color: green">✓</span> |
 | rodio         | rodio                                                     | Audio library                                                    | <span style="color: red">✗</span>   |
+| crossterm     | crossterm                                                 | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
 | gif_player    | gif, rodio, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
 | video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
 | sixel_support | quantette, nohash-hasher                                  | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
@@ -155,6 +156,9 @@ image_to_console --protocol sixel --max-colors 128 file image.jpg
 # Enable compression (only in normal protocol)
 image_to_console --enable-compression file image.jpg
 
+# Auto detect terminal protocol (default)
+image_to_console --protocol auto file image.jpg
+
 ```
 
 ### File Subcommand Options
@@ -219,6 +223,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **Kitty mode** (--protocol kitty): Use Kitty's inline image protocol to display original image directly
 - **iTerm2 mode** (--protocol iterm2): Use iTerm2's inline image protocol to display original image directly
 - **Sixel mode** (--protocol sixel): Use Sixel protocol to display images in supported terminals
+- **Auto-detect mode** (--protocol auto): Automatically detect and use the best available terminal protocol (default)
 
 ### Grayscale Modes
 - **Grayscale mode** (--no-color): Convert image to grayscale character art display
@@ -227,6 +232,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **WezTerm grayscale mode** (--protocol wezterm --no-color): Display grayscale image in WezTerm
 - **Kitty grayscale mode** (--protocol kitty --no-color): Display grayscale image in Kitty
 - **iTerm2 grayscale mode** (--protocol iterm2 --no-color): Display grayscale image in iTerm2
+- **Auto-detect grayscale mode** (--protocol auto --no-color): Automatically detect and use the best available terminal protocol in grayscale mode
 
 ## Supported Image Formats
 
@@ -250,6 +256,7 @@ Supports most common image formats, including but not limited to:
 | [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
 | [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | Terminal progress bars                  |
 | [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | Detect terminal size                    |
+| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | Terminal control and input(optional)    |
 | [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
 | [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF animation decoding (optional)       |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | Cross-thread communication   (optional) |

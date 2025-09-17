@@ -33,13 +33,14 @@
 
 ## 特性说明
 
-| 特性           | 依赖                                                        | 描述                             | 是否默认启用                              |
-|---------------|-----------------------------------------------------------|----------------------------------|-------------------------------------|
-| reqwest       | reqwest                                                   | HTTP 请求库                        | <span style="color: green">✓</span> |
-| rodio         | rodio                                                     | 音频库                            | <span style="color: red">✗</span>   |
-| gif_player    | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画                  | <span style="color: green">✓</span> |
-| video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频                       | <span style="color: red">✗</span>   |
-| sixel_support | quantette, nohash-hasher                                  | 使用 Sixel 协议显示图像              | <span style="color: green">✓</span> |
+| 特性            | 依赖                                                        | 描述              | 是否默认启用                              |
+|---------------|-----------------------------------------------------------|-----------------|-------------------------------------|
+| reqwest       | reqwest                                                   | HTTP 请求库        | <span style="color: green">✓</span> |
+| rodio         | rodio                                                     | 音频库             | <span style="color: red">✗</span>   |
+| crossterm     | crossterm                                                 | 终端库             | <span style="color: green">✓</span> |
+| gif_player    | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画    | <span style="color: green">✓</span> |
+| video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频         | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                                  | 使用 Sixel 协议显示图像 | <span style="color: green">✓</span> |
 
 ## 安装
 
@@ -159,6 +160,9 @@ image_to_console --protocol sixel --max-colors 128 file image.jpg
 # 启用压缩（仅在普通协议下可用）
 image_to_console --enable-compression file image.jpg
 
+# 自动检测终端协议（默认）
+image_to_console --protocol auto file image.jpg
+
 ```
 
 ### 文件子命令选项
@@ -225,6 +229,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **iTerm2 模式** (--protocol iterm2) ：使用 iTerm2 的内联图片协议直接显示原图
 - **Sixel 模式** (--protocol sixel) ：使用 Sixel 协议在支持的终端中显示图像
 - **半分辨率 Sixel 模式** (--protocol sixel --half-resolution) ：使用 Sixel 协议在支持的终端中显示图像，并使用全分辨率显示图片
+- **自动检测模式** (--protocol auto) ：自动检测并使用最佳的终端协议（默认）
 
 ### 灰度模式
 
@@ -234,6 +239,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 - **WezTerm 灰度模式**（--protocol wezterm --no-color）：在 WezTerm 中显示灰度图
 - **Kitty 灰度模式**（--protocol kitty --no-color）：在 Kitty 中显示灰度图
 - **iTerm2 灰度模式** (--protocol iterm2 --no-color) ：在 iTerm2 中显示灰度图
+- **自动检测灰度模式** (--protocol auto --no-color) ：自动检测并使用最佳的终端协议在灰度模式下显示
 
 ## 支持的图片格式
 
@@ -258,6 +264,7 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 | [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 编解码       |
 | [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | 终端进度条            |
 | [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | 检测终端尺寸           |
+| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | 终端控制（可选）         |
 | [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
 | [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
