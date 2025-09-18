@@ -29,54 +29,58 @@ pub fn get_terminal_protocol() -> Protocol {
     } else {
         #[cfg(feature = "crossterm")]
         {
-            use std::io::BufRead;
-            crossterm::terminal::enable_raw_mode().unwrap();
-            // Send the escape sequence
-            std::io::stdout().write_all(b"\x1b[>c").unwrap();
-            // Flush the output
-            std::io::stdout().flush().unwrap();
-            // Wait some time then try to get the result
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            let (st, rt) = std::sync::mpsc::channel::<String>();
-            // Spawn a thread to read the input
-            std::thread::spawn(move || {
-                let mut buffer = Vec::new();
-                std::io::stdin()
-                    .lock()
-                    .read_until(b'c', &mut buffer)
-                    .unwrap();
-                st.send(String::from_utf8(buffer).unwrap()).unwrap();
-            });
-            // try to get the result
-            let p = match rt.recv_timeout(std::time::Duration::from_millis(100)) {
-                Ok(s) => {
-                    // The result should be "ESC [ > Ps ; Pv ; Pc c"
-                    // So we skip to '>' then skip one again
-                    // and take all characters before 'c'
-                    let s = s.chars().skip_while(|&c| c == '>').skip(1).take_while(|&c| c != 'c').collect::<String>();
-                    // return the normal if we don't get anything
-                    if s.is_empty() {
-                        return Protocol::Normal;
+            fn check_sixel() -> std::io::Result<Protocol> {
+                use std::io::BufRead;
+                crossterm::terminal::enable_raw_mode()?;
+                // Send the escape sequence
+                std::io::stdout().write_all(b"\x1b[>c")?;
+                // Flush the output
+                std::io::stdout().flush()?;
+                // Wait some time then try to get the result
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                let (st, rt) = std::sync::mpsc::channel::<String>();
+                // Spawn a thread to read the input
+                std::thread::spawn(move || {
+                    let mut buffer = Vec::new();
+                    match std::io::stdin()
+                        .lock()
+                        .read_until(b'c', &mut buffer) {
+                        Ok(_) => st.send(String::from_utf8(buffer).unwrap_or_default()),
+                        Err(_) => st.send(String::default())
                     }
-                    // Parse the args
-                    let args = s.split(";").collect::<Vec<&str>>();
-                    // The Pc was ignored if the args length is 2
-                    // We need Pc argument to determine whether we should use sixel or not
-                    if args.len() <= 2 {
-                        Protocol::Normal
-                    } else if args.last().unwrap().trim().parse::<u8>().unwrap_or(0) & 1 == 1 {
-                        Protocol::Sixel
-                    } else {
+                });
+                // try to get the result
+                let p = match rt.recv_timeout(std::time::Duration::from_millis(100)) {
+                    Ok(s) => {
+                        // The result should be "ESC [ > Ps ; Pv ; Pc c"
+                        // So we skip to '>' then skip one again
+                        // and take all characters before 'c'
+                        let s = s.chars().skip_while(|&c| c == '>').skip(1).take_while(|&c| c != 'c').collect::<String>();
+                        // return the normal if we don't get anything
+                        if s.is_empty() {
+                            return Ok(Protocol::Normal);
+                        }
+                        // Parse the args
+                        let args = s.split(";").collect::<Vec<&str>>();
+                        // The Pc was ignored if the args length is 2
+                        // We need Pc argument to determine whether we should use sixel or not
+                        if args.len() <= 2 {
+                            Protocol::Normal
+                        } else if args.last().unwrap().trim().parse::<u8>().unwrap_or(0) & 1 == 1 {
+                            Protocol::Sixel
+                        } else {
+                            Protocol::Normal
+                        }
+                    }
+                    Err(_) => {
+                        // return normal if we cannot get the result
                         Protocol::Normal
                     }
-                }
-                Err(_) => {
-                    // return normal if we cannot get the result
-                    Protocol::Normal
-                }
-            };
-            crossterm::terminal::disable_raw_mode().unwrap();
-            p
+                };
+                crossterm::terminal::disable_raw_mode()?;
+                Ok(p)
+            }
+            check_sixel().unwrap_or(Protocol::Normal)
         }
         #[cfg(not(feature = "crossterm"))]
         Protocol::Normal
