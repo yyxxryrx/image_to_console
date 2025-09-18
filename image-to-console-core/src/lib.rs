@@ -1,9 +1,9 @@
 mod converter;
 #[cfg(feature = "gif")]
 pub mod gif_processor;
-pub mod processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
+pub mod processor;
 
 #[allow(unused_imports)]
 use image::{DynamicImage, GrayImage, RgbImage, RgbaImage};
@@ -44,13 +44,19 @@ impl DisplayMode {
         #[cfg(feature = "sixel")]
         return matches!(
             self,
-            Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2 | Self::SixelHalf | Self::SixelFull
+            Self::FullColor
+                | Self::HalfColor
+                | Self::WezTerm
+                | Self::Kitty
+                | Self::Iterm2
+                | Self::SixelHalf
+                | Self::SixelFull
         );
         #[cfg(not(feature = "sixel"))]
-        return matches!(
+        matches!(
             self,
             Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
-        );
+        )
     }
 
     pub fn is_normal(&self) -> bool {
@@ -59,7 +65,11 @@ impl DisplayMode {
             Self::HalfColor | Self::FullColor | Self::Ascii | Self::FullNoColor
         )
     }
-    
+
+    pub fn is_wezterm(&self) -> bool {
+        matches!(self, Self::WezTerm | Self::WezTermNoColor)
+    }
+
     #[cfg(feature = "sixel")]
     pub fn is_sixel(&self) -> bool {
         matches!(self, Self::SixelHalf | Self::SixelFull)
@@ -129,8 +139,6 @@ impl ProcessedImage {
         matches!(self, Self::Color(_) | Self::Both(_, _))
     }
 }
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AutoResizeOption {

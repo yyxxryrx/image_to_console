@@ -36,7 +36,6 @@ impl ImageProcessor {
 
     pub fn process(&mut self) -> ImageProcessorResult {
         let time = std::time::SystemTime::now();
-        let mut arr: Vec<String> = Vec::new();
         let mut air_line: usize = 0;
         let (mut w, mut h) = self.image.dimensions();
         let (width, height) = terminal_size::terminal_size().unwrap();
@@ -111,7 +110,6 @@ impl ImageProcessor {
                     || self.option.full && h < height.0 as u32 / 2
                 {
                     for _ in 0..(height.0 / 2) as u32 - h / if self.option.full { 4 } else { 2 } {
-                        arr.push(String::new());
                         air_line += 1;
                     }
                 }
@@ -121,6 +119,35 @@ impl ImageProcessor {
                         - w as f32 / if self.option.full { 2f32 } else { 1f32 })
                     .round() as usize;
                     line_init.push_str(&" ".repeat(len));
+                }
+            }
+
+            if self.option.mode.is_wezterm() {
+                air_line = height.0 as usize;
+                let terminal_rate = width.0 as f64 / height.0 as f64 / 2f64;
+                let rate = w as f64 / h as f64;
+                println!("{} {}", terminal_rate, rate);
+                if rate < terminal_rate {
+                    let w = (height.0 as f64 * rate).floor() as u16;
+                    let offset = width.0 / 2 - w;
+                    line_init.push_str(&format!(
+                        "\x1b[1;{}H",
+                        offset - if rate > 1.0 { offset / 2 } else { 0 }
+                    ));
+                } else if rate == terminal_rate {
+                    if width.0 > height.0 {
+                        let w = height.0;
+                        let offset = (width.0 - w) / 2;
+                        line_init.push_str(&format!("\x1b[1;{}H", offset - offset / 2));
+                    } else if width.0 < height.0 {
+                        let h = width.0 / 2;
+                        let offset = (height.0 * 2 - h) / 2;
+                        line_init.push_str(&format!("\x1b[{};1H", offset - offset / 2));
+                    }
+                } else {
+                    let h = (width.0 as f64 / 2f64 / rate).floor() as u16;
+                    let offset = height.0 * 2 - h;
+                    line_init.push_str(&format!("\x1b[{};1H", offset - offset / 2));
                 }
             }
         }

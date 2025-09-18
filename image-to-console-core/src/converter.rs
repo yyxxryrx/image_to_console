@@ -6,6 +6,7 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use rayon::iter::*;
 use std::io::Cursor;
+use std::ops::Div;
 
 #[derive(Copy, Clone)]
 struct PixelColor {
@@ -379,11 +380,27 @@ impl ImageConverter {
         let image_data = self.get_image_data();
         // Add space to prevent misalignment
         let mut lines: Vec<String> = vec![String::from(" "); 2];
-        lines[0] = format!(
-            "\x1b]1337;File=size={};inline=1:{}\x1b\\",
-            image_data.len(),
-            STANDARD.encode(image_data)
-        );
+        lines[0] = if self.option.line_init.is_empty() {
+            format!(
+                "\x1b]1337;File=size={};inline=1:{}\x1b\\",
+                image_data.len(),
+                STANDARD.encode(image_data)
+            )
+        } else {
+            let (w, h) = terminal_size::terminal_size()
+                .and_then(|(w, h)| Some((w.0.div(2) as u32, h.0 as u32)))
+                .unwrap_or((0, 0));
+            let r = self.option.width as f32 / self.option.height as f32;
+            let tr = w as f32 / h as f32;
+            format!(
+                "{}\x1b]1337;File=size={};{}={};inline=1:{}\x1b\\",
+                self.option.line_init,
+                image_data.len(),
+                if r < tr { "height" } else { "width" },
+                if r < tr { h } else { w },
+                STANDARD.encode(image_data)
+            )
+        };
         lines
     }
 
