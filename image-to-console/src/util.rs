@@ -31,10 +31,14 @@ pub fn get_terminal_protocol() -> Protocol {
         {
             use std::io::BufRead;
             crossterm::terminal::enable_raw_mode().unwrap();
+            // Send the escape sequence
             std::io::stdout().write_all(b"\x1b[>c").unwrap();
+            // Flush the output
             std::io::stdout().flush().unwrap();
+            // Wait some time then try to get the result
             std::thread::sleep(std::time::Duration::from_millis(100));
             let (st, rt) = std::sync::mpsc::channel::<String>();
+            // Spawn a thread to read the input
             std::thread::spawn(move || {
                 let mut buffer = Vec::new();
                 std::io::stdin()
@@ -43,19 +47,31 @@ pub fn get_terminal_protocol() -> Protocol {
                     .unwrap();
                 st.send(String::from_utf8(buffer).unwrap()).unwrap();
             });
+            // try to get the result
             let p = match rt.recv_timeout(std::time::Duration::from_millis(100)) {
                 Ok(s) => {
-                    let s = s.chars().skip(3).take_while(|&c| c != 'c').collect::<String>();
+                    // The result should be "ESC [ > Ps ; Pv ; Pc c"
+                    // So we skip to '>' then skip one again
+                    // and take all characters before 'c'
+                    let s = s.chars().skip_while(|&c| c == '>').skip(1).take_while(|&c| c != 'c').collect::<String>();
+                    // return the normal if we don't get anything
+                    if s.is_empty() {
+                        return Protocol::Normal;
+                    }
+                    // Parse the args
                     let args = s.split(";").collect::<Vec<&str>>();
+                    // The Pc was ignored if the args length is 2
+                    // We need Pc argument to determine whether we should use sixel or not
                     if args.len() <= 2 {
                         Protocol::Normal
-                    } else if args.last().unwrap().parse::<u8>().unwrap_or(0) & 1 == 1 {
+                    } else if args.last().unwrap().trim().parse::<u8>().unwrap_or(0) & 1 == 1 {
                         Protocol::Sixel
                     } else {
                         Protocol::Normal
                     }
                 }
                 Err(_) => {
+                    // return normal if we cannot get the result
                     Protocol::Normal
                 }
             };
