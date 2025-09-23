@@ -7,6 +7,8 @@ use image::{imageops::FilterType, GenericImageView};
 pub struct ImageProcessorOptions {
     pub full: bool,
     pub center: bool,
+    #[cfg(feature = "sixel")]
+    pub dither: bool,
     pub mode: DisplayMode,
     pub black_background: bool,
     pub resize_mode: ResizeMode,
@@ -158,6 +160,8 @@ impl ImageProcessor {
                 height: h,
                 line_init,
                 mode: self.option.mode,
+                #[cfg(feature = "sixel")]
+                dither: self.option.dither,
                 black_background: self.option.black_background,
                 enable_compression: self.option.enable_compression,
                 #[cfg(feature = "sixel")]

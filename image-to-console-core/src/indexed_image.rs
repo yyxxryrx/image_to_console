@@ -11,11 +11,11 @@ pub struct IndexedImage {
 }
 
 impl IndexedImage {
-    pub fn from_image(img: &image::RgbImage, max_colors: u16) -> Result<Self, AboveMaxLen<u32>> {
+    pub fn from_image(img: &image::RgbImage, max_colors: u16, dither: bool) -> Result<Self, AboveMaxLen<u32>> {
         let (width, height) = img.dimensions();
         let (palette, index_data) = quantette::ImagePipeline::try_from(img)?
             .palette_size(quantette::PaletteSize::from_clamped(max_colors))
-            .dither(true)
+            .dither(dither)
             .colorspace(quantette::ColorSpace::Srgb)
             .quantize_method(quantette::QuantizeMethod::wu())
             .indexed_palette_par();

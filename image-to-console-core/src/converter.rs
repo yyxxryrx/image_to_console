@@ -91,6 +91,8 @@ const NO_COLOR_PIXELS: [NoColorPixel; 5] = [
 pub struct ImageConverterOption {
     pub width: u32,
     pub height: u32,
+    #[cfg(feature = "sixel")]
+    pub dither: bool,
     pub line_init: String,
     pub mode: DisplayMode,
     pub black_background: bool,
@@ -503,7 +505,7 @@ impl ImageConverter {
         let is_full = self.full;
 
         let img = self.img.rgb().unwrap();
-        let img = IndexedImage::from_image(img, self.option.max_colors).unwrap();
+        let img = IndexedImage::from_image(img, self.option.max_colors, self.option.dither).unwrap();
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
         let palette_count = img.palette.len();
         let (width, height) = (img.width, img.height);
