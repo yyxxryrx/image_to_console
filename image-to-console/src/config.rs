@@ -39,7 +39,7 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 pub struct Cli {
     #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
     pub center: bool,
-    #[clap(long, help="Clear the screen", default_value_t = false)]
+    #[clap(long, help = "Clear the screen", default_value_t = false)]
     pub clear: bool,
     #[clap(long, help = "Pause at the end", default_value_t = false)]
     pub pause: bool,
@@ -52,11 +52,7 @@ pub struct Cli {
     pub show_time: bool,
     #[clap(short, long, help = "Output file path")]
     pub output: Option<String>,
-    #[clap(
-        long,
-        help = "Operates at half resolution",
-        default_value_t = false
-    )]
+    #[clap(long, help = "Operates at half resolution", default_value_t = false)]
     pub half_resolution: bool,
     #[clap(long, help = "Disable the print", default_value_t = false)]
     pub disable_print: bool,
@@ -109,6 +105,13 @@ pub struct Cli {
         default_value_t = false
     )]
     pub enable_compression: bool,
+    #[cfg(feature = "sixel_support")]
+    #[clap(
+        long,
+        help = "Disable dither (Only run in normal protocol)",
+        default_value_t = false
+    )]
+    pub disable_dither: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -217,6 +220,8 @@ impl Default for Cli {
             }),
             #[cfg(feature = "sixel_support")]
             max_colors: 256,
+            #[cfg(feature = "sixel_support")]
+            disable_dither: false,
         }
     }
 }
@@ -235,10 +240,12 @@ pub struct Config {
     pub mode: DisplayMode,
     pub disable_info: bool,
     pub disable_print: bool,
+    #[cfg(feature = "sixel_support")]
+    pub disable_dither: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
     #[cfg(feature = "rodio")]
-    pub audio: Option<String>,
+    pub audio: AudioPath,
     pub black_background: bool,
     pub output: Option<String>,
     pub resize_mode: ResizeMode,
@@ -279,12 +286,42 @@ impl RunMode {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum AudioPath {
+    #[cfg(feature = "rodio")]
+    Temp(std::path::PathBuf),
+    #[cfg(feature = "rodio")]
+    Custom(std::path::PathBuf),
+    None,
+}
+
+impl Default for AudioPath {
+    fn default() -> Self {
+        Self::None
+    }
+}
+#[allow(unused)]
+impl AudioPath {
+    #[cfg(feature = "rodio")]
+    pub fn get_path(&self) -> Option<std::path::PathBuf> {
+        match self {
+            AudioPath::Temp(path) => Some(path.clone()),
+            AudioPath::Custom(path) => Some(path.clone()),
+            AudioPath::None => None,
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self, AudioPath::None)
+    }
+}
+
 pub fn parse() -> RunMode {
     let cli = Cli::parse();
     let resize_mode = ResizeMode::from_cli(&cli);
     let output_base = cli.output.clone();
     #[allow(unused)]
-    let builder = |img, file_name, show_file_name, fps, loop_play, audio: Option<String>| Config {
+    let builder = |img, file_name, show_file_name, fps, loop_play, audio: AudioPath| Config {
         fps,
         #[cfg(feature = "rodio")]
         audio,
@@ -311,6 +348,8 @@ pub fn parse() -> RunMode {
         ),
         #[cfg(feature = "sixel_support")]
         max_colors: cli.max_colors,
+        #[cfg(feature = "sixel_support")]
+        disable_dither: cli.disable_dither,
     };
     match cli.command {
         Commands::File(args) => {
@@ -328,7 +367,7 @@ pub fn parse() -> RunMode {
                 !args.hide_filename,
                 None,
                 false,
-                None,
+                AudioPath::None,
             )))
         }
         Commands::Directory(args) => {
@@ -382,13 +421,13 @@ pub fn parse() -> RunMode {
                                         ),
                                         fps: None,
                                         #[cfg(feature = "rodio")]
-                                        audio: None,
+                                        audio: AudioPath::None,
                                         resize_mode,
                                         pause: false,
                                         file_name: None,
                                         loop_play: false,
                                         show_time: false,
-                                        clear:  cli.clear,
+                                        clear: cli.clear,
                                         center: cli.center,
                                         disable_info: true,
                                         disable_print: true,
@@ -405,6 +444,8 @@ pub fn parse() -> RunMode {
                                         },
                                         #[cfg(feature = "sixel_support")]
                                         max_colors: cli.max_colors,
+                                        #[cfg(feature = "sixel_support")]
+                                        disable_dither: cli.disable_dither,
                                     }))
                                 }
                                 None => None,
@@ -460,9 +501,13 @@ pub fn parse() -> RunMode {
                             args.fps,
                             args.loop_play,
                             #[cfg(feature = "rodio")]
-                            args.audio,
+                            args.audio
+                                .and_then(|path| {
+                                    Some(AudioPath::Custom(Path::new(&path).to_path_buf()))
+                                })
+                                .unwrap_or_default(),
                             #[cfg(not(feature = "rodio"))]
-                            None,
+                            AudioPath::None,
                         )))
                     }
                     Err(err) => Once(Err(err.to_string())),
@@ -473,7 +518,14 @@ pub fn parse() -> RunMode {
         Commands::Base64(args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
+                    Ok(img) => Once(Ok(builder(
+                        Image(img),
+                        None,
+                        false,
+                        None,
+                        false,
+                        AudioPath::None,
+                    ))),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -483,7 +535,14 @@ pub fn parse() -> RunMode {
             let mut buffer = Vec::new();
             match std::io::stdin().lock().read_to_end(&mut buffer) {
                 Ok(_) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(builder(Image(img), None, false, None, false, None))),
+                    Ok(img) => Once(Ok(builder(
+                        Image(img),
+                        None,
+                        false,
+                        None,
+                        false,
+                        AudioPath::None,
+                    ))),
                     Err(e) => Once(Err(e.to_string())),
                 },
                 Err(e) => Once(Err(e.to_string())),
@@ -524,9 +583,14 @@ pub fn parse() -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => {
-                                Once(Ok(builder(Image(img), None, false, None, false, None)))
-                            }
+                            Ok(img) => Once(Ok(builder(
+                                Image(img),
+                                None,
+                                false,
+                                None,
+                                false,
+                                AudioPath::None,
+                            ))),
                             Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
                         }
                     } else {
@@ -544,22 +608,25 @@ pub fn parse() -> RunMode {
             std::thread::spawn(move || {
                 etx.send(Ok(Starting)).unwrap();
                 let audio_path = if args.audio.is_none() {
-                    // First, extract the audio to temp folder
-                    let path = Path::new(&args.path);
-                    let audio_path = std::env::temp_dir()
-                        .join(path.file_stem().unwrap().to_str().unwrap().to_owned() + "-tmp.aac");
-                    ez_ffmpeg::FfmpegContext::builder()
-                        .input(args.path.as_str())
-                        .output(audio_path.to_str().unwrap())
-                        .build()
-                        .unwrap()
-                        .start()
-                        .unwrap()
-                        .wait()
-                        .unwrap();
-                    audio_path
+                    let function = || {
+                        // First, extract the audio to temp folder
+                        let path = Path::new(&args.path);
+                        let audio_path = std::env::temp_dir().join(
+                            path.file_stem().unwrap().to_str().unwrap().to_owned() + "-tmp.aac",
+                        );
+                        ez_ffmpeg::FfmpegContext::builder()
+                            .input(args.path.as_str())
+                            .output(audio_path.to_str().unwrap())
+                            .build()?
+                            .start()?
+                            .wait()?;
+                        Ok::<std::path::PathBuf, ez_ffmpeg::error::Error>(audio_path)
+                    };
+                    function()
+                        .and_then(|path| Ok(AudioPath::Temp(path)))
+                        .unwrap_or_default()
                 } else {
-                    Path::new(&args.audio.unwrap()).to_path_buf()
+                    AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
                 };
                 // And then, extract the video
                 // We will to use ffmpeg-next lib to do this
@@ -597,7 +664,7 @@ pub fn parse() -> RunMode {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                            .and_then(|img| Some(DynamicImage::from(img)));
+                                        .and_then(|img| Some(DynamicImage::from(img)));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()
@@ -625,8 +692,8 @@ pub fn parse() -> RunMode {
                     }
                     vtx.send(Err(FrameError::EOF)).unwrap();
                 })
-                    .join()
-                    .unwrap();
+                .join()
+                .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(builder(
@@ -635,7 +702,7 @@ pub fn parse() -> RunMode {
                 false,
                 None,
                 false,
-                None,
+                AudioPath::None,
             )))
         }
     }

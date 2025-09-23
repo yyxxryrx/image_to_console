@@ -1,4 +1,9 @@
 use crate::color::{colors::TerminalColor, prelude::ToColoredText};
+#[cfg(all(
+    feature = "rodio",
+    any(feature = "video_player", feature = "gif_player")
+))]
+use crate::config::AudioPath;
 use crate::config::Config;
 #[cfg(feature = "gif_player")]
 use crate::types::Frame;
@@ -7,8 +12,6 @@ use image_to_console_core::processor::ImageProcessorResult;
 use std::fs::File;
 use std::io::Result;
 use std::io::Write;
-#[cfg(feature = "video_player")]
-use std::path::PathBuf;
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
 use std::thread::JoinHandle;
 
@@ -102,11 +105,11 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
-    let stream_handle = config.audio.clone().and_then(|_| {
+    let stream_handle = config.audio.get_path().and_then(|_| {
         Some(rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream"))
     });
     #[cfg(feature = "rodio")]
-    let audio = if let Some(audio_file) = config.audio {
+    let audio = if let AudioPath::Custom(audio_file) = config.audio {
         let file = std::io::BufReader::new(File::open(audio_file).unwrap());
         Some(rodio::play(stream_handle.as_ref().unwrap().mixer(), file).unwrap())
     } else {
@@ -199,16 +202,21 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: crossbeam_channel::Receiver<(String, usize)>,
-    audio_path: PathBuf,
+    audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,
     clear: bool,
 ) {
     // Load the audio if exists
+    #[cfg(feature = "rodio")]
     let stream_handle =
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-    let file = std::io::BufReader::new(File::open(audio_path).unwrap());
-    let sink = rodio::play(&stream_handle.mixer(), file).unwrap();
+    #[cfg(feature = "rodio")]
+    let file = audio_path
+        .get_path()
+        .and_then(|path| Some(std::io::BufReader::new(File::open(path).unwrap())));
+    #[cfg(feature = "rodio")]
+    let sink = file.and_then(|file| Some(rodio::play(&stream_handle.mixer(), file).unwrap()));
 
     // calculate the delay
     let start_time = std::time::Instant::now();
@@ -226,9 +234,9 @@ pub fn render_video(
         }
         let frame = frame.unwrap();
         let (frame, index) = frame;
-        // Create new thread and other works it takes about 700 µs(sixel mode is 840 µs) time, so we need to subtract it.
+        // Create new thread and other works it takes about 700 µs(sixel mode is 843 µs) time, so we need to subtract it.
         let d = std::time::Duration::from_micros(
-            (1_000_000f32 / delay).round() as u64 - if is_sixel { 840 } else { 700 },
+            (1_000_000f32 / delay).round() as u64 - if is_sixel { 843 } else { 700 },
         );
         let st2 = st.clone();
         let task = std::thread::spawn(move || {
@@ -253,6 +261,10 @@ pub fn render_video(
         }
     }
 
+    if clear {
+        print!("\x1bc");
+    }
+
     play_frame(vrx, fps, st, is_sixel, clear);
 
     for task in rt.iter() {
@@ -275,5 +287,10 @@ pub fn render_video(
     );
     // audio_task.join().unwrap();
     // quit the audio stream
+    #[cfg(feature = "rodio")]
     std::mem::forget(stream_handle);
+    #[cfg(feature = "rodio")]
+    if let AudioPath::Temp(path) = audio_path {
+        std::fs::remove_file(path).unwrap();
+    }
 }

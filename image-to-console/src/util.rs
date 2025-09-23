@@ -99,6 +99,8 @@ impl CreateIPFromConfig for ImageProcessor {
             mode: config.mode,
             center: config.center,
             full: config.full_resolution,
+            #[cfg(feature = "sixel_support")]
+            dither: !config.disable_dither,
             resize_mode: config.resize_mode,
             black_background: config.black_background,
             enable_compression: config.enable_compression,
