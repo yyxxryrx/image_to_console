@@ -1268,7 +1268,7 @@ dependencies = [
 
 [[package]]
 name = "image_to_console"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "base64",
  "clap",
@@ -1293,7 +1293,7 @@ version = "0.1.2"
 
 [[package]]
 name = "image_to_console_core"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "base64",
  "gif",
