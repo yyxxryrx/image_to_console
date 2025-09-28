@@ -36,7 +36,7 @@
 | 特性            | 依赖                                                        | 描述              | 是否默认启用                              |
 |---------------|-----------------------------------------------------------|-----------------|-------------------------------------|
 | reqwest       | reqwest                                                   | HTTP 请求库        | <span style="color: green">✓</span> |
-| rodio         | rodio                                                     | 音频库             | <span style="color: red">✗</span>   |
+| audio_support | rodio                                                     | 播放音频支持          | <span style="color: red">✗</span>   |
 | crossterm     | crossterm                                                 | 终端库             | <span style="color: green">✓</span> |
 | gif_player    | gif, rodio, crossbeam-channel                             | 在终端播放 GIF 动画    | <span style="color: green">✓</span> |
 | video_player  | rodio, ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频         | <span style="color: red">✗</span>   |
