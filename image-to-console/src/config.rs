@@ -1,4 +1,3 @@
-use crate::util::{CreateMDFromBool, CreateRMFromCli};
 use crate::{
     config::RunMode::*,
     const_value::IMAGE_EXTS,
@@ -7,6 +6,7 @@ use crate::{
         ImageType::{self, Image},
         Protocol,
     },
+    util::CreateMDFromBool
 };
 use base64::Engine;
 use clap::{
@@ -23,6 +23,7 @@ use image_to_console_core::{DisplayMode, ResizeMode};
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use std::io::Read;
 use std::path::Path;
+use image_to_console_renderer::audio_path::AudioPath;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -164,7 +165,7 @@ pub struct GifArgs {
     pub fps: Option<u64>,
     #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
     pub loop_play: bool,
-    #[cfg(feature = "rodio")]
+    #[cfg(feature = "audio_support")]
     #[clap(long, help = "Audio file path")]
     pub audio: Option<String>,
     #[clap(help = "Gif file path")]
@@ -244,7 +245,7 @@ pub struct Config {
     pub disable_dither: bool,
     pub show_file_name: bool,
     pub full_resolution: bool,
-    #[cfg(feature = "rodio")]
+    #[cfg(feature = "audio_support")]
     pub audio: AudioPath,
     pub black_background: bool,
     pub output: Option<String>,
@@ -286,44 +287,14 @@ impl RunMode {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum AudioPath {
-    #[cfg(feature = "rodio")]
-    Temp(std::path::PathBuf),
-    #[cfg(feature = "rodio")]
-    Custom(std::path::PathBuf),
-    None,
-}
-
-impl Default for AudioPath {
-    fn default() -> Self {
-        Self::None
-    }
-}
-#[allow(unused)]
-impl AudioPath {
-    #[cfg(feature = "rodio")]
-    pub fn get_path(&self) -> Option<std::path::PathBuf> {
-        match self {
-            AudioPath::Temp(path) => Some(path.clone()),
-            AudioPath::Custom(path) => Some(path.clone()),
-            AudioPath::None => None,
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        matches!(self, AudioPath::None)
-    }
-}
-
 pub fn parse() -> RunMode {
     let cli = Cli::parse();
-    let resize_mode = ResizeMode::from_cli(&cli);
+    let resize_mode = ResizeMode::from(&cli);
     let output_base = cli.output.clone();
     #[allow(unused)]
     let builder = |img, file_name, show_file_name, fps, loop_play, audio: AudioPath| Config {
         fps,
-        #[cfg(feature = "rodio")]
+        #[cfg(feature = "audio_support")]
         audio,
         file_name,
         loop_play,
@@ -420,7 +391,7 @@ pub fn parse() -> RunMode {
                                             cli.protocol,
                                         ),
                                         fps: None,
-                                        #[cfg(feature = "rodio")]
+                                        #[cfg(feature = "audio_support")]
                                         audio: AudioPath::None,
                                         resize_mode,
                                         pause: false,
@@ -500,13 +471,13 @@ pub fn parse() -> RunMode {
                             false,
                             args.fps,
                             args.loop_play,
-                            #[cfg(feature = "rodio")]
+                            #[cfg(feature = "audio_support")]
                             args.audio
                                 .and_then(|path| {
                                     Some(AudioPath::Custom(Path::new(&path).to_path_buf()))
                                 })
                                 .unwrap_or_default(),
-                            #[cfg(not(feature = "rodio"))]
+                            #[cfg(not(feature = "audio_support"))]
                             AudioPath::None,
                         )))
                     }
@@ -607,6 +578,7 @@ pub fn parse() -> RunMode {
             // decode the audio and video in another thread
             std::thread::spawn(move || {
                 etx.send(Ok(Starting)).unwrap();
+                #[cfg(feature = "audio_support")]
                 let audio_path = if args.audio.is_none() {
                     let function = || {
                         // First, extract the audio to temp folder
@@ -648,6 +620,10 @@ pub fn parse() -> RunMode {
                 let (vtx, vrx) = bounded(video.frame_rate().ceil() as usize);
 
                 // tell the channel
+                #[cfg(not(feature = "audio_support"))]
+                etx.send(Ok(Initialized((vrx, video.frame_rate()))))
+                    .unwrap();
+                #[cfg(feature = "audio_support")]
                 etx.send(Ok(Initialized((vrx, audio_path, video.frame_rate()))))
                     .unwrap();
                 std::thread::spawn(move || {

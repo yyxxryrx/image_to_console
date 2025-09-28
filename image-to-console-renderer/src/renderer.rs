@@ -1,19 +1,24 @@
-use crate::color::{colors::TerminalColor, prelude::ToColoredText};
+use image_to_console_colored::{colors::TerminalColor, prelude::ToColoredText};
 #[cfg(all(
     feature = "rodio",
     any(feature = "video_player", feature = "gif_player")
 ))]
-use crate::config::AudioPath;
+use crate::audio_path::AudioPath;
 use crate::config::Config;
 #[cfg(feature = "gif_player")]
-use crate::types::Frame;
-use crate::util::get_char;
+use crate::frame::Frame;
 use image_to_console_core::processor::ImageProcessorResult;
 use std::fs::File;
-use std::io::Result;
+use std::io::{Read, Result};
 use std::io::Write;
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
 use std::thread::JoinHandle;
+
+pub fn get_char() -> char {
+    let mut buf = vec![0; 1];
+    std::io::stdin().lock().read_exact(&mut buf).unwrap();
+    buf[0] as char
+}
 
 pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     let output = result.lines.join("\n");
@@ -65,8 +70,10 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
                 .to_string()
                 .to_colored_text()
                 .set_foreground_color(TerminalColor::Yellow),
-            config
-                .no_color
+            result
+                .option
+                .mode
+                .is_luma()
                 .to_string()
                 .to_colored_text()
                 .set_foreground_color(TerminalColor::Yellow),
@@ -202,6 +209,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: crossbeam_channel::Receiver<(String, usize)>,
+    #[cfg(feature = "rodio")]
     audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,

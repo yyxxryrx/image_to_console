@@ -1,7 +1,7 @@
 [package]
 name = "image_to_console"
 version = "0.1.15"
-edition = "2021"
+edition = "2024"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
 
@@ -16,9 +16,10 @@ categories = ["command-line-utilities", "development-tools", "multimedia::images
 
 [features]
 default = ["reqwest", "gif_player", "sixel_support", "crossterm"]
-video_player = ["ndarray", "video-rs", "ez-ffmpeg", "rodio", "crossbeam-channel"]
-gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel"]
+video_player = ["ndarray", "video-rs", "ez-ffmpeg", "crossbeam-channel", "image_to_console_renderer/video_player"]
+gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel", "image_to_console_renderer/gif_player"]
 sixel_support = ["image_to_console_core/sixel"]
+audio_support = ["image_to_console_renderer/rodio"]
 
 [dependencies]
 rayon = "1.11.0"
@@ -33,10 +34,6 @@ version = "0.13.3"
 [dependencies.clap]
 version = "4.5.20"
 features = ["derive"]
-
-[dependencies.rodio]
-optional = true
-version = "0.21.1"
 
 [dependencies.reqwest]
 optional = true
@@ -66,3 +63,9 @@ version = "0.5.15"
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"
+
+[dependencies.image_to_console_colored]
+path = "../image-to-console-colored"
+
+[dependencies.image_to_console_renderer]
+path = "../image-to-console-renderer"

@@ -77,20 +77,6 @@ impl ValueEnum for ClapResizeMode {
     }
 }
 
-#[cfg(feature = "gif_player")]
-#[derive(Clone)]
-pub struct Frame {
-    pub index: usize,
-    pub frame: String,
-    pub delay: u64,
-}
-#[cfg(feature = "gif_player")]
-impl Frame {
-    pub fn unpacking(&self) -> (&str, usize, u64) {
-        (&self.frame, self.index, self.delay)
-    }
-}
-
 /// The event type to of video parser
 #[cfg(feature = "video_player")]
 #[derive(Debug, Clone)]
@@ -99,7 +85,10 @@ pub enum VideoEvent {
     /// The first one is the receiver of the video data
     ///
     /// The last one is the frame rate.
-    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, crate::config::AudioPath, f32)),
+    #[cfg(not(feature = "audio_support"))]
+    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, f32)),
+    #[cfg(feature = "audio_support")]
+    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, image_to_console_renderer::audio_path::AudioPath, f32)),
     Finished,
 }
 

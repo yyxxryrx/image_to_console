@@ -1,9 +1,7 @@
 extern crate core;
 
-mod color;
 mod config;
 mod const_value;
-mod display;
 mod runner;
 mod types;
 mod util;

@@ -1,4 +1,4 @@
-use crate::color::colors::TerminalColor;
+use crate::colors::TerminalColor;
 
 pub struct TextHeader {
     foreground_color: Option<String>,

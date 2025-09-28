@@ -1,4 +1,4 @@
-use crate::color::shaders::Text;
+use crate::shaders::Text;
 
 pub trait ToColoredText {
     fn to_colored_text(&self) -> Text;

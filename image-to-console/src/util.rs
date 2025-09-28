@@ -3,13 +3,8 @@ use crate::types::ImageType::{Image, Path};
 use crate::types::{ClapResizeMode, Protocol};
 use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
 use image_to_console_core::{AutoResizeOption, CustomResizeOption, DisplayMode, ResizeMode};
-use std::io::{Read, Write};
+use std::io::Write;
 
-pub fn get_char() -> char {
-    let mut buf = vec![0; 1];
-    std::io::stdin().lock().read_exact(&mut buf).unwrap();
-    buf[0] as char
-}
 
 pub fn get_terminal_protocol() -> Protocol {
     let term_program = std::env::var("TERM_PROGRAM")
@@ -119,12 +114,8 @@ impl CreateIPFromConfig for ImageProcessor {
     }
 }
 
-pub trait CreateRMFromCli {
-    fn from_cli(cli: &Cli) -> Self;
-}
-
-impl CreateRMFromCli for ResizeMode {
-    fn from_cli(cli: &Cli) -> Self {
+impl From<&Cli> for ResizeMode {
+    fn from(cli: &Cli) -> Self {
         match cli.resize_mode {
             ClapResizeMode::Auto => Self::Auto(AutoResizeOption {
                 width: !(cli.without_resize_width || cli.no_resize),
@@ -170,6 +161,48 @@ impl CreateMDFromBool for DisplayMode {
                 true => Self::SixelFull,
                 false => Self::SixelHalf,
             },
+        }
+    }
+}
+
+impl From<Config> for image_to_console_renderer::config::Config {
+    fn from(config: Config) -> Self {
+        Self {
+            fps: config.fps,
+            clear: config.clear,
+            pause: config.pause,
+            center: config.center,
+            output: config.output,
+            file_name: config.file_name,
+            show_time: config.show_time,
+            disable_info: config.disable_info,
+            disable_print: config.disable_print,
+            show_file_name: config.show_file_name,
+            #[cfg(feature = "audio_support")]
+            audio: config.audio,
+            #[cfg(feature = "sixel_support")]
+            mode: config.mode,
+        }
+    }
+}
+
+impl From<&Config> for image_to_console_renderer::config::Config {
+    fn from(config: &Config) -> Self {
+        Self {
+            fps: config.fps,
+            clear: config.clear,
+            pause: config.pause,
+            center: config.center,
+            show_time: config.show_time,
+            output: config.output.clone(),
+            disable_info: config.disable_info,
+            file_name: config.file_name.clone(),
+            disable_print: config.disable_print,
+            show_file_name: config.show_file_name,
+            #[cfg(feature = "audio_support")]
+            audio: config.audio.clone(),
+            #[cfg(feature = "sixel_support")]
+            mode: config.mode,
         }
     }
 }

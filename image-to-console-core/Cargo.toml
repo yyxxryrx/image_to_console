@@ -1,7 +1,7 @@
 [package]
 name = "image_to_console_core"
 version = "0.1.16"
-edition = "2021"
+edition = "2024"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
 

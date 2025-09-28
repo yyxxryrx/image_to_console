@@ -1277,14 +1277,19 @@ dependencies = [
  "ez-ffmpeg",
  "gif",
  "image",
+ "image_to_console_colored",
  "image_to_console_core",
+ "image_to_console_renderer",
  "indicatif",
  "ndarray",
  "rayon",
  "reqwest",
- "rodio",
  "video-rs",
 ]
+
+[[package]]
+name = "image_to_console_colored"
+version = "0.1.2"
 
 [[package]]
 name = "image_to_console_core"
@@ -1298,6 +1303,16 @@ dependencies = [
  "quantette",
  "rayon",
  "terminal_size",
+]
+
+[[package]]
+name = "image_to_console_renderer"
+version = "0.1.15"
+dependencies = [
+ "crossbeam-channel",
+ "image_to_console_colored",
+ "image_to_console_core",
+ "rodio",
 ]
 
 [[package]]

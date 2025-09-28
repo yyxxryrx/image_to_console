@@ -1,5 +1,5 @@
 [workspace]
-members = ["image-to-console", "image-to-console-core"]
+members = ["image-to-console", "image-to-console-core", "image-to-console-colored", "image-to-console-renderer"]
 resolver = "2"
 
 [profile.release]

@@ -58,6 +58,10 @@ impl DisplayMode {
             Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
         )
     }
+    
+    pub fn is_luma(&self) -> bool {
+        !self.is_color()
+    }
 
     pub fn is_normal(&self) -> bool {
         matches!(

@@ -1,0 +1,25 @@
+[package]
+name = "image_to_console_renderer"
+version = "0.1.15"
+edition = "2024"
+
+[lib]
+name = "image_to_console_renderer"
+crate-type = ["lib"]
+
+[features]
+gif_player = ["crossbeam-channel"]
+video_player = ["crossbeam-channel"]
+sixel_support = ["image_to_console_core/sixel"]
+
+[dependencies]
+image_to_console_core = { path = "../image-to-console-core" }
+image_to_console_colored = { path = "../image-to-console-colored" }
+
+[dependencies.rodio]
+optional = true
+version = "0.21.1"
+
+[dependencies.crossbeam-channel]
+optional = true
+version = "0.5.15"

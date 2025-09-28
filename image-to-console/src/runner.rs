@@ -1,7 +1,7 @@
-use crate::color::colors::TerminalColor;
-use crate::color::prelude::ToColoredText;
+use image_to_console_colored::colors::TerminalColor;
+use image_to_console_colored::prelude::ToColoredText;
 use crate::config::Config;
-use crate::display::renderer::{render};
+use image_to_console_renderer::renderer::{render};
 use crate::util::CreateIPFromConfig;
 use image_to_console_core::processor::ImageProcessor;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -27,7 +27,7 @@ pub fn run(config: Result<Config, String>) {
         Ok(config) => match ImageProcessor::from_config(&config) {
             Ok(mut image_processor) => {
                 let result = image_processor.process();
-                if let Err(e) = render(result, config) {
+                if let Err(e) = render(result,image_to_console_renderer::config::Config::from(&config) ) {
                     eprintln!(
                         "{}: {}",
                         "error"
@@ -57,8 +57,8 @@ pub fn run_video(config: Result<Config, String>) {
             match config.image {
                 #[cfg(feature = "gif_player")]
                 ImageType::Gif(gif) => {
-                    use crate::types::Frame;
-                    use crate::display::renderer::render_gif;
+                    use image_to_console_renderer::frame::Frame;
+                    use image_to_console_renderer::renderer::render_gif;
                     let (st, rt) = bounded::<Frame>(config_clone.fps.unwrap_or(30) as _);
                     // Process the evey frame image
                     let task = std::thread::spawn(move || {
@@ -87,12 +87,12 @@ pub fn run_video(config: Result<Config, String>) {
                             }
                         }
                     });
-                    render_gif(rt, config_clone2);
+                    render_gif(rt, image_to_console_renderer::config::Config::from(config_clone2));
                     task.join().unwrap();
                 }
                 #[cfg(feature = "video_player")]
                 ImageType::Video(video_event) => {
-                    use crate::display::renderer::render_video;
+                    use image_to_console_renderer::renderer::render_video;
                     use crate::types::VideoEvent::*;
                     use crate::errors::FrameError::*;
                     for event in video_event {
@@ -101,7 +101,11 @@ pub fn run_video(config: Result<Config, String>) {
                                 Starting => {
                                     println!("正在初始化中...");
                                 }
-                                Initialized((vrx, audio_path, fps)) => {
+                                Initialized(args) => {
+                                    #[cfg(not(feature = "audio_support"))]
+                                    let (vrx, fps) = args;
+                                    #[cfg(feature = "audio_support")]
+                                    let (vrx, audio_path, fps) = args;
                                     let (st, rt) = bounded(10);
                                     let config_clone = config_clone.clone();
                                     let task = std::thread::spawn(move || loop {
@@ -140,10 +144,14 @@ pub fn run_video(config: Result<Config, String>) {
                                         }
                                     });
                                     let render_task = std::thread::spawn(move || {
-                                        #[cfg(feature = "sixel_support")]
+                                        #[cfg(all(feature = "sixel_support", feature = "audio_support"))]
                                         render_video(rt, audio_path, fps, config.mode.is_sixel(), config.clear);
-                                        #[cfg(not(feature = "sixel_support"))]
+                                        #[cfg(all(not(feature = "sixel_support"), feature = "audio_support"))]
                                         render_video(rt, audio_path, fps, false, config.clear);
+                                        #[cfg(all(feature = "sixel_support", not(feature = "audio_support")))]
+                                        render_video(rt, fps, config.mode.is_sixel(), config.clear);
+                                        #[cfg(all(not(feature = "sixel_support"), not(feature = "audio_support")))]
+                                        render_video(rt, fps, false, config.clear);
                                     });
                                     task.join().unwrap();
                                     render_task.join().unwrap();
