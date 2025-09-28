@@ -450,6 +450,50 @@ impl ImageConverter {
         use nohash_hasher::BuildNoHashHasher;
         use std::collections::HashMap;
 
+        // tool enum
+        #[derive(Copy, Clone)]
+        pub enum ColorIndexState {
+            First(u8),
+            Same(u8),
+            None
+        }
+
+        impl Default for ColorIndexState {
+            fn default() -> Self {
+                Self::None
+            }
+        }
+
+        impl From<ColorIndexState> for Option<u8> {
+            fn from(state: ColorIndexState) -> Self {
+                match state {
+                    ColorIndexState::First(index) => Some(index),
+                    ColorIndexState::Same(_) => None,
+                    ColorIndexState::None => None
+                }
+            }
+        }
+
+        impl PartialEq<u8> for ColorIndexState {
+            fn eq(&self, other: &u8) -> bool {
+                match self {
+                    ColorIndexState::First(index) => index == other,
+                    ColorIndexState::Same(index) => index == other,
+                    ColorIndexState::None => false
+                }
+            }
+        }
+
+        impl ColorIndexState {
+            pub fn update_index(&self, index: u8) -> Self {
+                if *self == index {
+                    Self::Same(index)
+                } else {
+                    Self::First(index)
+                }
+            }
+        }
+
         // Some tool functions
         fn get_sixel(style: &[u8; 6]) -> String {
             let mut v = 0u8;
@@ -522,17 +566,17 @@ impl ImageConverter {
                     (0..width).map(|i| (i, (0, 0))).collect();
                 let mut col_indexs: Vec<[i16; 6]> = vec![[-1; 6]; width as usize];
                 let mut col_index_counter = vec![0usize; palette_count];
+                let mut same_index = ColorIndexState::default();
                 while col.len() > 0 {
                     line.push((None, "$".to_string()));
                     let mut skip_count = 0;
                     let mut same_count = 0;
-                    let mut same_index = 0;
                     let mut same_style = [0u8; 6];
                     (0..width).for_each(|x| {
                         if !col.contains_key(&x) {
                             if same_count > 0 {
                                 line.push(render_same(
-                                    Some(same_index),
+                                    Option::from(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
@@ -594,7 +638,7 @@ impl ImageConverter {
                             // And update this color and style to the same style and color
                             if same_count > 0 {
                                 line.push(render_same(
-                                    Some(same_index),
+                                    Option::from(same_index),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
@@ -604,7 +648,7 @@ impl ImageConverter {
                             // Set the counter to 1
                             same_count = 1;
                             // update other information
-                            same_index = cur_index;
+                            same_index = same_index.update_index(cur_index);
                             same_style = style;
                         }
                     });
@@ -613,7 +657,7 @@ impl ImageConverter {
                     // write into this line if the counter is not zero
                     if same_count > 0 {
                         line.push(render_same(
-                            Some(same_index),
+                            Option::from(same_index),
                             same_count,
                             &get_sixel(&same_style),
                             is_full,
