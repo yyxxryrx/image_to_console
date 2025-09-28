@@ -18,7 +18,7 @@ categories = ["command-line-utilities", "development-tools", "multimedia::images
 default = ["reqwest", "gif_player", "sixel_support", "crossterm"]
 video_player = ["ndarray", "video-rs", "ez-ffmpeg", "crossbeam-channel", "image_to_console_renderer/video_player"]
 gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel", "image_to_console_renderer/gif_player"]
-sixel_support = ["image_to_console_core/sixel"]
+sixel_support = ["image_to_console_core/sixel", "image_to_console_renderer/sixel_support"]
 audio_support = ["image_to_console_renderer/rodio"]
 
 [dependencies]
