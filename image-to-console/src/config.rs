@@ -357,8 +357,8 @@ pub fn parse() -> RunMode {
             Once(Ok(Config::from_cli(
                 &cli,
                 Image(img),
-                Some(path.file_name().unwrap().to_string_lossy().to_string()),
                 None,
+                Some(path.file_name().unwrap().to_string_lossy().to_string()),
                 !args.hide_filename,
                 None,
                 false,
