@@ -87,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI support for video builds: added `libavcodec-dev`, `libavformat-dev`, `libavutil-dev` on Ubuntu; `ffmpeg` on macOS via Homebrew; `ffmpeg` via vcpkg on Windows.
 
 ### Refactor
-- Restructured project into workspace: `image-to-console` (CLI) and `image_to_console-core` (library).
+- Restructured project into workspace: `image-to-console` (CLI) and `image-to-console-core` (library).
 
 ### Performance
 - Multi-threaded GIF frame processing using `crossbeam-channel`.
