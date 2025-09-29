@@ -9,18 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.16] - 2025-09-29
 
+### Added
+
+- Support center display mode in **Wezterm protocol**
+- **Sixel protocol** can dithering control (`--disable-dither`),
+- **Clear screen control** with `--clear` flag before/after rendering.
+- Support for loading images from **standard input** via `image_to_console bytes`.
+- **Auto terminal protocol detection** via new `--protocol auto` option using `crossterm`.
+- **Output compression** with `--enable-compression` to reduce redundant ANSI sequences.
+- Introduced `AudioPath` enum for robust audio file handling (temporary/custom paths with auto-cleanup).
+
 ### Changed
+
+- Replaced `Option<String>` audio path with `AudioPath` enum.
 - Renamed feature `rodio` to `audio_support` across the codebase and documentation.
 - Updated `image_to_console` from `0.1.15` → `0.1.16`.
 - Updated `image_to_console_core` from `0.1.16` → `0.1.17`.
 
 ### Fixed
+- Fixed character rendering logic in non-full modes.
+- Removed redundant `\x1b` in ANSI escape sequences.
 - Fixed missing `sixel_support` feature dependency in `image-to-console-renderer`.
+- Corrected `DisplayMode::is_full()` to properly recognize `SixelFull` as full-resolution.
 
 ### Refactor
 - Refactored configuration parsing logic: extracted `Config` building into `from_cli`, added `Clone` to CLI structs, unified path handling.
 - Replaced raw `u8` color index with `ColorIndexState` enum for safer state management.
 - Split rendering logic into dedicated crates: `image-to-console-renderer` and `image-to-console-colored`.
+-  Improved GIF/video player with on-demand audio loading.
 - Upgraded project to Rust 2024 edition.
 
 ---
@@ -28,28 +44,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.15] - 2025-09-15
 
 ### Added
-- Full **Sixel protocol support**, including dithering control (`--disable-dither`), quantization, and indexed image rendering.
-- **Auto terminal protocol detection** via new `--protocol auto` option using `crossterm`.
-- Support for loading images from **standard input** via `image_to_console bytes`.
-- **Output compression** with `--enable-compression` to reduce redundant ANSI sequences.
-- **Clear screen control** with `--clear` flag before/after rendering.
-- Introduced `AudioPath` enum for robust audio file handling (temporary/custom paths with auto-cleanup).
+- **Sixel protocol support**, quantization, and indexed image rendering.
 
 ### Changed
 - Renamed CLI flag `--full-resolution` to `--half-resolution` (logic inverted for clarity).
-- Replaced `Option<String>` audio path with `AudioPath` enum.
 - Adjusted frame delay calculation in Sixel mode for better playback smoothness.
 
 ### Fixed
 - Fixed out-of-bounds access in Sixel rendering by using actual image dimensions.
-- Corrected `DisplayMode::is_full()` to properly recognize `SixelFull` as full-resolution.
-- Fixed character rendering logic in non-full modes.
-- Removed redundant `\x1b` in ANSI escape sequences.
 
 ### Refactor
-- Restructured project into workspace: `image-to-console` (CLI) and `image_to_console-core` (library).
 - Optimized color handling with usage counting and parallel pixel processing.
-- Improved GIF/video player with bounded channels and on-demand audio loading.
+- Improved GIF/video player with bounded channels
 
 ### Documentation
 - Updated README (EN & ZH) with Sixel, auto-detection, stdin, compression, and audio support details.
@@ -65,11 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Made `gif` dependency optional via feature flag.
-- Conditionally compiled video-related code under `cfg(feature = "video")`.
 
 ### Performance
 - Dynamically sized frame channel based on actual video FPS.
-- Multi-threaded GIF frame processing using `crossbeam-channel`.
 
 ### Documentation
 - Added FFmpeg installation instructions per OS.
@@ -82,8 +86,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CI support for video builds: added `libavcodec-dev`, `libavformat-dev`, `libavutil-dev` on Ubuntu; `ffmpeg` on macOS via Homebrew; `ffmpeg` via vcpkg on Windows.
 
+### Refactor
+- Restructured project into workspace: `image-to-console` (CLI) and `image_to_console-core` (library).
+
+### Performance
+- Multi-threaded GIF frame processing using `crossbeam-channel`.
+
 ### Changed
+
 - Simplified release workflow to upload a single asset variant.
+- Conditionally compiled video-related code under `cfg(feature = "video")`.
 
 ---
 
