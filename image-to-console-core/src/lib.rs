@@ -5,10 +5,11 @@ pub mod gif_processor;
 pub mod indexed_image;
 pub mod processor;
 
-#[allow(unused_imports)]
-use image::{DynamicImage, GrayImage, RgbImage, RgbaImage};
+#[cfg(feature = "sixel")]
+use image::RgbImage;
+use image::{DynamicImage, GrayImage, RgbaImage};
 
-#[allow(dead_code)]
+/// The protocol of dispaly
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DisplayMode {
     HalfColor,
@@ -26,13 +27,13 @@ pub enum DisplayMode {
     #[cfg(feature = "sixel")]
     SixelFull,
 }
-#[allow(dead_code)]
+
 impl Default for DisplayMode {
     fn default() -> Self {
         Self::HalfColor
     }
 }
-#[allow(dead_code)]
+
 impl DisplayMode {
     pub fn is_full(&self) -> bool {
         #[cfg(feature = "sixel")]
@@ -58,7 +59,7 @@ impl DisplayMode {
             Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
         )
     }
-    
+
     pub fn is_luma(&self) -> bool {
         !self.is_color()
     }
@@ -80,16 +81,15 @@ impl DisplayMode {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProcessedImage {
     Color(RgbaImage),
+    #[cfg(feature = "sixel")]
     Color2(RgbImage),
     NoColor(GrayImage),
     Both(RgbaImage, GrayImage),
 }
 
-#[allow(dead_code)]
 impl ProcessedImage {
     pub fn new(mode: DisplayMode, img: &DynamicImage) -> Self {
         match mode {
@@ -117,6 +117,7 @@ impl ProcessedImage {
         }
     }
 
+    #[cfg(feature = "sixel")]
     pub fn rgb(&self) -> Option<&RgbImage> {
         match self {
             Self::Color2(img) => Some(img),
@@ -160,11 +161,11 @@ pub struct CustomResizeOption {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ResizeMode {
-    // Resize with terminal size
+    /// Resize with terminal size
     Auto(AutoResizeOption),
-    // Resize with given size
+    /// Resize with given size
     Custom(CustomResizeOption),
-    // No resize
+    /// No resize
     None,
 }
 

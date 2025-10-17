@@ -1,6 +1,7 @@
-use quantette::palette::encoding::Srgb;
-use quantette::palette::rgb::Rgb;
-use quantette::AboveMaxLen;
+use quantette::{
+    AboveMaxLen,
+    palette::{encoding::Srgb, rgb::Rgb},
+};
 
 #[derive(Clone)]
 pub struct IndexedImage {
@@ -11,7 +12,11 @@ pub struct IndexedImage {
 }
 
 impl IndexedImage {
-    pub fn from_image(img: &image::RgbImage, max_colors: u16, dither: bool) -> Result<Self, AboveMaxLen<u32>> {
+    pub fn from_image(
+        img: &image::RgbImage,
+        max_colors: u16,
+        dither: bool,
+    ) -> Result<Self, AboveMaxLen<u32>> {
         let (width, height) = img.dimensions();
         let (palette, index_data) = quantette::ImagePipeline::try_from(img)?
             .palette_size(quantette::PaletteSize::from_clamped(max_colors))

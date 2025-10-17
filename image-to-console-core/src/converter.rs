@@ -2,11 +2,9 @@ use crate::{
     DisplayMode::{self, *},
     ProcessedImage,
 };
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
+use base64::{Engine, engine::general_purpose::STANDARD};
 use rayon::iter::*;
-use std::io::Cursor;
-use std::ops::Div;
+use std::{io::Cursor, ops::Div};
 
 #[derive(Copy, Clone)]
 struct PixelColor {
@@ -324,41 +322,6 @@ impl ImageConverter {
         }
     }
 
-    // Older conversion algorithms may be used in the future
-    #[allow(dead_code)]
-    fn no_color_convert_old(&self, x: u32, y: u32) -> String {
-        if let ProcessedImage::NoColor(luma_img) = &self.img {
-            let pixel1 = luma_img.get_pixel(x, y * 2);
-            let pixel2 = luma_img.get_pixel(x, y * 2 + 1);
-            let p1 = pixel1.0[0] as usize;
-            let p2 = pixel2.0[0] as usize;
-            if (153 < p1) && (p1 < 204) && (153 < p2) && (p2 < 204) {
-                return "▮".to_string();
-            } else if (153 < p1) && (p1 < 204) {
-                return "▘".to_string();
-            } else if (153 < p2) && (p2 < 204) {
-                return "▖".to_string();
-            }
-            if (102 < p1 || 102 < p2) && (p1 < 204 && p2 < 204) {
-                return "▪".to_string();
-            }
-            if (51 < p1 || 51 < p2) && (p1 < 204 && p2 < 204) {
-                return ".".to_string();
-            }
-            if p1 > 128 && p2 > 128 {
-                "█".to_string()
-            } else if p1 > 128 {
-                "▀".to_string()
-            } else if p2 > 128 {
-                "▄".to_string()
-            } else {
-                " ".to_string()
-            }
-        } else {
-            panic!("Invalid image type")
-        }
-    }
-
     fn get_image_data(&self) -> Vec<u8> {
         let mut buffer = Vec::new();
         let mut writer = Cursor::new(&mut buffer);
@@ -455,7 +418,7 @@ impl ImageConverter {
         pub enum ColorIndexState {
             First(u8),
             Same(u8),
-            None
+            None,
         }
 
         impl Default for ColorIndexState {
@@ -469,7 +432,7 @@ impl ImageConverter {
                 match state {
                     ColorIndexState::First(index) => Some(index),
                     ColorIndexState::Same(_) => None,
-                    ColorIndexState::None => None
+                    ColorIndexState::None => None,
                 }
             }
         }
@@ -479,7 +442,7 @@ impl ImageConverter {
                 match self {
                     ColorIndexState::First(index) => index == other,
                     ColorIndexState::Same(index) => index == other,
-                    ColorIndexState::None => false
+                    ColorIndexState::None => false,
                 }
             }
         }
@@ -549,7 +512,8 @@ impl ImageConverter {
         let is_full = self.full;
 
         let img = self.img.rgb().unwrap();
-        let img = IndexedImage::from_image(img, self.option.max_colors, self.option.dither).unwrap();
+        let img =
+            IndexedImage::from_image(img, self.option.max_colors, self.option.dither).unwrap();
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
         let palette_count = img.palette.len();
         let (width, height) = (img.width, img.height);

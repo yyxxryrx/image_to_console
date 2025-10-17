@@ -4,6 +4,10 @@ version = "0.1.17"
 edition = "2024"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
+description = "A Rust library for converting images to terminal ASCII art, supporting multiple image formats and terminal output methods"
+license = "MIT"
+keywords = ["image", "terminal", "conosle"]
+categories = ["multimedia::images"]
 
 [lib]
 name = "image_to_console_core"
@@ -16,14 +20,14 @@ sixel = ["quantette", "nohash-hasher"]
 rayon = "1.11.0"
 base64 = "0.22.1"
 num_cpus = "1.17.0"
-terminal_size = "0.4.0"
+terminal_size = "0.4.3"
 
 [dependencies.gif]
 optional = true
 version = "0.13.3"
 
 [dependencies.image]
-version = "0.25.4"
+version = "0.25.8"
 default-features = false
 features = ["png", "jpeg"]
 
