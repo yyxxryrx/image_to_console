@@ -1,15 +1,35 @@
 use gif::DisposalMethod;
 use image::{DynamicImage, ImageBuffer, Rgba};
 
+/// Processes GIF frames to create a coherent animation
+/// 
+/// This handles GIF frame disposal methods and maintains the correct frame state
+/// throughout the animation sequence.
 pub struct GifFrameProcessor {
+    /// Global color palette for the GIF
     global_palette: Option<Vec<u8>>,
+    /// Disposal method used for the last frame
     last_disposal: DisposalMethod,
+    /// Area (left, top, width, height) occupied by the last frame
     last_frame_area: (u32, u32, u32, u32),
+    /// Current canvas storing the accumulated image state
     canvas: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    /// Previous canvas state for DisposalMethod::Previous
     previous_canvas: Option<ImageBuffer<Rgba<u8>, Vec<u8>>>,
 }
 
 impl GifFrameProcessor {
+    /// Create a new GIF frame processor
+    /// 
+    /// # Arguments
+    /// 
+    /// * `width` - Width of the GIF canvas
+    /// * `height` - Height of the GIF canvas
+    /// * `global_palette` - Global color palette for the GIF
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a new GIF frame processor instance
     pub fn new(width: u32, height: u32, global_palette: Option<Vec<u8>>) -> Self {
         Self {
             global_palette,
@@ -20,6 +40,7 @@ impl GifFrameProcessor {
         }
     }
 
+    /// Clean the canvas according to the last frame's disposal method
     fn clean_canvas(&mut self) {
         match self.last_disposal {
             DisposalMethod::Background => {
@@ -41,6 +62,15 @@ impl GifFrameProcessor {
         }
     }
 
+    /// Process a GIF frame and return the resulting image
+    /// 
+    /// # Arguments
+    /// 
+    /// * `frame` - The GIF frame to process
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the processed frame as a DynamicImage
     pub fn process_frame(&mut self, frame: &gif::Frame) -> DynamicImage {
         self.clean_canvas();
         if frame.dispose == DisposalMethod::Previous {

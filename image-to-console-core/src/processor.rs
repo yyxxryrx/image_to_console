@@ -3,39 +3,81 @@ use crate::ResizeMode::{Auto, Custom, None};
 use crate::{DisplayMode, ProcessedImage, ResizeMode};
 use image::{imageops::FilterType, GenericImageView};
 
+/// Image processor options
+/// 
+/// Configures various parameters for image processing
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
+    /// Whether to use full height mode
     pub full: bool,
+    /// Whether to center the display
     pub center: bool,
+    /// Whether to enable dithering (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub dither: bool,
+    /// Display mode
     pub mode: DisplayMode,
+    /// Whether to use a black background
     pub black_background: bool,
+    /// Resize mode
     pub resize_mode: ResizeMode,
+    /// Whether to enable compression
     pub enable_compression: bool,
+    /// Maximum number of colors (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
 }
 
+/// Image processing result
+/// 
+/// Contains the processed image data and related information
 pub struct ImageProcessorResult {
+    /// Image width
     pub width: u32,
+    /// Image height
     pub height: u32,
+    /// Number of empty lines
     pub air_lines: usize,
+    /// Processed line data
     pub lines: Vec<String>,
+    /// Processing time
     pub time: std::time::SystemTime,
+    /// Processing options
     pub option: ImageProcessorOptions,
 }
 
+/// Image processor
+/// 
+/// Responsible for processing images into terminal-friendly formats
 pub struct ImageProcessor {
+    /// Image to be processed
     pub image: image::DynamicImage,
+    /// Processing options
     pub option: ImageProcessorOptions,
 }
 
 impl ImageProcessor {
+    /// Create a new image processor
+    /// 
+    /// # Arguments
+    /// 
+    /// * `image` - Image to be processed
+    /// * `option` - Processing options
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a new image processor instance
     pub fn new(image: image::DynamicImage, option: ImageProcessorOptions) -> Self {
         Self { image, option }
     }
 
+    /// Process the image
+    /// 
+    /// Processes the image according to configuration options and returns the result
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the processed result
     pub fn process(&mut self) -> ImageProcessorResult {
         let time = std::time::SystemTime::now();
         let mut air_line: usize = 0;

@@ -6,6 +6,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use rayon::iter::*;
 use std::{io::Cursor, ops::Div};
 
+/// Represents a pixel color with RGBA components
 #[derive(Copy, Clone)]
 struct PixelColor {
     r: u8,
@@ -15,6 +16,7 @@ struct PixelColor {
 }
 
 impl PixelColor {
+    /// Create a PixelColor from a channel array
     fn from_channels(channels: [u8; 4]) -> Self {
         Self {
             r: channels[0],
@@ -24,21 +26,30 @@ impl PixelColor {
         }
     }
 
+    /// Get the background color escape sequence
     fn bg(&self) -> String {
         format!("\x1b[48;2;{};{};{}m", self.r, self.g, self.b)
     }
 
+    /// Get the foreground color escape sequence
     fn fg(&self) -> String {
         format!("\x1b[38;2;{};{};{}m", self.r, self.g, self.b)
     }
 }
 
+/// Represents a no-color pixel with different display options
 struct NoColorPixel {
+    /// Top half character
     top: &'static str,
+    /// Full character
     full: &'static str,
+    /// Bottom half character
     bottom: &'static str,
+    /// Whether to separate top and bottom
     sep: bool,
+    /// Lower bound of intensity range
     from: usize,
+    /// Upper bound of intensity range
     to: usize,
 }
 
@@ -86,26 +97,49 @@ const NO_COLOR_PIXELS: [NoColorPixel; 5] = [
     },
 ];
 
+/// Options for the image converter
 pub struct ImageConverterOption {
+    /// Width of the image
     pub width: u32,
+    /// Height of the image
     pub height: u32,
+    /// Whether to enable dithering (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub dither: bool,
+    /// Initial line string
     pub line_init: String,
+    /// Display mode
     pub mode: DisplayMode,
+    /// Whether to use a black background
     pub black_background: bool,
+    /// Whether to enable compression
     pub enable_compression: bool,
+    /// Maximum number of colors (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
 }
 
+/// Converts images to terminal-friendly formats
 pub struct ImageConverter {
+    /// Whether to use full height mode
     full: bool,
+    /// Processed image
     img: ProcessedImage,
+    /// Converter options
     pub option: ImageConverterOption,
 }
 
 impl ImageConverter {
+    /// Create a new image converter
+    /// 
+    /// # Arguments
+    /// 
+    /// * `img` - Processed image to convert
+    /// * `option` - Converter options
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a new image converter instance
     pub fn new(img: ProcessedImage, option: ImageConverterOption) -> Self {
         Self {
             img,
@@ -114,6 +148,11 @@ impl ImageConverter {
         }
     }
 
+    /// Convert the image to terminal-friendly format
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of strings representing the converted image
     pub fn convert(&self) -> Vec<String> {
         match self.option.mode {
             Kitty | KittyNoColor => self.kitty_convert(),
@@ -176,6 +215,17 @@ impl ImageConverter {
         }
     }
 
+    /// Convert a pixel in half-height color mode
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - X coordinate
+    /// * `y` - Y coordinate
+    /// * `only_color` - Whether to return only the color information
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a string representing the converted pixel
     fn unfull_convert(&self, x: u32, y: u32, only_color: bool) -> String {
         if let ProcessedImage::Color(rgba_img) = &self.img {
             let pixel = rgba_img.get_pixel(x, y);
@@ -203,6 +253,17 @@ impl ImageConverter {
         }
     }
 
+    /// Convert a pixel in full-height color mode
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - X coordinate
+    /// * `y` - Y coordinate
+    /// * `only_color` - Whether to return only the color information
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a string representing the converted pixel
     fn full_convert(&self, x: u32, y: u32, only_color: bool) -> String {
         if let ProcessedImage::Both(rgba_img, luma_img) = &self.img {
             let pixel1 = rgba_img.get_pixel(x, y * 2);
@@ -269,6 +330,16 @@ impl ImageConverter {
         }
     }
 
+    /// Convert a single pixel at the bottom row in full mode
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - X coordinate
+    /// * `y` - Y coordinate
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a string representing the converted pixel
     fn full_convert_pixel(&self, x: u32, y: u32) -> String {
         if let ProcessedImage::Both(rgba_img, _) = &self.img {
             let pixel = rgba_img.get_pixel(x, y);
@@ -286,6 +357,16 @@ impl ImageConverter {
         }
     }
 
+    /// Convert pixels in no-color mode
+    /// 
+    /// # Arguments
+    /// 
+    /// * `x` - X coordinate
+    /// * `y` - Y coordinate
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a string representing the converted pixel
     fn no_color_convert(&self, x: u32, y: u32) -> String {
         if let ProcessedImage::NoColor(luma_img) = &self.img {
             let pixel1 = luma_img.get_pixel(x, y * 2);
@@ -322,6 +403,11 @@ impl ImageConverter {
         }
     }
 
+    /// Get image data as bytes
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of bytes representing the image data
     fn get_image_data(&self) -> Vec<u8> {
         let mut buffer = Vec::new();
         let mut writer = Cursor::new(&mut buffer);
@@ -341,6 +427,11 @@ impl ImageConverter {
         buffer
     }
 
+    /// Convert image using WezTerm protocol
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of strings representing the converted image
     fn wezterm_convert(&self) -> Vec<String> {
         let image_data = self.get_image_data();
         // Add space to prevent misalignment
@@ -369,6 +460,11 @@ impl ImageConverter {
         lines
     }
 
+    /// Convert image using Kitty protocol
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of strings representing the converted image
     fn kitty_convert(&self) -> Vec<String> {
         /// Base64 encodes 3 raw bytes → 4 ASCII bytes.
         ///
@@ -398,6 +494,11 @@ impl ImageConverter {
         vec![line]
     }
 
+    /// Convert image using ITerm2 protocol
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of strings representing the converted image
     fn iterm2_convert(&self) -> Vec<String> {
         let image_data = self.get_image_data();
         vec![format!(
@@ -407,6 +508,11 @@ impl ImageConverter {
         )]
     }
 
+    /// Convert image using Sixel protocol
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a vector of strings representing the converted image
     #[cfg(feature = "sixel")]
     fn sixel_convert(&self) -> Vec<String> {
         use crate::indexed_image::IndexedImage;
