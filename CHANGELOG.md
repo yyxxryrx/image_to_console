@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- Add test and docs for core library
+
+### Fixed
+- Fix the file name processing logic
+
 ## [0.1.16] - 2025-09-29
 
 ### Added
