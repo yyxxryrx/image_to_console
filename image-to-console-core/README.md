@@ -41,6 +41,7 @@ Basic usage example:
 ```rust
 use image_to_console_core::{DisplayMode, processor::{ImageProcessor, ImageProcessorOptions}};
 use image::error::ImageResult;
+
 fn main() -> ImageResult<()> {
     let img = image::open("path/to/image.png")?;
     let options = ImageProcessorOptions {
@@ -59,6 +60,20 @@ fn main() -> ImageResult<()> {
 
 - `sixel` - Enable Sixel graphics protocol support
 - `gif` - Enable GIF processing support
+
+## Dependencies
+
+| Crate                                                   | Version | License | Purpose                                |
+|---------------------------------------------------------|---------|---------|----------------------------------------|
+| [base64](https://crates.io/crates/base64)               | 0.22.1  | MIT     | Base64 encoding                        |
+| [gif](https://crates.io/crates/gif)                     | 0.13.3  | MIT     | GIF animation decoding (optional)      |
+| [image](https://crates.io/crates/image)                 | 0.25.8  | MIT     | Image encoding/decoding and processing |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher) | 0.2.0   | MIT     | Sixel Fast Hash (optional)             |
+| [num_cpus](https://crates.io/crates/num_cpus)           | 1.17.0  | MIT     | Get logical CPU core count             |
+| [quantette](https://crates.io/crates/quantette)         | 0.3.0   | MIT     | Sixel image quantization (optional)    |
+| [rayon](https://crates.io/crates/rayon)                 | 1.11.0  | MIT     | Data parallel computing                |
+| [terminal_size](https://crates.io/crates/terminal_size) | 0.4.3   | MIT     | Detect terminal size                   |
+
 
 ## License
 
