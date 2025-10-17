@@ -796,3 +796,42 @@ impl ImageConverter {
         lines
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_pixel_color_creation() {
+        let color = PixelColor::from_channels([255, 128, 64, 255]);
+        assert_eq!(color.r, 255);
+        assert_eq!(color.g, 128);
+        assert_eq!(color.b, 64);
+        assert_eq!(color.a, 255);
+    }
+    
+    #[test]
+    fn test_pixel_color_bg() {
+        let color = PixelColor::from_channels([255, 128, 64, 255]);
+        let bg = color.bg();
+        assert_eq!(bg, "\x1b[48;2;255;128;64m");
+    }
+    
+    #[test]
+    fn test_pixel_color_fg() {
+        let color = PixelColor::from_channels([255, 128, 64, 255]);
+        let fg = color.fg();
+        assert_eq!(fg, "\x1b[38;2;255;128;64m");
+    }
+    
+    #[test]
+    fn test_no_color_pixel_struct() {
+        let pixel = &NO_COLOR_PIXELS[0];
+        assert_eq!(pixel.top, "▘");
+        assert_eq!(pixel.full, "▮");
+        assert_eq!(pixel.bottom, "▖");
+        assert!(pixel.sep);
+        assert_eq!(pixel.from, 153);
+        assert_eq!(pixel.to, 204);
+    }
+}
