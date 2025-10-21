@@ -16,6 +16,15 @@ crate-type = ["lib"]
 [features]
 sixel = ["quantette", "nohash-hasher"]
 
+[[example]]
+name = "simple-example-iterm"
+path = "examples/simple-example-iterm.rs"
+
+[[example]]
+name = "simple-example-kitty"
+path = "examples/simple-example-kitty.rs"
+
+
 [dependencies]
 rayon = "1.11.0"
 base64 = "0.22.1"
