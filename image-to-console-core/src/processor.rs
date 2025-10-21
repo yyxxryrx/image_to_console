@@ -1,10 +1,10 @@
-use crate::converter::{ImageConverter, ImageConverterOption};
 use crate::ResizeMode::{Auto, Custom, None};
-use crate::{DisplayMode, ProcessedImage, ResizeMode};
-use image::{imageops::FilterType, GenericImageView};
+use crate::converter::{ImageConverter, ImageConverterOption};
+use crate::{AutoResizeOption, DisplayMode, ProcessedImage, ResizeMode};
+use image::{GenericImageView, imageops::FilterType};
 
 /// Image processor options
-/// 
+///
 /// Configures various parameters for image processing
 #[derive(Copy, Clone)]
 pub struct ImageProcessorOptions {
@@ -28,8 +28,55 @@ pub struct ImageProcessorOptions {
     pub max_colors: u16,
 }
 
+impl Default for ImageProcessorOptions {
+    fn default() -> Self {
+        Self {
+            full: true,
+            center: false,
+            #[cfg(feature = "sixel")]
+            dither: true,
+            mode: DisplayMode::FullColor,
+            black_background: false,
+            resize_mode: Auto(AutoResizeOption {
+                width: true,
+                height: true,
+            }),
+            enable_compression: true,
+            #[cfg(feature = "sixel")]
+            max_colors: 256,
+        }
+    }
+}
+
+impl ImageProcessorOptions {
+    pub fn new(mode: DisplayMode, resize: ResizeMode, center: bool) -> Self {
+        Self {
+            mode,
+            center,
+            #[cfg(feature = "sixel")]
+            dither: true,
+            full: mode.is_full(),
+            resize_mode: resize,
+            black_background: false,
+            enable_compression: true,
+            #[cfg(feature = "sixel")]
+            max_colors: 256,
+        }
+    }
+
+    pub fn option_blackground(&mut self, enabled: bool) -> &mut Self {
+        self.black_background = enabled;
+        self
+    }
+
+    pub fn option_compression(&mut self, enabled: bool) -> &mut Self {
+        self.enable_compression = enabled;
+        self
+    }
+}
+
 /// Image processing result
-/// 
+///
 /// Contains the processed image data and related information
 pub struct ImageProcessorResult {
     /// Image width
@@ -46,8 +93,36 @@ pub struct ImageProcessorResult {
     pub option: ImageProcessorOptions,
 }
 
+pub struct ImageProcessorResultDisplay {
+    air_lines: usize,
+    lines: Vec<String>,
+}
+
+impl std::fmt::Display for ImageProcessorResultDisplay {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}{}",
+            "\n".repeat(self.air_lines),
+            self.lines.join("\n")
+        )
+    }
+}
+
+impl ImageProcessorResultDisplay {
+    fn new(air_lines: usize, lines: Vec<String>) -> Self {
+        Self { lines, air_lines }
+    }
+}
+
+impl ImageProcessorResult {
+    pub fn display(&self) -> ImageProcessorResultDisplay {
+        ImageProcessorResultDisplay::new(self.air_lines, self.lines.clone())
+    }
+}
+
 /// Image processor
-/// 
+///
 /// Responsible for processing images into terminal-friendly formats
 pub struct ImageProcessor {
     /// Image to be processed
@@ -58,25 +133,25 @@ pub struct ImageProcessor {
 
 impl ImageProcessor {
     /// Create a new image processor
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `image` - Image to be processed
     /// * `option` - Processing options
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns a new image processor instance
     pub fn new(image: image::DynamicImage, option: ImageProcessorOptions) -> Self {
         Self { image, option }
     }
 
     /// Process the image
-    /// 
+    ///
     /// Processes the image according to configuration options and returns the result
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns the processed result
     pub fn process(&mut self) -> ImageProcessorResult {
         let time = std::time::SystemTime::now();
