@@ -255,25 +255,26 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 ## 依赖库
 
-| Crate                                                           | Version | License          | Purpose          |
-|-----------------------------------------------------------------|---------|------------------|------------------|
-| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | 命令行参数解析          |
-| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | 数据并行计算           |
-| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | 获取逻辑 CPU 核心数     |
-| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | 图像编解码与处理         |
-| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 编解码       |
-| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | 终端进度条            |
-| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | 检测终端尺寸           |
-| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | 终端控制（可选）         |
-| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
-| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
-| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
-| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）         |
-| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | 视频处理（可选）         |
-| [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | 视频处理（可选）         |
-| [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N维数组（可选）         |
-| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel 图像量化（可选）   |
-| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel 快速哈希（可选）   |
+| Crate                                                           | Version | License          |   | Purpose              |
+|-----------------------------------------------------------------|---------|------------------|:--|----------------------|
+| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 |   | 命令行参数解析              |
+| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 |   | 数据并行计算               |
+| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              |   | 获取逻辑 CPU 核心数         |
+| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              |   | 图像编解码与处理             |
+| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 |   | Base64 编解码           |
+| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              |   | 终端进度条                |
+| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              |   | 检测终端尺寸               |
+| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              |   | 终端控制（可选）             |
+| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 |   | 阻塞式 HTTP 客户端（可选）     |
+| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              |   | GIF 动画解码（可选）         |
+| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 |   | 跨线程通信（可选）            |
+| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 |   | 音频播放（可选）             |
+| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              |   | 视频处理（可选）             |
+| [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              |   | 视频处理（可选）             |
+| [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              |   | N维数组（可选）             |
+| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              |   | Sixel 图像量化（可选）       |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              |   | Sixel 快速哈希（可选）       |
+| [pyo3](https://crates.io/crates/pyo3)                           | 0.27.1  | MIT / Apache-2.0 |   | Python 绑定 (optional) |
 
 ## License
 
