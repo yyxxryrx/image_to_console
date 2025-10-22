@@ -49,6 +49,18 @@ impl Default for ImageProcessorOptions {
 }
 
 impl ImageProcessorOptions {
+    /// Create a new ImageProcessorOptions instance
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Display mode
+    /// * `resize` - Resize mode
+    /// * `center` - Whether to center the display
+    ///
+    /// # Returns
+    ///
+    /// Returns a configured ImageProcessorOptions instance
+
     pub fn new(mode: DisplayMode, resize: ResizeMode, center: bool) -> Self {
         Self {
             mode,
@@ -64,13 +76,63 @@ impl ImageProcessorOptions {
         }
     }
 
-    pub fn option_blackground(&mut self, enabled: bool) -> &mut Self {
+    /// Set black background option
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - Whether to enable black background
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_black_background(&mut self, enabled: bool) -> &mut Self {
         self.black_background = enabled;
         self
     }
 
+    /// Set compression option
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - Whether to enable compression
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
     pub fn option_compression(&mut self, enabled: bool) -> &mut Self {
         self.enable_compression = enabled;
+        self
+    }
+
+    /// Set maximum colors option (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `max_colors` - Maximum number of colors
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_max_colors(&mut self, max_colors: u16) -> &mut Self {
+        self.max_colors = max_colors;
+        self
+    }
+
+    /// Set dithering option (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - Whether to enable dithering
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_dither(&mut self, enabled: bool) -> &mut Self {
+        self.dither = enabled;
         self
     }
 }
