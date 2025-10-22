@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Add test and docs for core library
+
+- Add test, docs and examples for core library
 
 ### Fixed
+
 - Fix the file name processing logic
 
 ## [0.1.16] - 2025-09-29
@@ -35,16 +37,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `image_to_console_core` from `0.1.16` → `0.1.17`.
 
 ### Fixed
+
 - Fixed character rendering logic in non-full modes.
 - Removed redundant `\x1b` in ANSI escape sequences.
 - Fixed missing `sixel_support` feature dependency in `image-to-console-renderer`.
 - Corrected `DisplayMode::is_full()` to properly recognize `SixelFull` as full-resolution.
 
 ### Refactor
+
 - Refactored configuration parsing logic: extracted `Config` building into `from_cli`, added `Clone` to CLI structs, unified path handling.
 - Replaced raw `u8` color index with `ColorIndexState` enum for safer state management.
 - Split rendering logic into dedicated crates: `image-to-console-renderer` and `image-to-console-colored`.
--  Improved GIF/video player with on-demand audio loading.
+- Improved GIF/video player with on-demand audio loading.
 - Upgraded project to Rust 2024 edition.
 
 ---
@@ -52,20 +56,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.15] - 2025-09-15
 
 ### Added
+
 - **Sixel protocol support**, quantization, and indexed image rendering.
 
 ### Changed
+
 - Renamed CLI flag `--full-resolution` to `--half-resolution` (logic inverted for clarity).
 - Adjusted frame delay calculation in Sixel mode for better playback smoothness.
 
 ### Fixed
+
 - Fixed out-of-bounds access in Sixel rendering by using actual image dimensions.
 
 ### Refactor
+
 - Optimized color handling with usage counting and parallel pixel processing.
 - Improved GIF/video player with bounded channels
 
 ### Documentation
+
 - Updated README (EN & ZH) with Sixel, auto-detection, stdin, compression, and audio support details.
 - Marked Sixel as “implemented” in terminal compatibility tables.
 
@@ -74,16 +83,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.14] - 2025-09-13
 
 ### Added
+
 - **Video playback support** using `video-rs` (replacing `ffmpeg-next`), with custom audio track support.
 - **GIF animation playback** with configurable FPS, looping, and frame buffering.
 
 ### Changed
+
 - Made `gif` dependency optional via feature flag.
 
 ### Performance
+
 - Dynamically sized frame channel based on actual video FPS.
 
 ### Documentation
+
 - Added FFmpeg installation instructions per OS.
 - Introduced feature dependency table in README.
 
@@ -92,12 +105,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.13] - 2025-09-11
 
 ### Added
+
 - CI support for video builds: added `libavcodec-dev`, `libavformat-dev`, `libavutil-dev` on Ubuntu; `ffmpeg` on macOS via Homebrew; `ffmpeg` via vcpkg on Windows.
 
 ### Refactor
+
 - Restructured project into workspace: `image-to-console` (CLI) and `image-to-console-core` (library).
 
 ### Performance
+
 - Multi-threaded GIF frame processing using `crossbeam-channel`.
 
 ### Changed
@@ -110,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.12] - 2025-08-31
 
 ### Added
+
 - **Kitty terminal protocol** support (`--protocol kitty`).
 - **iTerm2 protocol** support (`--protocol iterm2`).
 - **WezTerm protocol** support with centering logic.
@@ -117,14 +134,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audio playback during GIF/video via `rodio`.
 
 ### Changed
+
 - Replaced boolean `--wezterm` flag with unified `--protocol <normal|wezterm|kitty|iterm2|auto>` enum.
 - Deprecated `--no-resize` help text clarified as “(Only run in auto mode)”.
 
 ### Fixed
+
 - Fixed missing rendering of last row/column in images.
 - Improved error handling in terminal protocol detection.
 
 ### Documentation
+
 - Added Chinese README (`README_zh-CN.md`).
 - Updated crate metadata and dependency list.
 
@@ -138,3 +158,4 @@ _Note: All changes prior to 0.1.12 are considered initial development and not in
 
 > **Versioning Note**:  
 > This project follows semantic versioning. Given the current `0.x.y` format, breaking changes may occur between minor versions until `1.0.0` is released.
+

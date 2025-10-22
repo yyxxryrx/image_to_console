@@ -44,14 +44,15 @@ use image::error::ImageResult;
 
 fn main() -> ImageResult<()> {
     let img = image::open("path/to/image.png")?;
-    let options = ImageProcessorOptions {
-        mode: DisplayMode::HalfColor,
-        // ... other options
-    };
+
+    // Use default config
+    let option = ImageProcessorOptions::default();
 
     let processor = ImageProcessor::new(img, options);
     let result = processor.process();
     // result.lines contains the formatted terminal output
+    // you also can use display method to print
+    println!("{}", result.display());
     Ok(())
 }
 ```
@@ -73,7 +74,6 @@ fn main() -> ImageResult<()> {
 | [quantette](https://crates.io/crates/quantette)         | 0.3.0   | MIT     | Sixel image quantization (optional)    |
 | [rayon](https://crates.io/crates/rayon)                 | 1.11.0  | MIT     | Data parallel computing                |
 | [terminal_size](https://crates.io/crates/terminal_size) | 0.4.3   | MIT     | Detect terminal size                   |
-
 
 ## License
 

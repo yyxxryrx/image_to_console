@@ -1,0 +1,19 @@
+[package]
+name = "image_to_console_core_python"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["sixel"]
+sixel = ["image_to_console_core/sixel"]
+
+[dependencies]
+image = "0.25.8"
+image_to_console_core = { path = "../image-to-console-core/" }
+
+[dependencies.pyo3]
+version = "0.27.1"
+features = ["extension-module"]
