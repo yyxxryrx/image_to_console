@@ -17,6 +17,14 @@ crate-type = ["lib"]
 sixel = ["quantette", "nohash-hasher"]
 
 [[example]]
+name = "basic-example"
+path = "examples/basic-example.rs"
+
+[[example]]
+name = "simple-example"
+path = "examples/simple-example.rs"
+
+[[example]]
 name = "simple-example-iterm"
 path = "examples/simple-example-iterm.rs"
 

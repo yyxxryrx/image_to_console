@@ -135,6 +135,20 @@ impl ImageProcessorOptions {
         self.dither = enabled;
         self
     }
+
+    /// Create a new image processor
+    ///
+    /// # Arguments
+    ///
+    /// * `image` - Image to be processed
+    ///
+    /// # Returns
+    ///
+    /// Returns a new image processor instance
+
+    pub fn create_processor(&self, image: image::DynamicImage) -> ImageProcessor {
+        ImageProcessor::new(image, self.clone())
+    }
 }
 
 /// Image processing result

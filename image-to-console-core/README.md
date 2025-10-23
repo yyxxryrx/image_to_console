@@ -1,27 +1,30 @@
 # image_to_console_core
 
-> This is the core library of `image_to_console` project - a Rust library for converting images to terminal ASCII art, supporting multiple image formats and terminal output methods.
+> This is the core library of `image_to_console` project - a Rust library for converting images to terminal ASCII art,
+> supporting multiple image formats and terminal output methods.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-`image_to_console_core` is a Rust library that converts images into terminal-friendly formats including ASCII art and colored output. It supports various terminal protocols and image formats, making it easy to display images directly in the terminal.
+`image_to_console_core` is a Rust library that converts images into terminal-friendly formats including ASCII art and
+colored output. It supports various terminal protocols and image formats, making it easy to display images directly in
+the terminal.
 
 ## Features
 
 - Multiple terminal protocols support:
-  - Standard colored output (24-bit color)
-  - Kitty graphics protocol
-  - WezTerm graphics protocol
-  - iTerm2 graphics protocol
-  - Sixel graphics protocol (with `sixel` feature)
+    - Standard colored output (24-bit color)
+    - Kitty graphics protocol
+    - WezTerm graphics protocol
+    - iTerm2 graphics protocol
+    - Sixel graphics protocol (with `sixel` feature)
 - Various image format support through the `image` crate
 - Multiple display modes:
-  - Full color with background/foreground colors
-  - Half-block color mode
-  - ASCII mode
-  - No-color (grayscale) mode
+    - Full color with background/foreground colors
+    - Half-block color mode
+    - ASCII mode
+    - No-color (grayscale) mode
 - Image resizing with different algorithms
 - GIF support (with `gif` feature)
 - Parallel processing for better performance
@@ -37,24 +40,48 @@ image_to_console_core = "0.1"
 ```
 
 Basic usage example:
+> you can see in examples/basic-example.rs
 
 ```rust
 use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
 use image::error::ImageResult;
 
 fn main() -> ImageResult<()> {
+  let img = image::open("path/to/image.png")?;
+
+  // Use default config
+  let option = ImageProcessorOptions::default();
+
+  let mut processor = ImageProcessor::new(img, option);
+  let result = processor.process();
+  // result.lines contains the formatted terminal output
+  // you also can use display method to print
+  println!("{}", result.display());
+  Ok(())
+}
+```
+
+or more simply
+> you can see in examples/simple-example.rs
+
+```rust
+use image::error::ImageResult;
+use image_to_console_core::processor::ImageProcessorOptions;
+
+fn main() -> ImageResult<()> {
     let img = image::open("path/to/image.png")?;
 
-    // Use default config
-    let option = ImageProcessorOptions::default();
+    // Use default config and process
+    let result = ImageProcessorOptions::default()
+        .create_processor(img)
+        .process();
 
-    let processor = ImageProcessor::new(img, options);
-    let result = processor.process();
     // result.lines contains the formatted terminal output
     // you also can use display method to print
     println!("{}", result.display());
     Ok(())
 }
+
 ```
 
 ## Features Flags
