@@ -35,12 +35,47 @@ impl Default for DisplayMode {
 }
 
 impl DisplayMode {
+    /// Check if the display mode is a full block mode
+    ///
+    /// Returns `true` for modes that use full blocks to display pixels, which includes:
+    /// - `DisplayMode::FullColor`
+    /// - `DisplayMode::FullNoColor`
+    /// - `DisplayMode::WezTerm`
+    /// - `DisplayMode::WezTermNoColor`
+    /// - `DisplayMode::Kitty`
+    /// - `DisplayMode::KittyNoColor`
+    /// - `DisplayMode::Iterm2`
+    /// - `DisplayMode::Iterm2NoColor`
+    /// - `DisplayMode::SixelFull`
+    ///
+    /// Returns `false` for modes that use half blocks or ASCII characters:
+    /// - `DisplayMode::HalfColor`
+    /// - `DisplayMode::Ascii`
+    /// - `DisplayMode::SixelHalf`
     pub fn is_full(&self) -> bool {
         #[cfg(feature = "sixel")]
         return !matches!(self, Self::HalfColor | Self::Ascii | Self::SixelHalf);
         #[cfg(not(feature = "sixel"))]
         return !matches!(self, Self::HalfColor | Self::Ascii);
     }
+
+    /// Check if the display mode supports color output
+    ///
+    /// Returns `true` for modes that can display colors:
+    /// - `DisplayMode::FullColor`
+    /// - `DisplayMode::HalfColor`
+    /// - `DisplayMode::WezTerm`
+    /// - `DisplayMode::Kitty`
+    /// - `DisplayMode::Iterm2`
+    /// - `DisplayMode::SixelHalf`
+    /// - `DisplayMode::SixelFull`
+    ///
+    /// Returns `false` for modes that only support grayscale/luminance output:
+    /// - `DisplayMode::FullNoColor`
+    /// - `DisplayMode::Ascii`
+    /// - `DisplayMode::WezTermNoColor`
+    /// - `DisplayMode::KittyNoColor`
+    /// - `DisplayMode::Iterm2NoColor`
     pub fn is_color(&self) -> bool {
         #[cfg(feature = "sixel")]
         return matches!(
@@ -60,10 +95,28 @@ impl DisplayMode {
         )
     }
 
+    /// Check if the display mode supports only luminance/grayscale output
+    ///
+    /// This is the inverse of `is_color()`. Returns `true` for modes that only display
+    /// grayscale images and `false` for color-capable modes.
     pub fn is_luma(&self) -> bool {
         !self.is_color()
     }
 
+    /// Check if the display mode uses standard terminal capabilities
+    ///
+    /// Returns `true` for basic terminal display modes that don't require special
+    /// terminal features:
+    /// - `DisplayMode::HalfColor`
+    /// - `DisplayMode::FullColor`
+    /// - `DisplayMode::Ascii`
+    /// - `DisplayMode::FullNoColor`
+    ///
+    /// Returns `false` for modes that require special terminal protocols:
+    /// - WezTerm-specific modes
+    /// - Kitty-specific modes
+    /// - iTerm2-specific modes
+    /// - Sixel modes (when `sixel` feature is enabled)
     pub fn is_normal(&self) -> bool {
         matches!(
             self,
@@ -71,14 +124,31 @@ impl DisplayMode {
         )
     }
 
+    /// Check if the display mode is WezTerm-specific
+    ///
+    /// Returns `true` for both color and non-color WezTerm modes:
+    /// - `DisplayMode::WezTerm`
+    /// - `DisplayMode::WezTermNoColor`
     pub fn is_wezterm(&self) -> bool {
         matches!(self, Self::WezTerm | Self::WezTermNoColor)
     }
 
+    /// Check if the display mode is iTerm2-specific
+    ///
+    /// Returns `true` for both color and non-color iTerm2 modes:
+    /// - `DisplayMode::Iterm2`
+    /// - `DisplayMode::Iterm2NoColor`
     pub fn is_iterm2(&self) -> bool {
         matches!(self, Self::Iterm2 | Self::Iterm2NoColor)
     }
 
+    /// Check if the display mode uses Sixel graphics protocol
+    ///
+    /// Available only when the `sixel` feature is enabled.
+    ///
+    /// Returns `true` for Sixel modes:
+    /// - `DisplayMode::SixelHalf`
+    /// - `DisplayMode::SixelFull`
     #[cfg(feature = "sixel")]
     pub fn is_sixel(&self) -> bool {
         matches!(self, Self::SixelHalf | Self::SixelFull)
@@ -87,14 +157,29 @@ impl DisplayMode {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProcessedImage {
+    /// A color image represented as RGBA pixels
     Color(RgbaImage),
+    /// A color image represented as RGB pixels, available only when sixel feature is enabled
     #[cfg(feature = "sixel")]
     Color2(RgbImage),
+    /// A grayscale/luminance image
     NoColor(GrayImage),
+    /// Both color (RGBA) and grayscale (Gray) representations of the same image
     Both(RgbaImage, GrayImage),
 }
 
 impl ProcessedImage {
+    /// Create a new ProcessedImage based on the display mode and source image
+    ///
+    /// This method converts the input DynamicImage into the appropriate format(s)
+    /// required by the specified DisplayMode.
+    ///
+    /// # Arguments
+    /// * `mode` - The DisplayMode that determines how the image should be processed
+    /// * `img` - The source DynamicImage to process
+    ///
+    /// # Returns
+    /// A ProcessedImage variant containing the appropriately formatted image data
     pub fn new(mode: DisplayMode, img: &DynamicImage) -> Self {
         match mode {
             DisplayMode::Ascii => Self::NoColor(img.to_luma8()),
@@ -113,6 +198,12 @@ impl ProcessedImage {
             DisplayMode::SixelFull => Self::Color2(img.to_rgb8()),
         }
     }
+
+    /// Get a reference to the RGBA image data if available
+    ///
+    /// # Returns
+    /// * `Some(&RgbaImage)` - If the processed image contains RGBA data (Color or Both variants)
+    /// * `None` - If the processed image only contains grayscale data (NoColor variant)
     pub fn rgba(&self) -> Option<&RgbaImage> {
         match self {
             Self::Color(img) => Some(img),
@@ -121,6 +212,13 @@ impl ProcessedImage {
         }
     }
 
+    /// Get a reference to the RGB image data if available
+    ///
+    /// Available only when the sixel feature is enabled.
+    ///
+    /// # Returns
+    /// * `Some(&RgbImage)` - If the processed image contains RGB data (Color2 variant)
+    /// * `None` - For other variants
     #[cfg(feature = "sixel")]
     pub fn rgb(&self) -> Option<&RgbImage> {
         match self {
@@ -129,6 +227,11 @@ impl ProcessedImage {
         }
     }
 
+    /// Get a reference to the grayscale image data if available
+    ///
+    /// # Returns
+    /// * `Some(&GrayImage)` - If the processed image contains grayscale data (NoColor or Both variants)
+    /// * `None` - Should not occur in normal usage
     pub fn luma(&self) -> Option<&GrayImage> {
         match self {
             Self::NoColor(img) => Some(img),
@@ -137,6 +240,11 @@ impl ProcessedImage {
         }
     }
 
+    /// Get references to both RGBA and grayscale image data if available
+    ///
+    /// # Returns
+    /// * `Some((&RgbaImage, &GrayImage))` - If the processed image contains both formats (Both variant)
+    /// * `None` - For other variants
     pub fn both(&self) -> Option<(&RgbaImage, &GrayImage)> {
         match self {
             Self::Both(rgba, luma) => Some((rgba, luma)),
@@ -144,6 +252,11 @@ impl ProcessedImage {
         }
     }
 
+    /// Check if the processed image contains color data
+    ///
+    /// # Returns
+    /// * `true` - If the processed image contains color data (Color or Both variants)
+    /// * `false` - If the processed image only contains grayscale data (NoColor variant)
     pub fn is_color(&self) -> bool {
         matches!(self, Self::Color(_) | Self::Both(_, _))
     }
@@ -151,9 +264,9 @@ impl ProcessedImage {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AutoResizeOption {
-    // Resize with terminal width
+    /// Resize with terminal width
     pub width: bool,
-    // Resize with terminal height
+    /// Resize with terminal height
     pub height: bool,
 }
 
@@ -167,24 +280,53 @@ impl Default for AutoResizeOption {
 }
 
 impl AutoResizeOption {
+    /// Create a new AutoResizeOption with the specified width and height settings
+    ///
+    /// # Arguments
+    /// * `width` - Whether to resize based on terminal width
+    /// * `height` - Whether to resize based on terminal height
+    ///
+    /// # Returns
+    /// A new AutoResizeOption instance with the specified settings
     pub fn new(width: bool, height: bool) -> Self {
         Self { width, height }
     }
-    
+
+    /// Create an AutoResizeOption that resizes only based on terminal width
+    ///
+    /// This is useful when you want to maintain the original aspect ratio but
+    /// adjust the image width to fit the terminal.
+    ///
+    /// # Returns
+    /// An AutoResizeOption with width=true and height=false
     pub fn only_width() -> Self {
         Self {
             width: true,
             height: false,
         }
     }
-    
+
+    /// Create an AutoResizeOption that resizes only based on terminal height
+    ///
+    /// This is useful when you want to maintain the original aspect ratio but
+    /// adjust the image height to fit the terminal.
+    ///
+    /// # Returns
+    /// An AutoResizeOption with width=false and height=true
     pub fn only_height() -> Self {
         Self {
             width: false,
             height: true,
         }
     }
-    
+
+    /// Create an AutoResizeOption that disables automatic resizing
+    ///
+    /// This effectively disables auto-resizing functionality, meaning the image
+    /// will retain its original dimensions regardless of terminal size.
+    ///
+    /// # Returns
+    /// An AutoResizeOption with both width and height set to false
     pub fn none() -> Self {
         Self {
             width: false,
@@ -200,6 +342,14 @@ pub struct CustomResizeOption {
 }
 
 impl CustomResizeOption {
+    /// Create a new CustomResizeOption with both width and height specified
+    ///
+    /// # Arguments
+    /// * `width` - The width to resize to
+    /// * `height` - The height to resize to
+    ///
+    /// # Returns
+    /// A new CustomResizeOption instance with both width and height set
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width: Some(width),
@@ -207,6 +357,16 @@ impl CustomResizeOption {
         }
     }
 
+    /// Create a CustomResizeOption with only width specified
+    ///
+    /// This is useful when you want to resize the image to a specific width
+    /// while maintaining the original aspect ratio.
+    ///
+    /// # Arguments
+    /// * `width` - The width to resize to
+    ///
+    /// # Returns
+    /// A new CustomResizeOption instance with only width set
     pub fn with_width(width: u32) -> Self {
         Self {
             width: Some(width),
@@ -214,6 +374,16 @@ impl CustomResizeOption {
         }
     }
 
+    /// Create a CustomResizeOption with only height specified
+    ///
+    /// This is useful when you want to resize the image to a specific height
+    /// while maintaining the original aspect ratio.
+    ///
+    /// # Arguments
+    /// * `height` - The height to resize to
+    ///
+    /// # Returns
+    /// A new CustomResizeOption instance with only height set
     pub fn with_height(height: u32) -> Self {
         Self {
             width: None,
@@ -233,7 +403,7 @@ pub enum ResizeMode {
 }
 
 impl Default for ResizeMode {
-    /// Returns to the default resize mode [Auto](file:///D:/Desktop/Work/Rust/image_to_console/image-to-console-core/src/lib.rs#L168-L168) and the width and height are automatically adjusted
+    /// Returns to the default resize mode [Auto and the width and height are automatically adjusted
     fn default() -> Self {
         Self::Auto(AutoResizeOption::default())
     }

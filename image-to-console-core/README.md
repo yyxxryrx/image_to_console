@@ -5,6 +5,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Requirements
+
+- Rust 1.85.0 or later (due to Rust 2024 edition)
+
 ## Overview
 
 `image_to_console_core` is a Rust library that converts images into terminal-friendly formats including ASCII art and

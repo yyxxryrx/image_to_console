@@ -116,6 +116,7 @@ impl ImageProcessorOptions {
     ///
     /// Returns a mutable reference to self for method chaining
 
+    #[cfg(feature = "sixel")]
     pub fn option_max_colors(&mut self, max_colors: u16) -> &mut Self {
         self.max_colors = max_colors;
         self
@@ -131,6 +132,7 @@ impl ImageProcessorOptions {
     ///
     /// Returns a mutable reference to self for method chaining
 
+    #[cfg(feature = "sixel")]
     pub fn option_dither(&mut self, enabled: bool) -> &mut Self {
         self.dither = enabled;
         self
@@ -317,7 +319,11 @@ impl ImageProcessor {
                 }
             }
 
-            if !(self.option.mode.is_normal() || self.option.mode.is_sixel()) {
+            #[cfg(not(feature = "sixel"))]
+            let not_normal = !self.option.mode.is_normal();
+            #[cfg(feature = "sixel")]
+            let not_normal = !(self.option.mode.is_normal() || self.option.mode.is_sixel());
+            if not_normal {
                 air_line = height.0 as usize;
                 let terminal_rate = width.0 as f64 / height.0 as f64 / 2f64;
                 let rate = w as f64 / h as f64;
