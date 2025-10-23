@@ -67,9 +67,10 @@ impl Image {
     }
 
     #[pyo3(signature = (
-        mode = DisplayMode::FullColor
+        mode = DisplayMode::FullColor,
+        center = false,
     ))]
-    pub fn display(&self, mode: DisplayMode) -> DisplayImage {
+    pub fn display(&self, mode: DisplayMode, center: bool) -> DisplayImage {
         let mode = CoreDisplayMode::from(mode);
         let option = image_to_console_core::processor::ImageProcessorOptions::new(
             mode,
@@ -78,7 +79,7 @@ impl Image {
             } else {
                 image_to_console_core::ResizeMode::None
             },
-            false,
+            center,
         );
         let result =
             image_to_console_core::processor::ImageProcessor::new(self.img.clone(), option)

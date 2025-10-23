@@ -5,10 +5,10 @@
 This is a simple example to show how to use this library in Python
 
 ```Python
-import image_to_console_python as itccp
+import image_to_console_core_python as itccp
 
 img = itccp.open("path/image.png")
 print(img.display())
 # Or you can set display mode
-# print(img.display(itccp.DisplayMode.Kitty))
+# print(img.display(itccp.DisplayMode.))
 ```

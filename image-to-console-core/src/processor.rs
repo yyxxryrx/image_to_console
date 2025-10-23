@@ -303,11 +303,11 @@ impl ImageProcessor {
                 }
             }
 
-            if self.option.mode.is_wezterm() {
+            if !(self.option.mode.is_normal() || self.option.mode.is_sixel()) {
                 air_line = height.0 as usize;
                 let terminal_rate = width.0 as f64 / height.0 as f64 / 2f64;
                 let rate = w as f64 / h as f64;
-                println!("{} {}", terminal_rate, rate);
+                // println!("{} {}", terminal_rate, rate);
                 if rate < terminal_rate {
                     let w = (height.0 as f64 * rate).floor() as u16;
                     let offset = width.0 / 2 - w;

@@ -75,6 +75,10 @@ impl DisplayMode {
         matches!(self, Self::WezTerm | Self::WezTermNoColor)
     }
 
+    pub fn is_iterm2(&self) -> bool {
+        matches!(self, Self::Iterm2 | Self::Iterm2NoColor)
+    }
+
     #[cfg(feature = "sixel")]
     pub fn is_sixel(&self) -> bool {
         matches!(self, Self::SixelHalf | Self::SixelFull)
@@ -153,10 +157,25 @@ pub struct AutoResizeOption {
     pub height: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+impl Default for AutoResizeOption {
+    fn default() -> Self {
+        Self {
+            width: true,
+            height: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct CustomResizeOption {
     pub width: Option<u32>,
     pub height: Option<u32>,
+}
+
+impl CustomResizeOption {
+    pub fn new(width: Option<u32>, height: Option<u32>) -> Self {
+        Self { width, height }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -172,10 +191,7 @@ pub enum ResizeMode {
 impl Default for ResizeMode {
     /// Returns to the default resize mode [Auto](file:///D:/Desktop/Work/Rust/image_to_console/image-to-console-core/src/lib.rs#L168-L168) and the width and height are automatically adjusted
     fn default() -> Self {
-        Self::Auto(AutoResizeOption {
-            width: true,
-            height: true,
-        })
+        Self::Auto(AutoResizeOption::default())
     }
 }
 
@@ -186,36 +202,36 @@ mod tests {
     #[test]
     fn test_processed_image_creation() {
         let img = DynamicImage::new_rgba8(10, 10);
-        
+
         // Test color modes
         let processed = ProcessedImage::new(DisplayMode::HalfColor, &img);
         assert!(matches!(processed, ProcessedImage::Color(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::FullColor, &img);
         assert!(matches!(processed, ProcessedImage::Both(_, _)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::WezTerm, &img);
         assert!(matches!(processed, ProcessedImage::Color(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::Kitty, &img);
         assert!(matches!(processed, ProcessedImage::Color(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::Iterm2, &img);
         assert!(matches!(processed, ProcessedImage::Color(_)));
-        
+
         // Test luma modes
         let processed = ProcessedImage::new(DisplayMode::Ascii, &img);
         assert!(matches!(processed, ProcessedImage::NoColor(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::FullNoColor, &img);
         assert!(matches!(processed, ProcessedImage::NoColor(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::WezTermNoColor, &img);
         assert!(matches!(processed, ProcessedImage::NoColor(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::KittyNoColor, &img);
         assert!(matches!(processed, ProcessedImage::NoColor(_)));
-        
+
         let processed = ProcessedImage::new(DisplayMode::Iterm2NoColor, &img);
         assert!(matches!(processed, ProcessedImage::NoColor(_)));
     }
@@ -224,37 +240,37 @@ mod tests {
     fn test_processed_image_accessors() {
         let rgba_img = DynamicImage::new_rgba8(10, 10);
         let processed = ProcessedImage::new(DisplayMode::HalfColor, &rgba_img);
-        
+
         // Test rgba accessor
         assert!(processed.rgba().is_some());
-        
+
         // Test luma accessor (should be none for color mode)
         assert!(processed.luma().is_none());
-        
+
         // Test both accessor (should be none for color mode)
         assert!(processed.both().is_none());
-        
+
         // Test is_color
         assert!(processed.is_color());
-        
+
         let rgba_img2 = DynamicImage::new_rgba8(10, 10);
         let processed_both = ProcessedImage::new(DisplayMode::FullColor, &rgba_img2);
-        
+
         // Test both accessor
         assert!(processed_both.both().is_some());
-        
+
         // Test is_color
         assert!(processed_both.is_color());
-        
+
         let luma_img = DynamicImage::new_luma8(10, 10);
         let processed_luma = ProcessedImage::new(DisplayMode::Ascii, &luma_img);
-        
+
         // Test rgba accessor (should be none for luma mode)
         assert!(processed_luma.rgba().is_none());
-        
+
         // Test luma accessor
         assert!(processed_luma.luma().is_some());
-        
+
         // Test is_color (should be false for luma mode)
         assert!(!processed_luma.is_color());
     }
