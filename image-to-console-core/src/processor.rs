@@ -355,6 +355,7 @@ impl ImageProcessor {
         let converter = ImageConverter::new(
             ProcessedImage::new(self.option.mode, &self.image),
             ImageConverterOption {
+                center: self.option.center,
                 width: w,
                 height: h,
                 line_init,
