@@ -9,7 +9,7 @@ pub mod processor;
 use image::RgbImage;
 use image::{DynamicImage, GrayImage, RgbaImage};
 
-/// The protocol of dispaly
+/// The protocol of display
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DisplayMode {
     HalfColor,
@@ -166,6 +166,33 @@ impl Default for AutoResizeOption {
     }
 }
 
+impl AutoResizeOption {
+    pub fn new(width: bool, height: bool) -> Self {
+        Self { width, height }
+    }
+    
+    pub fn only_width() -> Self {
+        Self {
+            width: true,
+            height: false,
+        }
+    }
+    
+    pub fn only_height() -> Self {
+        Self {
+            width: false,
+            height: true,
+        }
+    }
+    
+    pub fn none() -> Self {
+        Self {
+            width: false,
+            height: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct CustomResizeOption {
     pub width: Option<u32>,
@@ -173,8 +200,25 @@ pub struct CustomResizeOption {
 }
 
 impl CustomResizeOption {
-    pub fn new(width: Option<u32>, height: Option<u32>) -> Self {
-        Self { width, height }
+    pub fn new(width: u32, height: u32) -> Self {
+        Self {
+            width: Some(width),
+            height: Some(height),
+        }
+    }
+
+    pub fn with_width(width: u32) -> Self {
+        Self {
+            width: Some(width),
+            height: None,
+        }
+    }
+
+    pub fn with_height(height: u32) -> Self {
+        Self {
+            width: None,
+            height: Some(height),
+        }
     }
 }
 

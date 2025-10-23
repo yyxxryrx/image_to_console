@@ -39,7 +39,7 @@ image_to_console_core = "0.1"
 Basic usage example:
 
 ```rust
-use image_to_console_core::{DisplayMode, processor::{ImageProcessor, ImageProcessorOptions}};
+use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
 use image::error::ImageResult;
 
 fn main() -> ImageResult<()> {

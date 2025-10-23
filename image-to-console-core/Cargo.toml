@@ -24,6 +24,30 @@ path = "examples/simple-example-iterm.rs"
 name = "simple-example-kitty"
 path = "examples/simple-example-kitty.rs"
 
+[[example]]
+name = "simple-example-default"
+path = "examples/simple-example-default.rs"
+
+[[example]]
+name = "resize-example-with-AutoResize"
+path = "examples/resize-example-with-AutoResize.rs"
+
+[[example]]
+name = "resize-example-with-AutoResize2"
+path = "examples/resize-example-with-AutoResize2.rs"
+
+[[example]]
+name = "resize-example-with-CustomResize"
+path = "examples/resize-example-with-CustomResize.rs"
+
+[[example]]
+name = "resize-example-with-CustomResize-with_width"
+path = "examples/resize-example-with-CustomResize-with_width.rs"
+
+[[example]]
+name = "resize-example-with-CustomResize-with_height"
+path = "examples/resize-example-with-CustomResize-with_height.rs"
+
 
 [dependencies]
 rayon = "1.11.0"
@@ -50,3 +74,4 @@ version = "0.3.0"
 
 [dev-dependencies]
 image = "0.25.8"
+
