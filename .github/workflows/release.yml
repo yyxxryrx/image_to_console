@@ -100,7 +100,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/wheels/*.whl
+          asset_path: ${{ github.workspace }}/target/wheels/*.whl
           asset_name: image_to_console_python-${{ matrix.target }}.whl
           asset_content_type: application/octet-stream
 
