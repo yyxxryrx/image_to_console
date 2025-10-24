@@ -95,14 +95,25 @@ jobs:
           fi
 
       - name: Upload Python Wheels
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/target/wheels/*.whl
-          asset_name: image_to_console_python-${{ matrix.target }}.whl
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          shopt -s nullglob
+          wheel_files=(${{ github.workspace }}/target/wheels/*.whl)
+          if [ ${#wheel_files[@]} -gt 0 ]; then
+            for wheel in "${wheel_files[@]}"; do
+              echo "Uploading wheel: $wheel"
+              upload_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" \
+                | jq -r '.upload_url' | sed 's/{?name,label}//')
+              curl -sS -X POST \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary "@$wheel" \
+                "${upload_url}?name=$(basename "$wheel")"
+            done
+          else
+            echo "No wheel files found"
+          fi
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
