@@ -72,7 +72,7 @@ jobs:
       - name: Build
         env:
           OPENSSL_STATIC: 1
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --package image_to_console
 
       - name: Build Wheel
         uses: PyO3/maturin-action@v1
@@ -80,16 +80,6 @@ jobs:
           command: build
           args: --release --features sixel
           working-directory: "image-to-console-core-python"
-
-      - name: Upload Python Wheels
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./image-to-console-core-python/target/wheels/*.whl
-          asset_name: image_to_console_python-${{ matrix.target }}.whl
-          asset_content_type: application/octet-stream
 
       - name: Package
         shell: bash
@@ -103,6 +93,16 @@ jobs:
           else
             tar czf ../${{ matrix.name }}.tar.gz ${{ matrix.name }}
           fi
+
+      - name: Upload Python Wheels
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/wheels/*.whl
+          asset_name: image_to_console_python-${{ matrix.target }}.whl
+          asset_content_type: application/octet-stream
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
