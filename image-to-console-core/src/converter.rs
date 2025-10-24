@@ -169,6 +169,7 @@ impl ImageConverter {
                     FullColor => self.full_convert(x, y, false),
                     HalfColor => self.unfull_convert(x, y, false),
                     FullNoColor => self.no_color_convert(x, y),
+                    Ascii => self.ascii_convert(x, y),
                     _ => String::new(),
                 };
                 let mut lines = (if self.full {
@@ -429,6 +430,34 @@ impl ImageConverter {
         buffer
     }
 
+    /// Convert pixels in ASCII mode
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - X coordinate
+    /// * `y` - Y coordinate
+    ///
+    /// # Returns
+    ///
+    /// Returns a string representing the converted pixel using ASCII characters
+    fn ascii_convert(&self, x: u32, y: u32) -> String {
+        if let ProcessedImage::NoColor(luma_img) = &self.img {
+            const ASCII_CHARS: [&str; 12] =
+                [" ", ".", ",", ":", ";", "+", "*", "?", "%", "S", "#", "@"];
+            let pixel = luma_img.get_pixel(x, y);
+            let p = pixel.0[0] as usize;
+            let unit = 256 / ASCII_CHARS.len();
+            for i in (0..ASCII_CHARS.len()).rev() {
+                if i * unit <= p {
+                    return ASCII_CHARS[i].repeat(2);
+                }
+            }
+            "  ".to_string()
+        } else {
+            panic!("Invalid image type")
+        }
+    }
+
     /// Convert image using WezTerm protocol
     ///
     /// # Returns
@@ -446,7 +475,7 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .and_then(|(w, h)| Some((w.0.div(2) as u32, h.0 as u32)))
+                .map(|(w, h)| (w.0.div(2) as u32, h.0 as u32))
                 .unwrap_or((0, 0));
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;
@@ -512,7 +541,7 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .and_then(|(w, h)| Some((w.0.div(2) as u32, h.0 as u32)))
+                .map(|(w, h)| (w.0.div(2) as u32, h.0 as u32))
                 .unwrap_or((0, 0));
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;

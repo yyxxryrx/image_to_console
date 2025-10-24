@@ -272,8 +272,7 @@ impl Config {
         show_file_name: bool,
         fps: Option<u64>,
         loop_play: bool,
-        #[cfg(feature = "audio_support")]
-        audio: AudioPath,
+        #[cfg(feature = "audio_support")] audio: AudioPath,
     ) -> Self {
         Self {
             fps,
@@ -292,14 +291,10 @@ impl Config {
             black_background: cli.black_background,
             enable_compression: cli.enable_compression,
             pause: cli.pause && !cli.command.is_directory(),
-            full_resolution: !cli.half_resolution || cli.no_color,
+            full_resolution: !cli.half_resolution,
             disable_info: cli.disable_info || cli.command.is_directory(),
             disable_print: cli.disable_print || cli.command.is_directory(),
-            mode: DisplayMode::from_bool(
-                !cli.half_resolution || cli.no_color,
-                cli.no_color,
-                cli.protocol,
-            ),
+            mode: DisplayMode::from_bool(!cli.half_resolution, cli.no_color, cli.protocol),
             #[cfg(feature = "sixel_support")]
             max_colors: cli.max_colors,
             #[cfg(feature = "sixel_support")]
@@ -453,7 +448,7 @@ pub fn parse() -> RunMode {
                             let mut gif_processor = GifFrameProcessor::new(
                                 decoder.width() as u32,
                                 decoder.height() as u32,
-                                decoder.global_palette().and_then(|p| Some(p.to_vec())),
+                                decoder.global_palette().map(|p| p.to_vec()),
                             );
                             loop {
                                 match decoder.read_next_frame() {
@@ -481,9 +476,7 @@ pub fn parse() -> RunMode {
                             args.loop_play,
                             #[cfg(feature = "audio_support")]
                             args.audio
-                                .and_then(|path| {
-                                    Some(AudioPath::Custom(Path::new(&path).to_path_buf()))
-                                })
+                                .map(|path| AudioPath::Custom(Path::new(&path).to_path_buf()))
                                 .unwrap_or_default(),
                         )))
                     }
@@ -610,7 +603,7 @@ pub fn parse() -> RunMode {
                         Ok::<std::path::PathBuf, ez_ffmpeg::error::Error>(audio_path)
                     };
                     function()
-                        .and_then(|path| Ok(AudioPath::Temp(path)))
+                        .map(|path| AudioPath::Temp(path))
                         .unwrap_or_default()
                 } else {
                     AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
@@ -649,13 +642,13 @@ pub fn parse() -> RunMode {
                                 let data = frame
                                     .slice(ndarray::s![.., .., ..])
                                     .to_slice()
-                                    .and_then(|data| Some(data.to_vec()));
+                                    .map(|data| data.to_vec());
                                 match data {
                                     Some(data) => {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                        .and_then(|img| Some(DynamicImage::from(img)));
+                                        .map(|img| DynamicImage::from(img));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()

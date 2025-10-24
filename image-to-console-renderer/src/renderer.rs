@@ -112,8 +112,8 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
-    let stream_handle = config.audio.get_path().and_then(|_| {
-        Some(rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream"))
+    let stream_handle = config.audio.get_path().map(|_| {
+        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream")
     });
     #[cfg(feature = "rodio")]
     let audio = if let AudioPath::Custom(audio_file) = config.audio {
@@ -123,7 +123,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         None
     };
     // calculate the delay
-    let delay = config.fps.and_then(|fps| Some(100 / fps));
+    let delay = config.fps.map(|fps| 100 / fps);
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     fn play_frame(
@@ -222,9 +222,9 @@ pub fn render_video(
     #[cfg(feature = "rodio")]
     let file = audio_path
         .get_path()
-        .and_then(|path| Some(std::io::BufReader::new(File::open(path).unwrap())));
+        .map(|path| std::io::BufReader::new(File::open(path).unwrap()));
     #[cfg(feature = "rodio")]
-    let sink = file.and_then(|file| Some(rodio::play(&stream_handle.mixer(), file).unwrap()));
+    let sink = file.map(|file| rodio::play(&stream_handle.mixer(), file).unwrap());
 
     // calculate the delay
     let start_time = std::time::Instant::now();
