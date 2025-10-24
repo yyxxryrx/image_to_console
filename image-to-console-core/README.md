@@ -24,7 +24,7 @@ the terminal.
     - iTerm2 graphics protocol
     - Sixel graphics protocol (with `sixel` feature)
 
-> **Note**: Kitty and iTerm2 protocols are primarily tested on macOS/Linux. Windows users may experience limited functionality with these protocols as they require terminal emulators that support these specific protocols.
+> **Note**: This library is primarily developed and tested on Windows. While Kitty and iTerm2 protocols are supported, they may require specific terminal emulators on Windows that fully support these protocols. For the best experience with these protocols, testing on macOS/Linux environments is recommended.
 
 - Various image format support through the `image` crate
 - Multiple display modes:
