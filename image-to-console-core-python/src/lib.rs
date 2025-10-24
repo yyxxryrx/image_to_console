@@ -19,9 +19,7 @@ pub enum DisplayMode {
     KittyNoColor,
     Iterm2,
     Iterm2NoColor,
-    #[cfg(feature = "sixel")]
     SixelHalf,
-    #[cfg(feature = "sixel")]
     SixelFull,
 }
 
@@ -38,9 +36,7 @@ impl From<DisplayMode> for CoreDisplayMode {
             DisplayMode::KittyNoColor => CoreDisplayMode::KittyNoColor,
             DisplayMode::Iterm2 => CoreDisplayMode::Iterm2,
             DisplayMode::Iterm2NoColor => CoreDisplayMode::Iterm2NoColor,
-            #[cfg(feature = "sixel")]
             DisplayMode::SixelHalf => CoreDisplayMode::SixelHalf,
-            #[cfg(feature = "sixel")]
             DisplayMode::SixelFull => CoreDisplayMode::SixelFull,
         }
     }
