@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v0.1.17] - 2025-10-24
 
 ### Added
 
 - Add test, docs and examples for core library
+- Add python bindings for core library
+- Support ASCII mode
 
 ### Fixed
 
