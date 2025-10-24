@@ -54,7 +54,7 @@ version = "0.16.1"
 
 [dependencies.video-rs]
 optional = true
-version = "0.10.3"
+version = "0.10.5"
 features = ["ndarray"]
 
 [dependencies.crossbeam-channel]
