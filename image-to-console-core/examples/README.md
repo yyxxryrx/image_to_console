@@ -33,6 +33,30 @@ This example will resize image to fit the terminal size
 
 This example will resize image to fit the custom size
 
+## Option Example
+
+> option-example-*.rs
+
+These example will show how to create options
+
+### 1. Default Option
+
+> simple-example.rs
+
+This example will show how to create default option
+
+### 2. Chained calls
+
+> option-example-chained.rs
+
+This example will show how to use chained calls to create option
+
+
+### 3. Builder and Chained calls
+> option-example-builder.rs
+
+This example will show how to use builder and chained calls to create option
+
 ## Image Source
 
 | Filename   | Source                                                                                |

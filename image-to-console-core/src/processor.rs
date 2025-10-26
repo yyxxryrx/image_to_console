@@ -76,6 +76,52 @@ impl ImageProcessorOptions {
         }
     }
 
+    /// Set display mode option
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Display mode to set
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_display_mode(&mut self, mode: DisplayMode) -> &mut Self {
+        self.mode = mode;
+        self.full = mode.is_full();
+        self
+    }
+
+    /// Set resize mode option
+    ///
+    /// # Arguments
+    ///
+    /// * `resize` - Resize mode to set
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_resize(&mut self, resize: ResizeMode) -> &mut Self {
+        self.resize_mode = resize;
+        self
+    }
+
+    /// Set center option
+    ///
+    /// # Arguments
+    ///
+    /// * `center` - Whether to center the display
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for method chaining
+
+    pub fn option_center(&mut self, center: bool) -> &mut Self {
+        self.center = center;
+        self
+    }
+
     /// Set black background option
     ///
     /// # Arguments
