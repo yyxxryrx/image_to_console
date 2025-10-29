@@ -33,29 +33,51 @@ This example will resize image to fit the terminal size
 
 This example will resize image to fit the custom size
 
-## Option Example
+### Option Example
 
 > option-example-*.rs
 
 These example will show how to create options
 
-### 1. Default Option
+#### 1. Default Option
 
 > simple-example.rs
 
 This example will show how to create default option
 
-### 2. Chained calls
+#### 2. Chained calls
 
 > option-example-chained.rs
 
 This example will show how to use chained calls to create option
 
+#### 3. Builder and Chained calls
 
-### 3. Builder and Chained calls
 > option-example-builder.rs
 
 This example will show how to use builder and chained calls to create option
+
+### Protocol Example
+
+> protocol-example-*.rs
+
+#### 1. Builder
+
+> protocol-example-builder.rs
+
+This example will show how to use builder to get `DisplayMode`
+
+#### 2. Builder
+
+> protocol-example-chained.rs
+
+This example will show how to use chained calls to get `DisplayMode`
+
+## CLI Example
+
+> example-cli/
+
+This example show how to use this library in CLI
 
 ## Image Source
 

@@ -1,0 +1,15 @@
+[package]
+name = "example-cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = "0.25.8"
+
+[dependencies.clap]
+version = "4.5.50"
+features = ["derive"]
+
+[dependencies.image_to_console_core]
+path = "../.."
+features = ["all"]
