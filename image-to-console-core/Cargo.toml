@@ -2,6 +2,7 @@
 name = "image_to_console_core"
 version = "0.1.17"
 edition = "2024"
+rust-version = "1.85.1"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
 description = "A Rust library for converting images to terminal ASCII art, supporting multiple image formats and terminal output methods"
