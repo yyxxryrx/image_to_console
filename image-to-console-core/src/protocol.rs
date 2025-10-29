@@ -187,7 +187,7 @@ impl DisplayModeBuilder {
         Self {
             protocol,
             is_full: true,
-            has_color: false,
+            has_color: true,
         }
     }
 
