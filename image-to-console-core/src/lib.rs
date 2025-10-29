@@ -4,6 +4,7 @@ pub mod gif_processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
 pub mod processor;
+pub mod protocol;
 
 #[cfg(feature = "sixel")]
 use image::RgbImage;

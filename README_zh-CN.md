@@ -37,7 +37,7 @@
 |---------------|----------------------------------------------------|-----------------|-------------------------------------|
 | reqwest       | reqwest                                            | HTTP 请求库        | <span style="color: green">✓</span> |
 | audio_support | rodio                                              | 播放音频支持          | <span style="color: red">✗</span>   |
-| crossterm     | crossterm                                          | 终端库             | <span style="color: green">✓</span> |
+| use_crossterm | crossterm                                          | 终端库             | <span style="color: green">✓</span> |
 | gif_player    | gif, crossbeam-channel                             | 在终端播放 GIF 动画    | <span style="color: green">✓</span> |
 | video_player  | ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频         | <span style="color: red">✗</span>   |
 | sixel_support | quantette, nohash-hasher                           | 使用 Sixel 协议显示图像 | <span style="color: green">✓</span> |

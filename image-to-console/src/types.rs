@@ -1,45 +1,7 @@
-use clap::builder::PossibleValue;
 use clap::ValueEnum;
+use clap::builder::PossibleValue;
 use image::DynamicImage;
 use std::fmt::Debug;
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Protocol {
-    Auto,
-    Normal,
-    WezTerm,
-    Kitty,
-    ITerm2,
-    #[cfg(feature = "sixel_support")]
-    Sixel,
-}
-#[allow(dead_code)]
-impl Default for Protocol {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-impl ValueEnum for Protocol {
-    fn value_variants<'a>() -> &'a [Self] {
-        #[cfg(not(feature = "sixel_support"))]
-        return &[Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2];
-        #[cfg(feature = "sixel_support")]
-        &[Self::Auto, Self::Normal, Self::WezTerm, Self::Kitty, Self::ITerm2, Self::Sixel]
-    }
-
-    fn to_possible_value(&self) -> Option<PossibleValue> {
-        Some(match self {
-            Self::Auto => PossibleValue::new("auto"),
-            Self::Normal => PossibleValue::new("normal"),
-            Self::WezTerm => PossibleValue::new("wezterm"),
-            Self::Kitty => PossibleValue::new("kitty"),
-            Self::ITerm2 => PossibleValue::new("iterm2"),
-            #[cfg(feature = "sixel_support")]
-            Self::Sixel => PossibleValue::new("sixel"),
-        })
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum ImageType {
@@ -49,7 +11,7 @@ pub enum ImageType {
     Gif(crossbeam_channel::Receiver<Result<(DynamicImage, usize, u16), String>>),
     #[cfg(feature = "video_player")]
     /// The channel to receive video events
-    Video(crossbeam_channel::Receiver<Result<VideoEvent, String>>)
+    Video(crossbeam_channel::Receiver<Result<VideoEvent, String>>),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -86,9 +48,19 @@ pub enum VideoEvent {
     ///
     /// The last one is the frame rate.
     #[cfg(not(feature = "audio_support"))]
-    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, f32)),
+    Initialized(
+        (
+            crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>,
+            f32,
+        ),
+    ),
     #[cfg(feature = "audio_support")]
-    Initialized((crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>, image_to_console_renderer::audio_path::AudioPath, f32)),
+    Initialized(
+        (
+            crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>,
+            image_to_console_renderer::audio_path::AudioPath,
+            f32,
+        ),
+    ),
     Finished,
 }
-

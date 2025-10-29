@@ -4,9 +4,7 @@ use crate::{
     types::{
         ClapResizeMode,
         ImageType::{self, Image},
-        Protocol,
     },
-    util::CreateMDFromBool,
 };
 use base64::Engine;
 use clap::{
@@ -19,6 +17,7 @@ use clap::{
 #[allow(unused)]
 #[cfg(any(feature = "gif_player", feature = "video_player"))]
 use crossbeam_channel::{bounded, unbounded};
+use image_to_console_core::protocol::Protocol;
 use image_to_console_core::{DisplayMode, ResizeMode};
 #[cfg(feature = "audio_support")]
 use image_to_console_renderer::audio_path::AudioPath;
@@ -294,7 +293,12 @@ impl Config {
             full_resolution: !cli.half_resolution,
             disable_info: cli.disable_info || cli.command.is_directory(),
             disable_print: cli.disable_print || cli.command.is_directory(),
-            mode: DisplayMode::from_bool(!cli.half_resolution, cli.no_color, cli.protocol),
+            mode: cli
+                .protocol
+                .builder()
+                .option_is_full(!cli.half_resolution)
+                .option_has_color(!cli.no_color)
+                .build(),
             #[cfg(feature = "sixel_support")]
             max_colors: cli.max_colors,
             #[cfg(feature = "sixel_support")]

@@ -34,7 +34,7 @@ English | [简体中文](README_zh-CN.md)
 |---------------|----------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
 | reqwest       | reqwest                                            | HTTP client library                                              | <span style="color: green">✓</span> |
 | audio_support | rodio                                              | Play audio support                                               | <span style="color: red">✗</span>   |
-| crossterm     | crossterm                                          | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
+| use_crossterm | crossterm                                          | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
 | gif_player    | gif, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
 | video_player  | ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
 | sixel_support | quantette, nohash-hasher                           | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
