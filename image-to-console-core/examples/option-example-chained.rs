@@ -12,7 +12,7 @@ fn main() {
     // Use chained calls to create, configure, and process images
     let result = ImageProcessorOptions::default()
         .option_resize(ResizeMode::Custom(CustomResizeOption::new(100, 100)))
-        .option_display_mode(DisplayMode::SixelFull)
+        .option_display_mode(DisplayMode::Ascii)
         .create_processor(img)
         .process();
     println!("{}", result.display());
