@@ -117,12 +117,10 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream")
     });
     #[cfg(feature = "rodio")]
-    let audio = if let AudioPath::Custom(ref audio_file) = config.audio {
-        let file = std::io::BufReader::new(File::open(audio_file).unwrap());
-        Some(rodio::play(stream_handle.as_ref().unwrap().mixer(), file).unwrap())
-    } else {
-        None
-    };
+    let audio = config.audio.get_path().map(|path| {
+        let file = std::io::BufReader::new(File::open(path).unwrap());
+        rodio::play(stream_handle.as_ref().unwrap().mixer(), file).unwrap()
+    });
     // calculate the delay
     let delay = config.fps.map(|fps| 100 / fps);
     let start_time = std::time::Instant::now();
@@ -145,12 +143,13 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         if let Some(delay) = delay {
             frame_delay = delay;
         }
-        // Create new thread and other works it takes about 700 µs(sixel mode is 1000 µs), so we need to subtract it.
         let d = std::time::Duration::from_micros(frame_delay * 10_000).saturating_sub(offset);
         let st2 = st.clone();
+        // create a new timer
         let timer = std::time::Instant::now();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
+            // calculate the time
             let time = timer.elapsed();
             play_frame(frames, delay, index + 1, st2, is_sixel, back_top, time - d);
         });
@@ -252,13 +251,14 @@ pub fn render_video(
         }
         let frame = frame.unwrap();
         let (frame, index) = frame;
-        // Create new thread and other works it takes about 700 µs(sixel mode is 843 µs) time, so we need to subtract it.
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
             .saturating_sub(offset);
         let st2 = st.clone();
+        // create a new timer
         let timer = std::time::Instant::now();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
+            // calculate the time
             let time = timer.elapsed();
             play_frame(frames, delay, st2, is_sixel, back_top, time - d);
         });
