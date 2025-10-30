@@ -1,4 +1,3 @@
-use image_to_console_colored::{colors::TerminalColor, prelude::ToColoredText};
 #[cfg(all(
     feature = "rodio",
     any(feature = "video_player", feature = "gif_player")
@@ -7,12 +6,14 @@ use crate::audio_path::AudioPath;
 use crate::config::Config;
 #[cfg(feature = "gif_player")]
 use crate::frame::Frame;
+use image_to_console_colored::{colors::TerminalColor, prelude::ToColoredText};
 use image_to_console_core::processor::ImageProcessorResult;
-use std::fs::File;
-use std::io::{Read, Result};
-use std::io::Write;
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
 use std::thread::JoinHandle;
+use std::{
+    fs::File,
+    io::{Read, Result, Write},
+};
 
 pub fn get_char() -> char {
     let mut buf = vec![0; 1];
@@ -116,7 +117,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream")
     });
     #[cfg(feature = "rodio")]
-    let audio = if let AudioPath::Custom(audio_file) = config.audio {
+    let audio = if let AudioPath::Custom(ref audio_file) = config.audio {
         let file = std::io::BufReader::new(File::open(audio_file).unwrap());
         Some(rodio::play(stream_handle.as_ref().unwrap().mixer(), file).unwrap())
     } else {
@@ -133,6 +134,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
         back_top: bool,
+        offset: std::time::Duration,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -144,13 +146,13 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
             frame_delay = delay;
         }
         // Create new thread and other works it takes about 700 µs(sixel mode is 1000 µs), so we need to subtract it.
-        let d = std::time::Duration::from_micros(
-            frame_delay * 10_000 - if is_sixel { 1000 } else { 700 },
-        );
+        let d = std::time::Duration::from_micros(frame_delay * 10_000).saturating_sub(offset);
         let st2 = st.clone();
+        let timer = std::time::Instant::now();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
-            play_frame(frames, delay, index + 1, st2, is_sixel, back_top);
+            let time = timer.elapsed();
+            play_frame(frames, delay, index + 1, st2, is_sixel, back_top, time - d);
         });
         st.send(task).unwrap();
 
@@ -172,7 +174,15 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         print!("\x1bc");
     }
     #[cfg(feature = "sixel_support")]
-    play_frame(results, delay, 0, st, config.mode.is_sixel(), config.clear);
+    play_frame(
+        results,
+        delay,
+        0,
+        st,
+        config.mode.is_sixel(),
+        config.clear,
+        std::time::Duration::default(),
+    );
     #[cfg(not(feature = "sixel_support"))]
     play_frame(results, delay, 0, st, false, config.clear);
 
@@ -209,8 +219,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: crossbeam_channel::Receiver<(String, usize)>,
-    #[cfg(feature = "rodio")]
-    audio_path: AudioPath,
+    #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,
     clear: bool,
@@ -235,6 +244,7 @@ pub fn render_video(
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
         back_top: bool,
+        offset: std::time::Duration,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -243,13 +253,14 @@ pub fn render_video(
         let frame = frame.unwrap();
         let (frame, index) = frame;
         // Create new thread and other works it takes about 700 µs(sixel mode is 843 µs) time, so we need to subtract it.
-        let d = std::time::Duration::from_micros(
-            (1_000_000f32 / delay).round() as u64 - if is_sixel { 843 } else { 700 },
-        );
+        let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
+            .saturating_sub(offset);
         let st2 = st.clone();
+        let timer = std::time::Instant::now();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
-            play_frame(frames, delay, st2, is_sixel, back_top);
+            let time = timer.elapsed();
+            play_frame(frames, delay, st2, is_sixel, back_top, time - d);
         });
         st.send(task).unwrap();
 
@@ -273,7 +284,14 @@ pub fn render_video(
         print!("\x1bc");
     }
 
-    play_frame(vrx, fps, st, is_sixel, clear);
+    play_frame(
+        vrx,
+        fps,
+        st,
+        is_sixel,
+        clear,
+        std::time::Duration::default(),
+    );
 
     for task in rt.iter() {
         task.join().unwrap();
@@ -297,8 +315,4 @@ pub fn render_video(
     // quit the audio stream
     #[cfg(feature = "rodio")]
     std::mem::forget(stream_handle);
-    #[cfg(feature = "rodio")]
-    if let AudioPath::Temp(path) = audio_path {
-        std::fs::remove_file(path).unwrap();
-    }
 }
