@@ -12,7 +12,16 @@ impl Default for AudioPath {
         Self::None
     }
 }
-#[allow(unused)]
+
+#[cfg(feature = "rodio")]
+impl Drop for AudioPath {
+    fn drop(&mut self) {
+        if let AudioPath::Temp(path) = self {
+            std::fs::remove_file(path).unwrap();
+        }
+    }
+}
+
 impl AudioPath {
     #[cfg(feature = "rodio")]
     pub fn get_path(&self) -> Option<std::path::PathBuf> {
