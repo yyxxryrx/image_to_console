@@ -78,7 +78,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: build
-          args: --release --features sixel --target ${{ matrix.target }}
+          args: --release --target ${{ matrix.target }}
           working-directory: "image-to-console-core-python"
 
       - name: Package
