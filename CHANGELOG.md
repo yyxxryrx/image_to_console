@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Add `drop` trait for `AudioPath` to clean temporary audio files automatically.
+
+### Changed
+
+- Remove the clear temporary audio file logic in the end of the video playback logic.
+- Change the delay calculation method to dynamic calculation not based on the fixed number.
+
+### Refactor
+
+- Replace the `if let` branch with the `get_path` method when init the audio mixer in the GIF playback logic
+- Move the `Protocol` enum to the core library
+
 ## [v0.1.17] - 2025-10-24
 
 ### Added
@@ -47,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactor
 
-- Refactored configuration parsing logic: extracted `Config` building into `from_cli`, added `Clone` to CLI structs, unified path handling.
+- Refactored configuration parsing logic: extracted `Config` building into `from_cli`, added `Clone` to CLI structs,
+  unified path handling.
 - Replaced raw `u8` color index with `ColorIndexState` enum for safer state management.
 - Split rendering logic into dedicated crates: `image-to-console-renderer` and `image-to-console-colored`.
 - Improved GIF/video player with on-demand audio loading.
@@ -99,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Added FFmpeg installation instructions per OS.
+- Added `FFmpeg` installation instructions per OS.
 - Introduced feature dependency table in README.
 
 ---
@@ -108,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- CI support for video builds: added `libavcodec-dev`, `libavformat-dev`, `libavutil-dev` on Ubuntu; `ffmpeg` on macOS via Homebrew; `ffmpeg` via vcpkg on Windows.
+- CI support for video builds: added `libavcodec-dev`, `libavformat-dev`, `libavutil-dev` on Ubuntu; `ffmpeg` on macOS
+  via Homebrew; `ffmpeg` via vcpkg on Windows.
 
 ### Refactor
 
@@ -116,7 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
-- Multi-threaded GIF frame processing using `crossbeam-channel`.
+- Multithreaded GIF frame processing using `crossbeam-channel`.
 
 ### Changed
 
@@ -159,5 +177,6 @@ _Note: All changes prior to 0.1.12 are considered initial development and not in
 ---
 
 > **Versioning Note**:  
-> This project follows semantic versioning. Given the current `0.x.y` format, breaking changes may occur between minor versions until `1.0.0` is released.
+> This project follows semantic versioning. Given the current `0.x.y` format, breaking changes may occur between minor
+> versions until `1.0.0` is released.
 
