@@ -410,6 +410,108 @@ impl Default for ResizeMode {
     }
 }
 
+#[macro_export]
+/// A macro to display a single image to the terminal using default options or custom options.
+///
+/// This macro provides a convenient way to display images without manually setting up
+/// the image processor and display protocol. It automatically detects the best terminal
+/// protocol to use and processes the image accordingly.
+///
+/// # Arguments
+///
+/// * `$image` - An image of type `image::DynamicImage` to be displayed
+/// * `$option` (optional) - Custom `ImageProcessorOptions` to control how the image is processed
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Display an image with default options
+/// show_image!(my_image);
+///
+/// // Display an image with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_display_mode(DisplayMode::Ascii);
+/// show_image!(my_image, options);
+/// ```
+macro_rules! show_image {
+    ($image:expr) => {
+        fn _show_image(image: image::DynamicImage) {
+            let display_mode = image_to_console_core::protocol::Protocol::Auto
+                .builder()
+                .build();
+            let result = image_to_console_core::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .create_processor(image)
+                .process();
+            println!("{}", result.display());
+        }
+        _show_image($image);
+    };
+    ($image: expr, $option: expr) => {
+        fn _show_image(
+            image: image::DynamicImage,
+            option: image_to_console_core::processor::ImageProcessorOptions,
+        ) {
+            let result = option.create_processor(image).process();
+            println!("{}", result.display());
+        }
+        _show_image($image, $option);
+    };
+}
+
+#[macro_export]
+/// A macro to display multiple images to the terminal.
+///
+/// This macro allows displaying multiple images either with default options or with
+/// shared custom options. It's useful when you want to display a series of images
+/// with the same processing settings.
+///
+/// # Arguments
+///
+/// * `$image` - One or more images of type `image::DynamicImage` to be displayed
+/// * `@with_options $option` (optional) - Custom `ImageProcessorOptions` to control
+///   how all images are processed
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Display multiple images with default options
+/// show_images!(image1, image2, image3);
+///
+/// // Display multiple images with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_resize_mode(ResizeMode::Custom(CustomResizeOption::new(80, 40)))
+///     .get_options();
+/// show_images!(image1, image2, image3, @with_options options);
+/// ```
+macro_rules! show_images {
+    ($($image:expr),+, @with_options $option: expr) => {
+        fn _show_image(image: image::DynamicImage, option: image_to_console_core::processor::ImageProcessorOptions) {
+            let result = option
+                .create_processor(image)
+                .process();
+            println!("{}", result.display());
+        }
+        let option = $option;
+        $(
+            _show_image($image, option);
+        )+
+    };
+    ($($image:expr),+) => {
+        fn _show_image(image: image::DynamicImage) {
+            let display_mode = image_to_console_core::protocol::Protocol::Auto.builder().build();
+            let result = image_to_console_core::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .create_processor(image)
+                .process();
+            println!("{}", result.display());
+        }
+        $(
+            _show_image($image);
+        )+
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
