@@ -74,18 +74,38 @@ This example will show how to use chained calls to get `DisplayMode`
 
 ### `show_image!` and `show_images!` Example
 
-### 1. `show_image!`
+#### 1. `show_image!`
 
 > simple-example2.rs
 > show-image-with-option.rs
 
 This example show how to use `show_image!` macro
 
-### 2. `show_images!`
+#### 2. `show_images!`
 
 > show-images*.rs
 
 This example show how to use `show_images!` macro
+
+### `process_images!` Example
+
+#### 1. One image
+
+> process-images-example-*.rs
+
+This example show how to process one image with use `process_images!` macro
+
+#### 2. Multiple images
+
+> process-images-example-*.rs
+
+This example show how to process multiple images with use `process_images!` macro
+
+#### 3. Nothing
+
+> process-images-nothing.rs
+
+This example show if you give nothing to `process_images!` macro, it will return empty `Vec`
 
 ## CLI Example
 
