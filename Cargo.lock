@@ -1293,7 +1293,7 @@ version = "0.1.2"
 
 [[package]]
 name = "image_to_console_core"
-version = "0.1.18"
+version = "0.1.19"
 dependencies = [
  "base64",
  "clap",
