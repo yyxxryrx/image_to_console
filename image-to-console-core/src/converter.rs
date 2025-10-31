@@ -467,7 +467,7 @@ impl ImageConverter {
         let image_data = self.get_image_data();
         // Add space to prevent misalignment
         let mut lines: Vec<String> = vec![String::from(" "); 2];
-        lines[0] = if self.option.center {
+        lines[0] = if !self.option.center {
             format!(
                 "\x1b]1337;File=size={};inline=1:{}\x1b\\",
                 image_data.len(),
@@ -533,7 +533,7 @@ impl ImageConverter {
     /// Returns a vector of strings representing the converted image
     fn iterm2_convert(&self) -> Vec<String> {
         let image_data = self.get_image_data();
-        vec![if self.option.center {
+        vec![if !self.option.center {
             format!(
                 "\x1b]1337;File=size={};inline=1:{}\x07",
                 image_data.len(),
