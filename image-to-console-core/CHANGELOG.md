@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v0.1.20] - 2025-10-31
+
+### Fixed
+
+- Fix the convert logic problem in the center mode
+
+## [v0.1.19] - 2025-10-31
 
 ### Added
 
