@@ -14,6 +14,8 @@ fn main() {
     .expect("Cannot found image");
     // Process images
     let results = process_images!(img1, img2);
+    // Or you can write
+    // let results = process_images![img1, img2];
     // Do something with results
     for result in results {
         println!("{}", result.display());

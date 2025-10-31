@@ -549,6 +549,8 @@ macro_rules! show_images {
 ///
 /// // Process multiple images with default options
 /// let results = process_images!(image1, image2, image3);
+/// // or
+/// let results = process_images![image1, image2, image3];
 ///
 /// // Process multiple images with custom options
 /// let options = ImageProcessorOptions::default()

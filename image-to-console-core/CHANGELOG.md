@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Add `show_image!` macro to display image
+- Add `show_images!` macro to display multiple images
+- Add `process_images!` macro to process images
+
 ## [v0.1.18] - 2025-10-30
 
 ### Added
