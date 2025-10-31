@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.85.1"
 
 authors = ["yyxxryrx <yyxxryrx@outlook.com>"]
-description = "A Rust library for converting images to terminal ASCII art, supporting multiple image formats and terminal output methods"
+description = "A simple Rust library for converting images to terminal ASCII art, supporting multiple image formats and terminal output methods"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/yyxxryrx/image_to_console"
@@ -31,6 +31,10 @@ path = "examples/basic-example.rs"
 [[example]]
 name = "simple-example"
 path = "examples/simple-example.rs"
+
+[[example]]
+name = "simple-example2"
+path = "examples/simple-example2.rs"
 
 [[example]]
 name = "simple-example-iterm"
@@ -71,6 +75,54 @@ path = "examples/protocol-example-builder.rs"
 [[example]]
 name = "protocol-example-chained"
 path = "examples/protocol-example-chained.rs"
+
+[[example]]
+name = "show-image-with-option"
+path = "examples/show-image-with-option.rs"
+
+[[example]]
+name = "show-images"
+path = "examples/show-images.rs"
+
+[[example]]
+name = "show-images-with-option"
+path = "examples/show-images-with-option.rs"
+
+[[example]]
+name = "show-images-vec"
+path = "examples/show-images-vec.rs"
+
+[[example]]
+name = "show-images-vec-with-option"
+path = "examples/show-images-vec-with-option.rs"
+
+[[example]]
+name = "process-image-example"
+path = "examples/process-image-example.rs"
+
+[[example]]
+name = "process-image-example-with-option"
+path = "examples/process-image-example-with-option.rs"
+
+[[example]]
+name = "process-images-example"
+path = "examples/process-images-example.rs"
+
+[[example]]
+name = "process-images-example-with-option"
+path = "examples/process-images-example-with-option.rs"
+
+[[example]]
+name = "process-images-example-vec"
+path = "examples/process-images-example-vec.rs"
+
+[[example]]
+name = "process-image-exmaples-vec-with-option"
+path = "examples/process-images-example-vec-with-option.rs"
+
+[[example]]
+name = "process-images-nothing"
+path = "examples/process-images-nothing.rs"
 
 [[example]]
 name = "example-cli"
