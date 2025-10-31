@@ -52,7 +52,7 @@ image_to_console_core = "0.1"
 
 Basic usage example:
 
-> you can see in examples/basic-example.rs
+> you can see in [examples/basic-example.rs](examples/basic-example.rs)
 
 ```rust
 use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
@@ -75,7 +75,7 @@ fn main() -> ImageResult<()> {
 
 or more simply
 
-> you can see in examples/simple-example.rs
+> you can see in [examples/simple-example.rs](examples/simple-example.rs)
 
 ```rust
 use image::error::ImageResult;
@@ -94,7 +94,21 @@ fn main() -> ImageResult<()> {
     println!("{}", result.display());
     Ok(())
 }
+```
 
+or
+> you can see in [examples/simple-example2.rs](examples/simple-example2.rs)
+
+```rust
+use image::error::ImageResult;
+use image_to_console_core::show_image;
+
+fn main() -> ImageResult<()> {
+    let img = image::open("path/to/image.png")?;
+    // show image
+    show_image!(img);
+    Ok(())
+}
 ```
 
 ## Features Flags
