@@ -6,6 +6,9 @@ pub mod indexed_image;
 pub mod processor;
 pub mod protocol;
 
+pub extern crate image;
+pub extern crate rayon;
+
 #[cfg(feature = "sixel")]
 use image::RgbImage;
 use image::{DynamicImage, GrayImage, RgbaImage};
@@ -435,11 +438,9 @@ impl Default for ResizeMode {
 /// ```
 macro_rules! show_image {
     ($image:expr) => {
-        fn _show_image(image: image::DynamicImage) {
-            let display_mode = image_to_console_core::protocol::Protocol::Auto
-                .builder()
-                .build();
-            let result = image_to_console_core::processor::ImageProcessorOptions::default()
+        fn _show_image(image: $crate::image::DynamicImage) {
+            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            let result = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .create_processor(image)
                 .process();
@@ -449,8 +450,8 @@ macro_rules! show_image {
     };
     ($image: expr, $option: expr) => {
         fn _show_image(
-            image: image::DynamicImage,
-            option: image_to_console_core::processor::ImageProcessorOptions,
+            image: $crate::image::DynamicImage,
+            option: $crate::processor::ImageProcessorOptions,
         ) {
             let result = option.create_processor(image).process();
             println!("{}", result.display());
@@ -486,7 +487,7 @@ macro_rules! show_image {
 /// ```
 macro_rules! show_images {
     ($($image:expr),+, @with_options $option: expr) => {
-        fn _show_image(image: image::DynamicImage, option: image_to_console_core::processor::ImageProcessorOptions) {
+        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
             let result = option
                 .create_processor(image)
                 .process();
@@ -498,9 +499,9 @@ macro_rules! show_images {
         )+
     };
     ($($image:expr),+) => {
-        fn _show_image(image: image::DynamicImage) {
-            let display_mode = image_to_console_core::protocol::Protocol::Auto.builder().build();
-            let result = image_to_console_core::processor::ImageProcessorOptions::default()
+        fn _show_image(image: $crate::image::DynamicImage) {
+            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            let result = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .create_processor(image)
                 .process();
@@ -510,6 +511,177 @@ macro_rules! show_images {
             _show_image($image);
         )+
     };
+}
+
+#[macro_export]
+/// A macro to process one or more images and return the processed results.
+///
+/// This macro provides flexible ways to process images with various options and
+/// automatically handles parallel processing for better performance when dealing
+/// with multiple images. It supports both single image processing and batch
+/// processing with optional custom options.
+///
+/// For batch processing of more than 10 images, this macro automatically uses
+/// parallel processing via the rayon crate to improve performance. For smaller
+/// batches or single images, sequential processing is used.
+///
+/// # Arguments
+///
+/// * `()` - Returns an empty vector when called with no arguments
+/// * `$image:expr` - Process a single image with default options
+/// * `$image:expr, @with_options $options:expr` - Process a single image with custom options
+/// * `$($image:expr),+` - Process multiple images with default options
+/// * `$($image:expr),+, @with_options $options:expr` - Process multiple images with custom options
+/// * `@vec $images:expr` - Process a vector of images with default options
+/// * `@vec $images:expr, @with_options $options:expr` - Process a vector of images with custom options
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Process a single image with default options
+/// let result = process_images!(my_image);
+///
+/// // Process a single image with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_display_mode(DisplayMode::Ascii)
+///     .get_options();
+/// let result = process_images!(my_image, @with_options options);
+///
+/// // Process multiple images with default options
+/// let results = process_images!(image1, image2, image3);
+///
+/// // Process multiple images with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_resize_mode(ResizeMode::Custom(CustomResizeOption::new(80, 40)))
+///     .get_options();
+/// let results = process_images!(image1, image2, image3, @with_options options);
+///
+/// // Process a vector of images
+/// let image_vec = vec![image1, image2, image3];
+/// let results = process_images!(@vec image_vec);
+///
+/// // Process a vector of images with custom options
+/// let results = process_images!(@vec image_vec, @with_options options);
+///
+/// // Return an empty vector
+/// let empty_results: Vec<ImageProcessorResult> = process_images!();
+/// ```
+///
+/// # Returns
+///
+/// * For single image processing: `ImageProcessorResult`
+/// * For multiple image processing: `Vec<ImageProcessorResult>`
+/// * For empty invocation: `Vec<ImageProcessorResult>` (empty vector)
+macro_rules! process_images {
+    () => {
+        Vec::<$crate::processor::ImageProcessorResult>::new()
+    };
+    (@vec $images:expr) => {{
+        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
+            let display_mode = $crate::protocol::Protocol::Auto
+                    .builder()
+                    .build();
+            let option = $crate::processor::ImageProcessorOptions::default()
+                    .option_display_mode(display_mode)
+                    .get_options();
+
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .map(|mut image| option.create_processor(image).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            } else {
+                images
+                    .iter()
+                    .map(|image| option.create_processor(image.clone()).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            }
+        }
+        _process_images($images)}
+    };
+    (@vec $images:expr,@with_options $options:expr) => {{
+        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .map(|mut image| options.create_processor(image).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            } else {
+                images
+                    .iter()
+                    .map(|image| options.create_processor(image.clone()).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            }
+        }
+        _process_images($images, $options)}
+    };
+    ($image:expr) => {{
+        let display_mode = $crate::protocol::Protocol::Auto
+                .builder()
+                .build();
+        let option = $crate::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .get_options();
+        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::processor::ImageProcessorResult {
+            return $crate::processor::ImageProcessor::new(image, option).process();
+        }
+        _process_image($image, option)}
+    };
+    ($image:expr,@with_options $options:expr) => {{
+        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::processor::ImageProcessorResult {
+            return $crate::processor::ImageProcessor::new(image, option).process();
+        }
+        _process_image($image, $options)}
+    };
+    ($($image:expr),+,@with_options $options: expr) => {{
+        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .map(|mut image| options.create_processor(image).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            } else {
+                images
+                    .iter()
+                    .map(|image| options.create_processor(image.clone()).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            }
+        }
+        let options = $options;
+        let mut images = vec![$($image),+];
+        _process_images(images, options)
+    }};
+    ($($image:expr),+$(,)?) => {{
+        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
+            let display_mode = $crate::protocol::Protocol::Auto
+                    .builder()
+                    .build();
+            let option = $crate::processor::ImageProcessorOptions::default()
+                    .option_display_mode(display_mode)
+                    .get_options();
+
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .map(|mut image| option.create_processor(image).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            } else {
+                images
+                    .iter()
+                    .map(|image| option.create_processor(image.clone()).process())
+                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+            }
+        }
+        let images = vec![$(
+            $image
+        ),+];
+        _process_images(images)
+        }
+    }
 }
 
 #[cfg(test)]

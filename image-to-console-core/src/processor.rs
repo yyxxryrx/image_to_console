@@ -6,7 +6,7 @@ use image::{GenericImageView, imageops::FilterType};
 /// Image processor options
 ///
 /// Configures various parameters for image processing
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct ImageProcessorOptions {
     /// Whether to use full height mode
     pub full: bool,
@@ -206,6 +206,7 @@ impl ImageProcessorOptions {
 /// Image processing result
 ///
 /// Contains the processed image data and related information
+#[derive(Debug)]
 pub struct ImageProcessorResult {
     /// Image width
     pub width: u32,
