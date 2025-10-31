@@ -197,6 +197,10 @@ impl ImageProcessorOptions {
     pub fn create_processor(&self, image: image::DynamicImage) -> ImageProcessor {
         ImageProcessor::new(image, self.clone())
     }
+
+    pub fn get_options(&self) -> ImageProcessorOptions {
+        self.clone()
+    }
 }
 
 /// Image processing result
