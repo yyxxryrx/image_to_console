@@ -469,6 +469,7 @@ macro_rules! show_image {
 ///
 /// # Arguments
 ///
+/// * `@vec $images` - A vector of images of type `Vec<image::DynamicImage>` to be displayed
 /// * `$image` - One or more images of type `image::DynamicImage` to be displayed
 /// * `@with_options $option` (optional) - Custom `ImageProcessorOptions` to control
 ///   how all images are processed
@@ -484,8 +485,47 @@ macro_rules! show_image {
 ///     .option_resize_mode(ResizeMode::Custom(CustomResizeOption::new(80, 40)))
 ///     .get_options();
 /// show_images!(image1, image2, image3, @with_options options);
+///
+/// // Display images from a vector with default options
+/// let image_vec = vec![image1, image2, image3];
+/// show_images!(@vec image_vec);
+///
+/// // Display images from a vector with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_display_mode(DisplayMode::Ascii)
+///     .get_options();
+/// show_images!(@vec image_vec, @with_options options);
 /// ```
 macro_rules! show_images {
+    (@vec $images:expr) => {
+        let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        let option = $crate::processor::ImageProcessorOptions::default()
+            .option_display_mode(display_mode)
+            .get_options();
+        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+            let result = option
+                .create_processor(image)
+                .process();
+            println!("{}", result.display());
+        }
+        let images: Vec<$crate::image::DynamicImage> = $images;
+        for image in images {
+            _show_image(image, option);
+        }
+    };
+    (@vec $images:expr, @with_options $option: expr) => {
+        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+            let result = option
+                .create_processor(image)
+                .process();
+            println!("{}", result.display());
+        }
+        let option: $crate::processor::ImageProcessorOptions = $option;
+        let images: Vec<$crate::image::DynamicImage> = $images;
+        for image in images {
+            _show_image(image, option);
+        }
+    };
     ($($image:expr),+, @with_options $option: expr) => {
         fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
             let result = option
@@ -493,22 +533,21 @@ macro_rules! show_images {
                 .process();
             println!("{}", result.display());
         }
-        let option = $option;
+        let option: $crate::processor::ImageProcessorOptions = $option;
         $(
             _show_image($image, option);
         )+
     };
     ($($image:expr),+) => {
-        fn _show_image(image: $crate::image::DynamicImage) {
-            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-            let result = $crate::processor::ImageProcessorOptions::default()
-                .option_display_mode(display_mode)
-                .create_processor(image)
-                .process();
-            println!("{}", result.display());
+        let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        let option = $crate::processor::ImageProcessorOptions::default()
+            .option_display_mode(display_mode)
+            .get_options();
+        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+            println!("{}", option.create_processor(image).process().display());
         }
         $(
-            _show_image($image);
+            _show_image($image, option);
         )+
     };
 }
