@@ -48,6 +48,33 @@ impl Default for ImageProcessorOptions {
     }
 }
 
+pub trait ImageProcessorOptionsCreate<T> {
+
+    /// Create a new image processor
+    ///
+    /// # Arguments
+    ///
+    /// * `image` - Image to be processed
+    ///
+    /// # Returns
+    ///
+    /// Returns a new image processor instance
+
+    fn create_processor(&self, image: T) -> ImageProcessor;
+}
+
+impl ImageProcessorOptionsCreate<image::DynamicImage> for ImageProcessorOptions {
+    fn create_processor(&self, image: image::DynamicImage) -> ImageProcessor {
+        ImageProcessor::new(image, self.clone())
+    }
+}
+
+impl ImageProcessorOptionsCreate<&image::DynamicImage> for ImageProcessorOptions {
+    fn create_processor(&self, image: &image::DynamicImage) -> ImageProcessor {
+        ImageProcessor::new(image.clone(), self.clone())
+    }
+}
+
 impl ImageProcessorOptions {
     /// Create a new ImageProcessorOptions instance
     ///
@@ -182,20 +209,6 @@ impl ImageProcessorOptions {
     pub fn option_dither(&mut self, enabled: bool) -> &mut Self {
         self.dither = enabled;
         self
-    }
-
-    /// Create a new image processor
-    ///
-    /// # Arguments
-    ///
-    /// * `image` - Image to be processed
-    ///
-    /// # Returns
-    ///
-    /// Returns a new image processor instance
-
-    pub fn create_processor(&self, image: image::DynamicImage) -> ImageProcessor {
-        ImageProcessor::new(image, self.clone())
     }
 
     pub fn get_options(&self) -> ImageProcessorOptions {

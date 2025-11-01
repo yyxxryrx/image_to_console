@@ -1,6 +1,6 @@
 use clap::Parser;
 use image::error::ImageResult;
-use image_to_console_core::{processor::ImageProcessorOptions, protocol::Protocol};
+use image_to_console_core::{processor::{ImageProcessorOptions, ImageProcessorOptionsCreate}, protocol::Protocol};
 
 #[derive(Debug, Parser)]
 struct Cli {

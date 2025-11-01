@@ -1,5 +1,5 @@
 use image::error::ImageResult;
-use image_to_console_core::processor::ImageProcessorOptions;
+use image_to_console_core::processor::{ImageProcessorOptions, ImageProcessorOptionsCreate};
 
 fn main() -> ImageResult<()> {
     let img = image::open("path/to/image.png")?;

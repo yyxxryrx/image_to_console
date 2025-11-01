@@ -438,8 +438,16 @@ impl Default for ResizeMode {
 /// ```
 macro_rules! show_image {
     ($image:expr) => {
-        fn _show_image(image: $crate::image::DynamicImage) {
+        fn _show_image<T>(image: T)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            #[cfg(not(feature = "auto_select"))]
+            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let result = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .create_processor(image)
@@ -453,6 +461,7 @@ macro_rules! show_image {
             image: $crate::image::DynamicImage,
             option: $crate::processor::ImageProcessorOptions,
         ) {
+            use $crate::processor::ImageProcessorOptionsCreate;
             let result = option.create_processor(image).process();
             println!("{}", result.display());
         }
@@ -498,7 +507,11 @@ macro_rules! show_image {
 /// ```
 macro_rules! show_images {
     (@vec $images:expr) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        #[cfg(feature = "auto_select")]
         let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        #[cfg(not(feature = "auto_select"))]
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
@@ -515,6 +528,7 @@ macro_rules! show_images {
     };
     (@vec $images:expr, @with_options $option: expr) => {
         fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+            use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
                 .process();
@@ -528,6 +542,7 @@ macro_rules! show_images {
     };
     ($($image:expr),+, @with_options $option: expr) => {
         fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+            use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
                 .process();
@@ -539,7 +554,11 @@ macro_rules! show_images {
         )+
     };
     ($($image:expr),+) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        #[cfg(feature = "auto_select")]
         let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        #[cfg(not(feature = "auto_select"))]
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
@@ -549,6 +568,75 @@ macro_rules! show_images {
         $(
             _show_image($image, option);
         )+
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __vec_process_images {
+    ($images: expr, $mode:ident, $var:ident, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
+        {
+        fn _process_images(images: Vec<$crate::image::DynamicImage>)$( -> $ty<$crate::processor::ImageProcessorResult>)? {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            #[cfg(feature = "auto_select")]
+            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            #[cfg(not(feature = "auto_select"))]
+            let display_mode = $crate::protocol::Protocol::default().builder().build();
+            let option = $crate::processor::ImageProcessorOptions::default()
+                    .option_display_mode(display_mode)
+                    .get_options();
+
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .$mode(|mut image| {
+                        let $var = option.create_processor(image).process();
+                        $($block)?$($end)?
+                        $($result)?
+                    })
+                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+            } else {
+                images
+                    .iter()
+                    .$mode(|image| {
+                        let $var = option.create_processor(image).process();
+                        $($block)?$($end)?
+                        $($result)?
+                    })
+                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+            }
+        }
+        _process_images($images)}
+    };
+    ($images: expr, $mode:ident, $var:ident, options: $options: expr, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
+        { 
+        let options: $crate::processor::ImageProcessorOptions = $options;
+        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions)$( -> $ty<$crate::processor::ImageProcessorResult>)? {
+            use $crate::processor::ImageProcessorOptionsCreate;
+
+            if images.len() > 10 {
+                use $crate::rayon::prelude::*;
+                images
+                    .into_par_iter()
+                    .$mode(|mut image| {
+                        let $var = options.create_processor(image).process();
+                        $($block)?$($end)?
+                        $($result)?
+                    })
+                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+            } else {
+                images
+                    .iter()
+                    .$mode(|image| {
+                        let $var = options.create_processor(image).process();
+                        $($block)?$($end)?
+                        $($result)?
+                    })
+                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+            }
+        }
+        _process_images($images, options)}
     };
 }
 
@@ -619,9 +707,11 @@ macro_rules! process_images {
     };
     (@vec $images:expr) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
-            let display_mode = $crate::protocol::Protocol::Auto
-                    .builder()
-                    .build();
+            use $crate::processor::ImageProcessorOptionsCreate;
+            #[cfg(feature = "auto_select")]
+            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            #[cfg(not(feature = "auto_select"))]
+            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
@@ -641,8 +731,21 @@ macro_rules! process_images {
         }
         _process_images($images)}
     };
+    (@vec $images:expr$(,@with_options $options:expr)?,@var $var:ident,@map $block:block) => {
+        $crate::__vec_process_images!($images, map, $var $(,options: $options)?, ty: Vec, collect: collect, block: $block)
+    };
+    (@vec $images:expr$(,@with_options $options:expr)?,@map $block:block) => {
+        $crate::__vec_process_images!($images, map, result $(,options: $options)?, ty: Vec, collect: collect, result: result, block: $block)
+    };
+    (@vec $images:expr$(,@with_options $options:expr)?,@var $var:ident,@for_each $block:block) => {
+        $crate::__vec_process_images!($images, for_each, $var $(,options: $options)?, block: $block, end: ;)
+    };
+    (@vec $images:expr$(,@with_options $options:expr)?,@for_each $block:block) => {
+        $crate::__vec_process_images!($images, for_each, result $(,options: $options)?, block: $block, end: ;)
+    };
     (@vec $images:expr,@with_options $options:expr) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+            use $crate::processor::ImageProcessorOptionsCreate;
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
                 images
@@ -659,9 +762,10 @@ macro_rules! process_images {
         _process_images($images, $options)}
     };
     ($image:expr) => {{
-        let display_mode = $crate::protocol::Protocol::Auto
-                .builder()
-                .build();
+        #[cfg(feature = "auto_select")]
+        let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        #[cfg(not(feature = "auto_select"))]
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .get_options();
@@ -678,6 +782,7 @@ macro_rules! process_images {
     };
     ($($image:expr),+,@with_options $options: expr) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+            use $crate::processor::ImageProcessorOptionsCreate;
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
                 images
@@ -697,6 +802,7 @@ macro_rules! process_images {
     }};
     ($($image:expr),+$(,)?) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
+            use $crate::processor::ImageProcessorOptionsCreate;
             let display_mode = $crate::protocol::Protocol::Auto
                     .builder()
                     .build();

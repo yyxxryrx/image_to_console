@@ -1,6 +1,6 @@
 use image::open;
 use image_to_console_core::{
-    CustomResizeOption, DisplayMode, ResizeMode, processor::ImageProcessorOptions,
+    CustomResizeOption, DisplayMode, ResizeMode, processor::{ImageProcessorOptions, ImageProcessorOptionsCreate},
 };
 
 fn main() {

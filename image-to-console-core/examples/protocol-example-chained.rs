@@ -1,8 +1,9 @@
 use image::open;
 use image_to_console_core::{
-    processor::ImageProcessorOptions,
+    processor::{ImageProcessorOptions, ImageProcessorOptionsCreate},
     protocol::Protocol,
 };
+
 fn main() {
     let img = open(concat!(
         env!("CARGO_MANIFEST_DIR"),
