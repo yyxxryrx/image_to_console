@@ -595,7 +595,6 @@ macro_rules! show_images {
 macro_rules! __vec_process_images {
     ($images: expr, $mode:ident, $var:ident, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
         {
-        fn _process_images(images: Vec<$crate::image::DynamicImage>)$( -> $ty<$crate::processor::ImageProcessorResult>)? {
             use $crate::processor::ImageProcessorOptionsCreate;
             #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
@@ -604,7 +603,7 @@ macro_rules! __vec_process_images {
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
-
+            let images: Vec<$crate::image::DynamicImage> = $images;
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
                 images
@@ -614,7 +613,7 @@ macro_rules! __vec_process_images {
                         $($block)?$($end)?
                         $($result)?
                     })
-                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+                    $(.$collect::<Vec<_>>())?
             } else {
                 images
                     .iter()
@@ -623,16 +622,16 @@ macro_rules! __vec_process_images {
                         $($block)?$($end)?
                         $($result)?
                     })
-                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+                    $(.$collect::<Vec<_>>())?
             }
         }
-        _process_images($images)}
     };
     ($images: expr, $mode:ident, $var:ident, options: $options: expr, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
         { 
-        let options: $crate::processor::ImageProcessorOptions = $options;
-        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions)$( -> $ty<$crate::processor::ImageProcessorResult>)? {
             use $crate::processor::ImageProcessorOptionsCreate;
+
+            let options: $crate::processor::ImageProcessorOptions = $options;
+            let images: Vec<$crate::image::DynamicImage> = $images;
 
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
@@ -642,8 +641,8 @@ macro_rules! __vec_process_images {
                         let $var = options.create_processor(image).process();
                         $($block)?$($end)?
                         $($result)?
-                    })
-                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+                    })$($end)?
+                    $(.$collect::<Vec<_>>())?
             } else {
                 images
                     .iter()
@@ -651,11 +650,10 @@ macro_rules! __vec_process_images {
                         let $var = options.create_processor(image).process();
                         $($block)?$($end)?
                         $($result)?
-                    })
-                    $(.$collect::<Vec<$crate::processor::ImageProcessorResult>>())?
+                    })$($end)?
+                    $(.$collect::<Vec<_>>())?
             }
         }
-        _process_images($images, options)}
     };
 }
 
@@ -680,6 +678,10 @@ macro_rules! __vec_process_images {
 /// * `$($image:expr),+, @with_options $options:expr` - Process multiple images with custom options
 /// * `@vec $images:expr` - Process a vector of images with default options
 /// * `@vec $images:expr, @with_options $options:expr` - Process a vector of images with custom options
+/// * `@vec $images:expr, @with_options $options:expr, @var $var:ident, @map $block:block` - Process a vector of images with custom options and map operation
+/// * `@vec $images:expr, @with_options $options:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with custom options and for_each operation
+/// * `@vec $images:expr, @var $var:ident, @map $block:block` - Process a vector of images with default options and map operation
+/// * `@vec $images:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with default options and for_each operation
 ///
 /// # Examples
 ///
@@ -711,6 +713,17 @@ macro_rules! __vec_process_images {
 /// // Process a vector of images with custom options
 /// let results = process_images!(@vec image_vec, @with_options options);
 ///
+/// // Process a vector of images with custom options and map operation
+/// let results = process_images!(@vec image_vec, @with_options options, @var img, @map {
+///     println!("Processed image size: {}x{}", img.width, img.height);
+///     img
+/// });
+///
+/// // Process a vector of images with default options and for_each operation
+/// process_images!(@vec image_vec, @var img, @for_each {
+///     println!("Processed image size: {}x{}", img.width, img.height);
+/// });
+///
 /// // Return an empty vector
 /// let empty_results: Vec<ImageProcessorResult> = process_images!();
 /// ```
@@ -720,6 +733,7 @@ macro_rules! __vec_process_images {
 /// * For single image processing: `ImageProcessorResult`
 /// * For multiple image processing: `Vec<ImageProcessorResult>`
 /// * For empty invocation: `Vec<ImageProcessorResult>` (empty vector)
+/// * For map operations: `Vec<T>` where T is the return type of the map block
 macro_rules! process_images {
     () => {
         Vec::<$crate::processor::ImageProcessorResult>::new()
