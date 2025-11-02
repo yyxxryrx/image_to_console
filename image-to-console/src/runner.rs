@@ -1,9 +1,9 @@
+use crate::config::Config;
+use crate::util::CreateIPFromConfig;
 use image_to_console_colored::colors::TerminalColor;
 use image_to_console_colored::prelude::ToColoredText;
-use crate::config::Config;
-use image_to_console_renderer::renderer::{render};
-use crate::util::CreateIPFromConfig;
 use image_to_console_core::processor::ImageProcessor;
+use image_to_console_renderer::renderer::render;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -26,8 +26,13 @@ pub fn run(config: Result<Config, String>) {
     match config {
         Ok(config) => match ImageProcessor::from_config(&config) {
             Ok(mut image_processor) => {
-                let result = image_processor.process();
-                if let Err(e) = render(result,image_to_console_renderer::config::Config::from(&config) ) {
+                let Ok(result) = image_processor.process() else {
+                    return;
+                };
+                if let Err(e) = render(
+                    result,
+                    image_to_console_renderer::config::Config::from(&config),
+                ) {
                     eprintln!(
                         "{}: {}",
                         "error"
@@ -68,14 +73,19 @@ pub fn run_video(config: Result<Config, String>) {
                                     let mut frame_config = config_clone.clone();
                                     frame_config.image = ImageType::Image(frame);
                                     match ImageProcessor::from_config(&frame_config) {
-                                        Ok(mut image_processor) => st
-                                            .send(Frame {
-                                                index,
-                                                delay: delay as u64,
-                                                frame: image_processor.process().lines.join("\n"),
-                                            })
-                                            .map_err(|e| err(e.to_string()))
-                                            .unwrap(),
+                                        Ok(mut image_processor) => {
+                                            match image_processor.process() {
+                                                Ok(result) => st
+                                                    .send(Frame {
+                                                        index,
+                                                        delay: delay as u64,
+                                                        frame: result.lines.join("\n"),
+                                                    })
+                                                    .map_err(|e| err(e.to_string()))
+                                                    .unwrap(),
+                                                Err(e) => err(e.to_string()),
+                                            }
+                                        }
                                         Err(e) => {
                                             err(e);
                                         }
@@ -87,14 +97,17 @@ pub fn run_video(config: Result<Config, String>) {
                             }
                         }
                     });
-                    render_gif(rt, image_to_console_renderer::config::Config::from(config_clone2));
+                    render_gif(
+                        rt,
+                        image_to_console_renderer::config::Config::from(config_clone2),
+                    );
                     task.join().unwrap();
                 }
                 #[cfg(feature = "video_player")]
                 ImageType::Video(video_event) => {
-                    use image_to_console_renderer::renderer::render_video;
-                    use crate::types::VideoEvent::*;
                     use crate::errors::FrameError::*;
+                    use crate::types::VideoEvent::*;
+                    use image_to_console_renderer::renderer::render_video;
                     for event in video_event {
                         match event {
                             Ok(event) => match event {
@@ -108,49 +121,77 @@ pub fn run_video(config: Result<Config, String>) {
                                     let (vrx, audio_path, fps) = args;
                                     let (st, rt) = bounded(10);
                                     let config_clone = config_clone.clone();
-                                    let task = std::thread::spawn(move || loop {
-                                        match vrx.recv() {
-                                            Err(_) => {
-                                                // Channel disconnected
-                                                break;
-                                            }
-                                            Ok(frame) => match frame {
-                                                Ok((frame, index)) => {
-                                                    let mut frame_config = config_clone.clone();
-                                                    frame_config.image = ImageType::Image(frame);
-                                                    match ImageProcessor::from_config(&frame_config)
-                                                    {
-                                                        Ok(mut image_processor) => st
-                                                            .send((
-                                                                image_processor
-                                                                    .process()
-                                                                    .lines
-                                                                    .join("\n"),
-                                                                index,
-                                                            ))
-                                                            .map_err(|e| err(e.to_string()))
-                                                            .unwrap(),
-                                                        Err(e) => {
-                                                            err(e);
+                                    let task = std::thread::spawn(move || {
+                                        loop {
+                                            match vrx.recv() {
+                                                Err(_) => {
+                                                    // Channel disconnected
+                                                    break;
+                                                }
+                                                Ok(frame) => match frame {
+                                                    Ok((frame, index)) => {
+                                                        let mut frame_config = config_clone.clone();
+                                                        frame_config.image =
+                                                            ImageType::Image(frame);
+                                                        match ImageProcessor::from_config(
+                                                            &frame_config,
+                                                        ) {
+                                                            Ok(mut image_processor) => {
+                                                                match image_processor.process() {
+                                                                    Ok(result) => st
+                                                                        .send((
+                                                                            result.lines.join("\n"),
+                                                                            index,
+                                                                        ))
+                                                                        .map_err(|e| {
+                                                                            err(e.to_string())
+                                                                        })
+                                                                        .unwrap(),
+                                                                    Err(e) => err(e.to_string()),
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                err(e);
+                                                            }
                                                         }
                                                     }
-                                                }
-                                                Err(EOF) => break,
-                                                Err(DecodeError) => {
-                                                    err("cannot decode this frame".to_string())
-                                                }
-                                                Err(Other(e)) => err(format!("Other decode error: {e}")),
-                                            },
+                                                    Err(EOF) => break,
+                                                    Err(DecodeError) => {
+                                                        err("cannot decode this frame".to_string())
+                                                    }
+                                                    Err(Other(e)) => {
+                                                        err(format!("Other decode error: {e}"))
+                                                    }
+                                                },
+                                            }
                                         }
                                     });
                                     let render_task = std::thread::spawn(move || {
-                                        #[cfg(all(feature = "sixel_support", feature = "audio_support"))]
-                                        render_video(rt, audio_path, fps, config.mode.is_sixel(), config.clear);
-                                        #[cfg(all(not(feature = "sixel_support"), feature = "audio_support"))]
+                                        #[cfg(all(
+                                            feature = "sixel_support",
+                                            feature = "audio_support"
+                                        ))]
+                                        render_video(
+                                            rt,
+                                            audio_path,
+                                            fps,
+                                            config.mode.is_sixel(),
+                                            config.clear,
+                                        );
+                                        #[cfg(all(
+                                            not(feature = "sixel_support"),
+                                            feature = "audio_support"
+                                        ))]
                                         render_video(rt, audio_path, fps, false, config.clear);
-                                        #[cfg(all(feature = "sixel_support", not(feature = "audio_support")))]
+                                        #[cfg(all(
+                                            feature = "sixel_support",
+                                            not(feature = "audio_support")
+                                        ))]
                                         render_video(rt, fps, config.mode.is_sixel(), config.clear);
-                                        #[cfg(all(not(feature = "sixel_support"), not(feature = "audio_support")))]
+                                        #[cfg(all(
+                                            not(feature = "sixel_support"),
+                                            not(feature = "audio_support")
+                                        ))]
                                         render_video(rt, fps, false, config.clear);
                                     });
                                     task.join().unwrap();

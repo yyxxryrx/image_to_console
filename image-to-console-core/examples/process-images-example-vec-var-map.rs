@@ -20,7 +20,7 @@ fn main() {
     let results = process_images!(@vec arr, @with_options options, @var img, @map {
         // Do something with image
         // make it mutable
-        let mut img = img;
+        let mut img = img.unwrap();
         // change the air lines
         img.air_lines += 10;
         // return the changed image

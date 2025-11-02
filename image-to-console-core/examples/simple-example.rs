@@ -7,7 +7,8 @@ fn main() -> ImageResult<()> {
     // Use default config and process
     let result = ImageProcessorOptions::default()
         .create_processor(img)
-        .process();
+        .process()
+        .unwrap();
 
     // result.lines contains the formatted terminal output
     // you also can use display method to print

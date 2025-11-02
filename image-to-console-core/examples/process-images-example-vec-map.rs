@@ -1,7 +1,9 @@
 use image::open;
-use image_to_console_core::{process_images, processor::ImageProcessorOptions};
+use image_to_console_core::{
+    error::ConvertResult, process_images, processor::ImageProcessorOptions,
+};
 
-fn main() {
+fn main() -> ConvertResult<()> {
     let img1 = open(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/examples/images/flower.jpg"
@@ -23,6 +25,7 @@ fn main() {
     });
     // Do something with results
     for result in results {
-        println!("{}", result.display());
+        println!("{}", result?.display());
     }
+    Ok(())
 }

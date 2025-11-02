@@ -1,9 +1,11 @@
 use image::open;
 use image_to_console_core::{
-    CustomResizeOption, DisplayMode, ResizeMode, processor::{ImageProcessorOptions, ImageProcessorOptionsCreate},
+    CustomResizeOption, DisplayMode, ResizeMode,
+    error::ConvertResult,
+    processor::{ImageProcessorOptions, ImageProcessorOptionsCreate},
 };
 
-fn main() {
+fn main() -> ConvertResult<()> {
     let img = open(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/examples/images/flower.jpg"
@@ -18,6 +20,7 @@ fn main() {
     .option_black_background(true)
     // Create processor
     .create_processor(img)
-    .process();
+    .process()?;
     println!("{}", result.display());
+    Ok(())
 }

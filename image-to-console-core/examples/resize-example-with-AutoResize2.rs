@@ -1,10 +1,11 @@
 use image::open;
 use image_to_console_core::{
     AutoResizeOption, DisplayMode, ResizeMode,
+    error::ConvertResult,
     processor::{ImageProcessor, ImageProcessorOptions},
 };
 
-fn main() {
+fn main() -> ConvertResult<()> {
     let img = open(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/examples/images/flower.jpg"
@@ -16,6 +17,7 @@ fn main() {
         ResizeMode::Auto(AutoResizeOption::only_width()),
         false,
     );
-    let result = ImageProcessor::new(img, option).process();
+    let result = ImageProcessor::new(img, option).process()?;
     println!("{}", result.display());
+    Ok(())
 }

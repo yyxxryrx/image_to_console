@@ -5,6 +5,7 @@ pub mod gif_processor;
 pub mod indexed_image;
 pub mod processor;
 pub mod protocol;
+pub mod error;
 
 pub extern crate image;
 pub extern crate rayon;
@@ -157,6 +158,35 @@ impl DisplayMode {
     pub fn is_sixel(&self) -> bool {
         matches!(self, Self::SixelHalf | Self::SixelFull)
     }
+
+    pub fn mode(&self) -> &'static str {
+        match self {
+            Self::HalfColor => "HalfColor",
+            Self::FullColor => "FullColor",
+            Self::FullNoColor => "FullNoColor",
+            Self::Ascii => "Ascii",
+            Self::WezTerm => "WezTerm",
+            Self::WezTermNoColor => "WezTermNoColor",
+            Self::Kitty => "Kitty",
+            Self::KittyNoColor => "KittyNoColor",
+            Self::Iterm2 => "Iterm2",
+            Self::Iterm2NoColor => "Iterm2NoColor",
+            #[cfg(feature = "sixel")]
+            Self::SixelHalf => "SixelHalf",
+            #[cfg(feature = "sixel")]
+            Self::SixelFull => "SixelFull",
+        }
+    }
+
+    pub fn check_image_type(&self, img_type: &ProcessedImage) -> bool {
+        match self {
+            Self::FullColor => img_type.is_both(),
+            #[cfg(feature = "sixel")]
+            Self::SixelHalf | Self::SixelFull => img_type.is_color2(),
+            Self::HalfColor | Self::Kitty | Self::Iterm2 | Self::WezTerm => img_type.is_color(),
+            Self::Ascii | Self::FullNoColor | Self::KittyNoColor | Self::Iterm2NoColor | Self::WezTermNoColor => img_type.is_no_color(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -262,7 +292,29 @@ impl ProcessedImage {
     /// * `true` - If the processed image contains color data (Color or Both variants)
     /// * `false` - If the processed image only contains grayscale data (NoColor variant)
     pub fn is_color(&self) -> bool {
-        matches!(self, Self::Color(_) | Self::Both(_, _))
+        matches!(self, Self::Color(_))
+    }
+
+    pub fn is_no_color(&self) -> bool {
+        matches!(self, Self::NoColor(_))
+    }
+
+    pub fn is_both(&self) -> bool {
+        matches!(self, Self::Both(_, _))
+    }
+
+    #[cfg(feature = "sixel")]
+    pub fn is_color2(&self) -> bool {
+        matches!(self, Self::Color2(_))
+    }
+
+    pub fn mode(&self) -> &'static str {
+        match self {
+            Self::Color(_) => "Color",
+            Self::Color2(_) => "Color2",
+            Self::NoColor(_) => "NoColor",
+            Self::Both(_, _) => "Both",
+        }
     }
 }
 
@@ -451,7 +503,8 @@ macro_rules! show_image {
             let result = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .create_processor(image)
-                .process();
+                .process()
+                .expect("Process image failed");
             println!("{}", result.display());
         }
         _show_image($image);
@@ -465,7 +518,7 @@ macro_rules! show_image {
                 $crate::processor::ImageProcessorOptionsCreate<T>,
         {
             use $crate::processor::ImageProcessorOptionsCreate;
-            let result = option.create_processor(image).process();
+            let result = option.create_processor(image).process().expect("Process image failed");
             println!("{}", result.display());
         }
         _show_image($image, $option);
@@ -525,7 +578,8 @@ macro_rules! show_images {
         {
             let result = option
                 .create_processor(image)
-                .process();
+                .process()
+                .expect("Process image failed");
             println!("{}", result.display());
         }
         let images: Vec<$crate::image::DynamicImage> = $images;
@@ -542,7 +596,8 @@ macro_rules! show_images {
             use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
-                .process();
+                .process()
+                .expect("Process image failed");
             println!("{}", result.display());
         }
         let option: $crate::processor::ImageProcessorOptions = $option;
@@ -560,7 +615,8 @@ macro_rules! show_images {
             use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
-                .process();
+                .process()
+                .expect("Process image failed");
             println!("{}", result.display());
         }
         let option: $crate::processor::ImageProcessorOptions = $option;
@@ -582,7 +638,7 @@ macro_rules! show_images {
             $crate::processor::ImageProcessorOptions:
                 $crate::processor::ImageProcessorOptionsCreate<T>,
         {
-            println!("{}", option.create_processor(image).process().display());
+            println!("{}", option.create_processor(image).process().expect("Process image failed").display());
         }
         $(
             _show_image($image, option);
@@ -739,7 +795,7 @@ macro_rules! process_images {
         Vec::<$crate::processor::ImageProcessorResult>::new()
     };
     (@vec $images:expr) => {{
-        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
+        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
             #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
@@ -754,12 +810,12 @@ macro_rules! process_images {
                 images
                     .into_par_iter()
                     .map(|mut image| option.create_processor(image).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
                     .iter()
                     .map(|image| option.create_processor(image.clone()).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
         _process_images($images)}
@@ -777,19 +833,19 @@ macro_rules! process_images {
         $crate::__vec_process_images!($images, for_each, result $(,options: $options)?, block: $block, end: ;)
     };
     (@vec $images:expr,@with_options $options:expr) => {{
-        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
                     .map(|mut image| options.create_processor(image).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
                     .iter()
                     .map(|image| options.create_processor(image.clone()).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
         _process_images($images, $options)}
@@ -802,31 +858,31 @@ macro_rules! process_images {
         let option = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .get_options();
-        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::processor::ImageProcessorResult {
+        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::error::ConvertResult<$crate::processor::ImageProcessorResult> {
             return $crate::processor::ImageProcessor::new(image, option).process();
         }
         _process_image($image, option)}
     };
     ($image:expr,@with_options $options:expr) => {{
-        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::processor::ImageProcessorResult {
+        fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::error::ConvertResult<$crate::processor::ImageProcessorResult> {
             return $crate::processor::ImageProcessor::new(image, option).process();
         }
         _process_image($image, $options)}
     };
     ($($image:expr),+,@with_options $options: expr) => {{
-        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::processor::ImageProcessorResult> {
+        fn _process_images(images: Vec<$crate::image::DynamicImage>, options: $crate::processor::ImageProcessorOptions) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
             if images.len() > 10 {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
                     .map(|mut image| options.create_processor(image).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
                     .iter()
                     .map(|image| options.create_processor(image.clone()).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
         let options = $options;
@@ -834,7 +890,7 @@ macro_rules! process_images {
         _process_images(images, options)
     }};
     ($($image:expr),+$(,)?) => {{
-        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::processor::ImageProcessorResult> {
+        fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
             let display_mode = $crate::protocol::Protocol::Auto
                     .builder()
@@ -848,12 +904,12 @@ macro_rules! process_images {
                 images
                     .into_par_iter()
                     .map(|mut image| option.create_processor(image).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
                     .iter()
                     .map(|image| option.create_processor(image.clone()).process())
-                    .collect::<Vec<$crate::processor::ImageProcessorResult>>()
+                    .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
         let images = vec![$(
@@ -929,7 +985,7 @@ mod tests {
         assert!(processed_both.both().is_some());
 
         // Test is_color
-        assert!(processed_both.is_color());
+        assert_eq!(processed_both.is_color(), false);
 
         let luma_img = DynamicImage::new_luma8(10, 10);
         let processed_luma = ProcessedImage::new(DisplayMode::Ascii, &luma_img);

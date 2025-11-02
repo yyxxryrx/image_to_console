@@ -16,6 +16,6 @@ fn main() -> ImageResult<()> {
         .option_display_mode(cli.protocol.builder().build())
         .create_processor(img)
         .process();
-    println!("{}", result.display());
+    println!("{}", result.unwrap().display());
     Ok(())
 }

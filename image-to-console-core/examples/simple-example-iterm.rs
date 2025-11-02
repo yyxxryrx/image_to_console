@@ -1,11 +1,12 @@
 use image::open;
 use image_to_console_core::{
     DisplayMode, ResizeMode,
+    error::ConvertResult,
     processor::{ImageProcessor, ImageProcessorOptions},
 };
 
 /// This is an example to show how to display an image in terminal with use iterm protocol
-fn main() {
+fn main() -> ConvertResult<()> {
     // Open the image
     let img = open(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -15,7 +16,8 @@ fn main() {
     // Create option
     let option = ImageProcessorOptions::new(DisplayMode::Iterm2, ResizeMode::None, false);
     // Process image
-    let result = ImageProcessor::new(img, option).process();
+    let result = ImageProcessor::new(img, option).process()?;
     // Display the result
     println!("{}", result.display());
+    Ok(())
 }

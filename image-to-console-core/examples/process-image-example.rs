@@ -1,14 +1,15 @@
 use image::open;
-use image_to_console_core::process_images;
+use image_to_console_core::{error::ConvertResult, process_images};
 
-fn main() {
+fn main() -> ConvertResult<()> {
     let img1 = open(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/examples/images/flower.jpg"
+        env!("CARGO_MANIFEST_DIR"),
+        "/examples/images/flower.jpg"
     ))
-        .expect("Cannot found image");
+    .expect("Cannot found image");
     // Process images
-    let result = process_images!(img1);
+    let result = process_images!(img1)?;
     // Do something with result
-    println!("{}", result.display())
+    println!("{}", result.display());
+    Ok(())
 }

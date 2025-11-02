@@ -1,3 +1,4 @@
+use crate::error::{ConvertError, ConvertErrorContext, ConvertResult};
 use crate::{
     DisplayMode::{self, *},
     ProcessedImage,
@@ -98,6 +99,7 @@ const NO_COLOR_PIXELS: [NoColorPixel; 5] = [
 ];
 
 /// Options for the image converter
+#[derive(Debug, Clone)]
 pub struct ImageConverterOption {
     /// Whether to center the image
     pub center: bool,
@@ -119,6 +121,215 @@ pub struct ImageConverterOption {
     /// Maximum number of colors (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
+    /// Dither method to use (requires `sixel` feature)
+    #[cfg(feature = "sixel")]
+    pub dither_method: quantette::QuantizeMethod,
+}
+
+impl Default for ImageConverterOption {
+    fn default() -> Self {
+        Self {
+            center: true,
+            width: 0,
+            height: 0,
+            #[cfg(feature = "sixel")]
+            dither: false,
+            line_init: String::new(),
+            mode: Default::default(),
+            black_background: false,
+            enable_compression: true,
+            #[cfg(feature = "sixel")]
+            max_colors: 256,
+            #[cfg(feature = "sixel")]
+            dither_method: quantette::QuantizeMethod::wu(),
+        }
+    }
+}
+
+impl ImageConverterOption {
+    /// Creates a new `ImageConverterOption` with the specified center, width, and height
+    ///
+    /// # Arguments
+    ///
+    /// * `center` - Whether to center the image
+    /// * `width` - Width of the image
+    /// * `height` - Height of the image
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `ImageConverterOption` instance
+
+    pub fn new(center: bool, width: u32, height: u32) -> Self {
+        Self {
+            center,
+            width,
+            height,
+            ..Default::default()
+        }
+    }
+
+    /// Sets whether to enable dithering (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `dither` - Whether to enable dithering
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    #[cfg(feature = "sixel")]
+    pub fn dither(&mut self, dither: bool) -> &mut Self {
+        self.dither = dither;
+        self
+    }
+
+    /// Sets the initial line string
+    ///
+    /// # Arguments
+    ///
+    /// * `line_init` - The initial line string
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn line_init(&mut self, line_init: String) -> &mut Self {
+        self.line_init = line_init;
+        self
+    }
+
+    /// Sets the display mode
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The display mode to use
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn mode(&mut self, mode: DisplayMode) -> &mut Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Sets whether to use a black background
+    ///
+    /// # Arguments
+    ///
+    /// * `black_background` - Whether to use a black background
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn black_background(&mut self, black_background: bool) -> &mut Self {
+        self.black_background = black_background;
+        self
+    }
+
+    /// Sets whether to enable compression
+    ///
+    /// # Arguments
+    ///
+    /// * `enable_compression` - Whether to enable compression
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn enable_compression(&mut self, enable_compression: bool) -> &mut Self {
+        self.enable_compression = enable_compression;
+        self
+    }
+
+    /// Sets the maximum number of colors (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `max_colors` - Maximum number of colors
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    #[cfg(feature = "sixel")]
+    pub fn max_colors(&mut self, max_colors: u16) -> &mut Self {
+        self.max_colors = max_colors;
+        self
+    }
+
+    /// Sets the width of the image
+    ///
+    /// # Arguments
+    ///
+    /// * `width` - Width of the image
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn width(&mut self, width: u32) -> &mut Self {
+        self.width = width;
+        self
+    }
+
+    /// Sets the height of the image
+    ///
+    /// # Arguments
+    ///
+    /// * `height` - Height of the image
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn height(&mut self, height: u32) -> &mut Self {
+        self.height = height;
+        self
+    }
+
+    /// Sets whether to center the image
+    ///
+    /// # Arguments
+    ///
+    /// * `center` - Whether to center the image
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    pub fn center(&mut self, center: bool) -> &mut Self {
+        self.center = center;
+        self
+    }
+
+    /// Sets the dither method to use (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `dither_method` - The dither method to use
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+
+    #[cfg(feature = "sixel")]
+    pub fn dither_method(&mut self, dither_method: quantette::QuantizeMethod) -> &mut Self {
+        self.dither_method = dither_method;
+        self
+    }
+
+    /// Returns a copy of the current converter options
+    ///
+    /// # Returns
+    ///
+    /// Returns a cloned `ImageConverterOption` instance with the same settings
+
+    pub fn get_options(&self) -> Self {
+        self.clone()
+    }
 }
 
 /// Converts images to terminal-friendly formats
@@ -155,7 +366,10 @@ impl ImageConverter {
     /// # Returns
     ///
     /// Returns a vector of strings representing the converted image
-    pub fn convert(&self) -> Vec<String> {
+    pub fn convert(&self) -> ConvertResult<Vec<String>> {
+        if !self.option.mode.check_image_type(&self.img) {
+            return Err(ConvertError::UnsupportedImageType);
+        }
         match self.option.mode {
             Kitty | KittyNoColor => self.kitty_convert(),
             Iterm2 | Iterm2NoColor => self.iterm2_convert(),
@@ -213,7 +427,7 @@ impl ImageConverter {
                     }
                     lines.push(line);
                 }
-                lines
+                Ok(lines)
             }
         }
     }
@@ -411,7 +625,7 @@ impl ImageConverter {
     /// # Returns
     ///
     /// Returns a vector of bytes representing the image data
-    fn get_image_data(&self) -> Vec<u8> {
+    fn get_image_data(&self) -> ConvertResult<Vec<u8>> {
         let mut buffer = Vec::new();
         let mut writer = Cursor::new(&mut buffer);
         if self.img.is_color() {
@@ -419,15 +633,25 @@ impl ImageConverter {
                 .rgba()
                 .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
-                .unwrap();
+                .map_err(|e| {
+                    ConvertError::ImageWriteError(ConvertErrorContext::new(
+                        "get_image_data".to_string(),
+                        e.to_string(),
+                    ))
+                })?;
         } else {
             self.img
                 .luma()
                 .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
-                .unwrap();
+                .map_err(|e| {
+                    ConvertError::ImageWriteError(ConvertErrorContext::new(
+                        "get_image_data".to_string(),
+                        e.to_string(),
+                    ))
+                })?;
         }
-        buffer
+        Ok(buffer)
     }
 
     /// Convert pixels in ASCII mode
@@ -463,10 +687,10 @@ impl ImageConverter {
     /// # Returns
     ///
     /// Returns a vector of strings representing the converted image
-    fn wezterm_convert(&self) -> Vec<String> {
-        let image_data = self.get_image_data();
+    fn wezterm_convert(&self) -> ConvertResult<Vec<String>> {
+        let image_data = self.get_image_data()?;
         // Add space to prevent misalignment
-        let mut lines: Vec<String> = vec![String::from(" "); 2];
+        let mut lines: Vec<String> = Vec::with_capacity(1);
         lines[0] = if !self.option.center {
             format!(
                 "\x1b]1337;File=size={};inline=1:{}\x1b\\",
@@ -475,8 +699,9 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .map(|(w, h)| (w.0.div(2) as u32, h.0 as u32))
-                .unwrap_or((0, 0));
+                .map_or(Err(ConvertError::TerminalSizeError), |(w, h)| {
+                    Ok((w.0.div(2) as u32, h.0 as u32))
+                })?;
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;
             format!(
@@ -488,7 +713,7 @@ impl ImageConverter {
                 STANDARD.encode(image_data)
             )
         };
-        lines
+        Ok(lines)
     }
 
     /// Convert image using Kitty protocol
@@ -496,7 +721,7 @@ impl ImageConverter {
     /// # Returns
     ///
     /// Returns a vector of strings representing the converted image
-    fn kitty_convert(&self) -> Vec<String> {
+    fn kitty_convert(&self) -> ConvertResult<Vec<String>> {
         /// Base64 encodes 3 raw bytes → 4 ASCII bytes.
         ///
         /// 3072 raw bytes / 3 * 4 = 4096 encoded bytes.
@@ -505,25 +730,36 @@ impl ImageConverter {
         ///
         /// This matches the Python example, which splits *after* encoding.
         const CHUNK_SIZE: usize = 3072;
-        let image_data = self.get_image_data();
+        let image_data = self.get_image_data()?;
+        let mut chunks = image_data.chunks(CHUNK_SIZE);
         let mut line = format!(
-            "{}\x1b_Gm=1,a=T,f=100,s={},v={},S={};",
+            "{}\x1b_Gm={},a=T,f=100,s={},v={},S={};",
             self.option.line_init,
+            chunks.len().saturating_sub(1).min(1),
             self.option.width,
             self.option.height,
             image_data.len()
         );
-        let mut chunks = image_data.chunks(CHUNK_SIZE);
-        line.push_str(&STANDARD.encode(chunks.nth(0).unwrap()));
+
+        line.push_str(
+            &STANDARD.encode(
+                chunks
+                    .nth(0)
+                    .map_or(Err(ConvertError::EmptyData), |chunk| Ok(chunk))?,
+            ),
+        );
         line.push_str("\x1b\\");
-        for chunk in chunks.clone().take(chunks.len() - 1) {
-            line.push_str(&format!("\x1b_Gm=1;{}\x1b\\", STANDARD.encode(chunk)));
+        if chunks.len() > 0 {
+            for chunk in chunks.clone().take(chunks.len() - 1) {
+                line.push_str(&format!("\x1b_Gm=1;{}\x1b\\", STANDARD.encode(chunk)));
+            }
+            // It is definitely available here, so there is no need to check
+            line.push_str(&format!(
+                "\x1b_Gm=0;{}\x1b\\",
+                STANDARD.encode(unsafe { chunks.last().unwrap_unchecked() })
+            ));
         }
-        line.push_str(&format!(
-            "\x1b_Gm=0;{}\x1b\\",
-            STANDARD.encode(chunks.last().unwrap())
-        ));
-        vec![line]
+        Ok(vec![line])
     }
 
     /// Convert image using ITerm2 protocol
@@ -531,9 +767,9 @@ impl ImageConverter {
     /// # Returns
     ///
     /// Returns a vector of strings representing the converted image
-    fn iterm2_convert(&self) -> Vec<String> {
-        let image_data = self.get_image_data();
-        vec![if !self.option.center {
+    fn iterm2_convert(&self) -> ConvertResult<Vec<String>> {
+        let image_data = self.get_image_data()?;
+        Ok(vec![if !self.option.center {
             format!(
                 "\x1b]1337;File=size={};inline=1:{}\x07",
                 image_data.len(),
@@ -541,8 +777,9 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .map(|(w, h)| (w.0.div(2) as u32, h.0 as u32))
-                .unwrap_or((0, 0));
+                .map_or(Err(ConvertError::TerminalSizeError), |(w, h)| {
+                    Ok((w.0.div(2) as u32, h.0 as u32))
+                })?;
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;
             format!(
@@ -553,7 +790,7 @@ impl ImageConverter {
                 if r < tr { h } else { w },
                 STANDARD.encode(image_data)
             )
-        }]
+        }])
     }
 
     /// Convert image using Sixel protocol
@@ -562,7 +799,7 @@ impl ImageConverter {
     ///
     /// Returns a vector of strings representing the converted image
     #[cfg(feature = "sixel")]
-    fn sixel_convert(&self) -> Vec<String> {
+    fn sixel_convert(&self) -> ConvertResult<Vec<String>> {
         use crate::indexed_image::IndexedImage;
         use nohash_hasher::BuildNoHashHasher;
         use std::collections::HashMap;
@@ -666,8 +903,13 @@ impl ImageConverter {
         let is_full = self.full;
 
         let img = self.img.rgb().unwrap();
-        let img =
-            IndexedImage::from_image(img, self.option.max_colors, self.option.dither).unwrap();
+        let img = IndexedImage::from_image(
+            img,
+            self.option.max_colors,
+            self.option.dither,
+            self.option.dither_method,
+        )
+        .map_err(|err| ConvertError::AboveMaxLength(err.0))?;
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
         let palette_count = img.palette.len();
         let (width, height) = (img.width, img.height);
@@ -809,7 +1051,12 @@ impl ImageConverter {
             .collect::<Vec<(Option<u8>, String)>>();
         let mut index_counter = ptr
             .lock()
-            .unwrap()
+            .map_err(|err| {
+                ConvertError::LockError(ConvertErrorContext::new(
+                    "Sixel convert".to_string(),
+                    err.to_string(),
+                ))
+            })?
             .iter()
             .enumerate()
             .map(|(index, &count)| (index, count))
@@ -841,7 +1088,7 @@ impl ImageConverter {
         result.push_str("\x1b\\");
         let mut lines = vec![String::from(" "); 2];
         lines[0] = result;
-        lines
+        Ok(lines)
     }
 }
 

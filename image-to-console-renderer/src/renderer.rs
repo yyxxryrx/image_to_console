@@ -81,7 +81,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         );
         if config.show_time {
             println!();
-            let duration = result.time.elapsed().unwrap();
+            let duration = result.time.elapsed();
             let min = duration.as_secs() / 60;
             let sec = duration.as_secs() % 60;
             let ms = duration.as_millis() % 1000;

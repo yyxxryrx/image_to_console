@@ -1,7 +1,9 @@
 use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
+use crate::error::ConvertResult;
 use crate::{AutoResizeOption, DisplayMode, ProcessedImage, ResizeMode};
 use image::{GenericImageView, imageops::FilterType};
+use std::default::Default;
 
 /// Image processor options
 ///
@@ -49,7 +51,6 @@ impl Default for ImageProcessorOptions {
 }
 
 pub trait ImageProcessorOptionsCreate<T> {
-
     /// Create a new image processor
     ///
     /// # Arguments
@@ -230,7 +231,7 @@ pub struct ImageProcessorResult {
     /// Processed line data
     pub lines: Vec<String>,
     /// Processing time
-    pub time: std::time::SystemTime,
+    pub time: std::time::Instant,
     /// Processing options
     pub option: ImageProcessorOptions,
 }
@@ -326,8 +327,8 @@ impl ImageProcessor {
     /// # Returns
     ///
     /// Returns the processed result
-    pub fn process(&mut self) -> ImageProcessorResult {
-        let time = std::time::SystemTime::now();
+    pub fn process(&mut self) -> ConvertResult<ImageProcessorResult> {
+        let time = std::time::Instant::now();
         let mut air_line: usize = 0;
         let (mut w, mut h) = self.image.dimensions();
         let (width, height) = terminal_size::terminal_size().unwrap();
@@ -461,15 +462,16 @@ impl ImageProcessor {
                 enable_compression: self.option.enable_compression,
                 #[cfg(feature = "sixel")]
                 max_colors: self.option.max_colors,
+                ..ImageConverterOption::default()
             },
         );
-        ImageProcessorResult {
+        Ok(ImageProcessorResult {
             time,
             width: w,
             height: h,
             air_lines: air_line,
-            lines: converter.convert(),
+            lines: converter.convert()?,
             option: self.option,
-        }
+        })
     }
 }

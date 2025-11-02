@@ -66,7 +66,7 @@ impl Image {
         mode = DisplayMode::FullColor,
         center = false,
     ))]
-    pub fn display(&self, mode: DisplayMode, center: bool) -> DisplayImage {
+    pub fn display(&self, mode: DisplayMode, center: bool) -> PyResult<DisplayImage> {
         let mode = CoreDisplayMode::from(mode);
         let option = image_to_console_core::processor::ImageProcessorOptions::new(
             mode,
@@ -79,8 +79,9 @@ impl Image {
         );
         let result =
             image_to_console_core::processor::ImageProcessor::new(self.img.clone(), option)
-                .process();
-        DisplayImage { result }
+                .process()
+                .map_err(|e| PyOSError::new_err(e.to_string()))?;
+        Ok(DisplayImage { result })
     }
 }
 
