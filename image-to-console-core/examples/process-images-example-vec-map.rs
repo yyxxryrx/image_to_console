@@ -17,14 +17,9 @@ fn main() {
     let options = ImageProcessorOptions::default();
     // Process images and do something with them
     // `@with_options` can was omitted
-    let results = process_images!(@vec arr, @with_options options, @var img, @map {
-        // Do something with image
-        // make it mutable
-        let mut img = img;
-        // change the air lines
-        img.air_lines += 10;
-        // return the changed image
-        img
+    let results = process_images!(@vec arr, @with_options options, @map {
+        // Do something
+        println!("Processed an image");
     });
     // Do something with results
     for result in results {

@@ -77,6 +77,7 @@ This example will show how to use chained calls to get `DisplayMode`
 #### 1. `show_image!`
 
 > simple-example2.rs
+>
 > show-image-with-option.rs
 
 This example show how to use `show_image!` macro
