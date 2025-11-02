@@ -457,10 +457,13 @@ macro_rules! show_image {
         _show_image($image);
     };
     ($image: expr, $option: expr) => {
-        fn _show_image(
-            image: $crate::image::DynamicImage,
+        fn _show_image<T>(
+            image: T,
             option: $crate::processor::ImageProcessorOptions,
-        ) {
+        ) where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
             use $crate::processor::ImageProcessorOptionsCreate;
             let result = option.create_processor(image).process();
             println!("{}", result.display());
@@ -515,7 +518,11 @@ macro_rules! show_images {
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
-        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
             let result = option
                 .create_processor(image)
                 .process();
@@ -527,7 +534,11 @@ macro_rules! show_images {
         }
     };
     (@vec $images:expr, @with_options $option: expr) => {
-        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
             use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
@@ -541,7 +552,11 @@ macro_rules! show_images {
         }
     };
     ($($image:expr),+, @with_options $option: expr) => {
-        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
             use $crate::processor::ImageProcessorOptionsCreate;
             let result = option
                 .create_processor(image)
@@ -562,7 +577,11 @@ macro_rules! show_images {
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
-        fn _show_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
             println!("{}", option.create_processor(image).process().display());
         }
         $(
