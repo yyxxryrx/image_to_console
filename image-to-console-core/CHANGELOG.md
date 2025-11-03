@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Add `error` module
+    - Add `ConvertError` enum
+    - Add `ConvertErrorContext` struct
+    - Add `ConvertErrorContextSource` enum
+    - Add `ConvertResult` alias type
+- `DisplayMode` enum add `check_image_tpye` function
+
+### Refactored
+
+- All convert functions will be returned as a `ConvertResult`
+
+### Fixed
+
+- Fix the convert logic problem in `Kitty` protocol when the given image is too small
+- Fix all macros cannot find `Protocol::Auto` when `sixel` feature is disabled
+
 ## [v0.1.20] - 2025-10-31
 
 ### Fixed
