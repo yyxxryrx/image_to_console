@@ -1,31 +1,55 @@
 use std::fmt::{Display, Formatter};
 
+/// The source of an error context, indicating where the error occurred
 #[derive(Debug)]
 pub enum ConvertErrorContextSource {
+    /// Error occurred at a specific pixel coordinate (x, y)
     Pixel(u32, u32),
+    /// Error occurred during sixel conversion process
     SixelConvert,
+    /// Error occurred in a specific function
     Function(String),
 }
 
+/// Context information for an error, including the source and a descriptive message
 #[derive(Debug)]
 pub struct ConvertErrorContext {
+    /// The source where the error occurred
     pub source: ConvertErrorContextSource,
+    /// A descriptive message explaining the error
     pub message: String,
 }
 
 impl ConvertErrorContext {
+    /// Creates a new error context with the given source and message
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The source where the error occurred
+    /// * `message` - A descriptive message explaining the error
+    ///
+    /// # Returns
+    ///
+    /// A new `ConvertErrorContext` instance
     pub fn new(source: ConvertErrorContextSource, message: String) -> Self {
         Self { source, message }
     }
 }
 
+/// Represents all possible errors that can occur during image conversion
 #[derive(Debug)]
 pub enum ConvertError {
+    /// The input data is empty
     EmptyData,
+    /// The image type is not supported
     UnsupportedImageType,
+    /// An error related to terminal size occurred
     TerminalSizeError,
+    /// The output exceeds the maximum allowed length
     AboveMaxLength(u32),
+    /// An error occurred while trying to acquire a lock
     LockError(ConvertErrorContext),
+    /// An error occurred while writing the image data
     ImageWriteError(ConvertErrorContext),
 }
 
@@ -42,4 +66,5 @@ impl Display for ConvertError {
     }
 }
 
+/// A type alias for `Result<T, ConvertError>`
 pub type ConvertResult<T> = Result<T, ConvertError>;
