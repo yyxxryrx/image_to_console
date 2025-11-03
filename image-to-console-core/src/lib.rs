@@ -894,12 +894,14 @@ macro_rules! __vec_process_images {
 ///
 /// // Process a vector of images with custom options and map operation
 /// let results = process_images!(@vec image_vec, @with_options options, @var img, @map {
+///     let img = img.unwrap();
 ///     println!("Processed image size: {}x{}", img.width, img.height);
 ///     img
 /// });
 ///
 /// // Process a vector of images with default options and for_each operation
 /// process_images!(@vec image_vec, @var img, @for_each {
+///     let img = img.unwrap();
 ///     println!("Processed image size: {}x{}", img.width, img.height);
 /// });
 ///
