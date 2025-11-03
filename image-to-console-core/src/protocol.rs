@@ -29,7 +29,6 @@ pub fn get_terminal_protocol() -> Protocol {
         .to_lowercase();
     let term = std::env::var("TERM").unwrap_or_default().to_lowercase();
     if term_program.contains("wezterm") || term.contains("wezterm") {
-        std::io::stdout().flush().unwrap();
         Protocol::WezTerm
     } else if term_program.contains("kitty") || term.contains("kitty") {
         Protocol::Kitty
@@ -81,7 +80,12 @@ pub fn get_terminal_protocol() -> Protocol {
                         // We need Pc argument to determine whether we should use sixel or not
                         if args.len() <= 2 {
                             Protocol::Normal
-                        } else if args.last().unwrap().trim().parse::<u8>().unwrap_or(0) & 1 == 1 {
+                        } else if args
+                            .last()
+                            .map(|s| s.trim().parse::<u8>().unwrap_or_default() & 1)
+                            .unwrap_or_default()
+                            == 1
+                        {
                             Protocol::Sixel
                         } else {
                             Protocol::Normal
