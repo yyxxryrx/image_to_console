@@ -22,7 +22,7 @@ pub struct ConvertErrorContext {
     /// A descriptive message explaining the error
     pub message: String,
     /// The optional source error
-    pub inner: Option<Box<dyn Error>>,
+    pub inner: Option<Box<dyn Error + Send>>,
 }
 
 impl PartialEq for ConvertErrorContext {
@@ -50,7 +50,7 @@ impl ConvertErrorContext {
         }
     }
 
-    pub fn with_inner(self, inner: Box<dyn Error>) -> Self {
+    pub fn with_inner(self, inner: Box<dyn Error + Send>) -> Self {
         Self {
             inner: Some(inner),
             ..self
@@ -118,7 +118,10 @@ impl Error for ConvertError {
             } => None,
             Self::AboveMaxLength(_, context)
             | Self::LockError(context)
-            | Self::ImageError(context) => context.inner.as_ref().map(|e| e.as_ref()),
+            | Self::ImageError(context) => context
+                .inner
+                .as_ref()
+                .map(|e| e.as_ref() as &(dyn Error + 'static)),
         }
     }
 }
