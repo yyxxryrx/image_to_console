@@ -368,7 +368,7 @@ impl ImageConverter {
     /// Returns a vector of strings representing the converted image
     pub fn convert(&self) -> ConvertResult<Vec<String>> {
         if !self.option.mode.check_image_type(&self.img) {
-            return Err(ConvertError::UnsupportedImageType {
+            return Err(ConvertError::WrongImageType {
                 actual_type: self.img.mode().to_string(),
                 expect_type: self.option.mode.expect_image_type().to_string(),
             });
@@ -637,7 +637,7 @@ impl ImageConverter {
                 .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .map_err(|e| {
-                    ConvertError::ImageWriteError(ConvertErrorContext::new(
+                    ConvertError::ImageError(ConvertErrorContext::new(
                         ConvertErrorContextSource::Function("get_image_data".to_string()),
                         e.to_string(),
                     ))
@@ -648,7 +648,7 @@ impl ImageConverter {
                 .unwrap()
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .map_err(|e| {
-                    ConvertError::ImageWriteError(ConvertErrorContext::new(
+                    ConvertError::ImageError(ConvertErrorContext::new(
                         ConvertErrorContextSource::Function("get_image_data".to_string()),
                         e.to_string(),
                     ))
@@ -702,7 +702,7 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .map_or(Err(ConvertError::TerminalSizeError), |(w, h)| {
+                .map_or(Err(ConvertError::GetTerminalSizeError), |(w, h)| {
                     Ok((w.0.div(2) as u32, h.0 as u32))
                 })?;
             let r = self.option.width as f32 / self.option.height as f32;
@@ -780,7 +780,7 @@ impl ImageConverter {
             )
         } else {
             let (w, h) = terminal_size::terminal_size()
-                .map_or(Err(ConvertError::TerminalSizeError), |(w, h)| {
+                .map_or(Err(ConvertError::GetTerminalSizeError), |(w, h)| {
                     Ok((w.0.div(2) as u32, h.0 as u32))
                 })?;
             let r = self.option.width as f32 / self.option.height as f32;

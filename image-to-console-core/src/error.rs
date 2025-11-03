@@ -41,28 +41,33 @@ impl ConvertErrorContext {
 pub enum ConvertError {
     /// The input data is empty
     EmptyData,
-    /// The image type is not supported
-    UnsupportedImageType {
+    /// The image type does not match the expectation
+    WrongImageType {
         /// The expected image type
         expect_type: String,
         /// The actual image type
         actual_type: String,
     },
-    /// An error related to terminal size occurred
-    TerminalSizeError,
-    /// The output exceeds the maximum allowed length
+    /// An error occurred while trying to get terminal size
+    GetTerminalSizeError,
+    /// An error type for when the length of an input (e.g., `Vec` or slice)
+    /// is above the maximum supported value.
+    ///
+    /// The inner value is the maximum supported value.
+    ///
+    /// > tips: This error is from the `quantette`
     AboveMaxLength(u32),
     /// An error occurred while trying to acquire a lock
     LockError(ConvertErrorContext),
-    /// An error occurred while writing the image data
-    ImageWriteError(ConvertErrorContext),
+    /// An error related with image
+    ImageError(ConvertErrorContext),
 }
 
 impl Display for ConvertError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ConvertError::EmptyData => write!(f, "Empty data"),
-            ConvertError::UnsupportedImageType {
+            ConvertError::WrongImageType {
                 actual_type,
                 expect_type,
             } => write!(
@@ -70,12 +75,12 @@ impl Display for ConvertError {
                 "Unsupported Image Type, expect {}, but actual {}",
                 expect_type, actual_type
             ),
-            ConvertError::TerminalSizeError => write!(f, "Terminal size error"),
+            ConvertError::GetTerminalSizeError => write!(f, "Terminal size error"),
             ConvertError::AboveMaxLength(len) => {
-                write!(f, "Length of the string is above max length: {}", len)
+                write!(f, "above the maximum length of {}", len)
             }
             ConvertError::LockError(context) => write!(f, "{}", context.message),
-            ConvertError::ImageWriteError(context) => write!(f, "{}", context.message),
+            ConvertError::ImageError(context) => write!(f, "{}", context.message),
         }
     }
 }

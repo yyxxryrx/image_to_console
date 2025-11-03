@@ -39,7 +39,7 @@ fn test_image_converter_convert() {
     assert!(matches!(result, Err(ConvertError::UnsupportedImageType)));
     let converter = ImageConverter::new(ProcessedImage::Color(img.to_rgba8()), options.clone());
     let result = converter.convert();
-    assert!(matches!(result, Err(ConvertError::ImageWriteError(_))));
+    assert!(matches!(result, Err(ConvertError::ImageError(_))));
     let converter = ImageConverter::new(ProcessedImage::Color(image::RgbaImage::new(10, 10)), options);
     let result = converter.convert();
     assert!(result.is_ok());
