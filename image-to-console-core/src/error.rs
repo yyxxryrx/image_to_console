@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 /// The source of an error context, indicating where the error occurred
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConvertErrorContextSource {
     /// Error occurred at a specific pixel coordinate (x, y)
     Pixel(u32, u32),
@@ -12,7 +12,7 @@ pub enum ConvertErrorContextSource {
 }
 
 /// Context information for an error, including the source and a descriptive message
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ConvertErrorContext {
     /// The source where the error occurred
     pub source: ConvertErrorContextSource,
@@ -37,7 +37,7 @@ impl ConvertErrorContext {
 }
 
 /// Represents all possible errors that can occur during image conversion
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ConvertError {
     /// The input data is empty
     EmptyData,

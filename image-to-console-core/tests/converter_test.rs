@@ -36,11 +36,19 @@ fn test_image_converter_convert() {
         .get_options();
     let converter = ImageConverter::new(ProcessedImage::NoColor(img.to_luma8()), options.clone());
     let result = converter.convert();
-    assert!(matches!(result, Err(ConvertError::UnsupportedImageType)));
+    let expected = ConvertError::WrongImageType {
+        expect_type: String::from("Color"),
+        actual_type: String::from("NoColor"),
+    };
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), expected);
     let converter = ImageConverter::new(ProcessedImage::Color(img.to_rgba8()), options.clone());
     let result = converter.convert();
     assert!(matches!(result, Err(ConvertError::ImageError(_))));
-    let converter = ImageConverter::new(ProcessedImage::Color(image::RgbaImage::new(10, 10)), options);
+    let converter = ImageConverter::new(
+        ProcessedImage::Color(image::RgbaImage::new(10, 10)),
+        options,
+    );
     let result = converter.convert();
     assert!(result.is_ok());
 }
