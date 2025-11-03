@@ -1,7 +1,7 @@
-use crate::error::{ConvertError, ConvertErrorContext, ConvertResult};
 use crate::{
     DisplayMode::{self, *},
     ProcessedImage,
+    error::{ConvertError, ConvertErrorContext, ConvertErrorContextSource, ConvertResult},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rayon::iter::*;
@@ -635,7 +635,7 @@ impl ImageConverter {
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .map_err(|e| {
                     ConvertError::ImageWriteError(ConvertErrorContext::new(
-                        "get_image_data".to_string(),
+                        ConvertErrorContextSource::Function("get_image_data".to_string()),
                         e.to_string(),
                     ))
                 })?;
@@ -646,7 +646,7 @@ impl ImageConverter {
                 .write_to(&mut writer, image::ImageFormat::Png)
                 .map_err(|e| {
                     ConvertError::ImageWriteError(ConvertErrorContext::new(
-                        "get_image_data".to_string(),
+                        ConvertErrorContextSource::Function("get_image_data".to_string()),
                         e.to_string(),
                     ))
                 })?;
@@ -1053,7 +1053,7 @@ impl ImageConverter {
             .lock()
             .map_err(|err| {
                 ConvertError::LockError(ConvertErrorContext::new(
-                    "Sixel convert".to_string(),
+                    ConvertErrorContextSource::SixelConvert,
                     err.to_string(),
                 ))
             })?

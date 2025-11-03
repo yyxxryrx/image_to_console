@@ -1,13 +1,22 @@
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
+pub enum ConvertErrorContextSource {
+    Pixel(u32, u32),
+    Image,
+    SixelConvert,
+    Function(String),
+    Unknown,
+}
+
+#[derive(Debug)]
 pub struct ConvertErrorContext {
-    pub source: String,
+    pub source: ConvertErrorContextSource,
     pub message: String,
 }
 
 impl ConvertErrorContext {
-    pub fn new(source: String, message: String) -> Self {
+    pub fn new(source: ConvertErrorContextSource, message: String) -> Self {
         Self { source, message }
     }
 }
