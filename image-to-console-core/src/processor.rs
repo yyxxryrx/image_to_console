@@ -1,6 +1,6 @@
 use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
-use crate::error::ConvertResult;
+use crate::error::{ConvertError, ConvertResult};
 use crate::{AutoResizeOption, DisplayMode, ProcessedImage, ResizeMode};
 use image::{GenericImageView, imageops::FilterType};
 use std::default::Default;
@@ -331,7 +331,8 @@ impl ImageProcessor {
         let time = std::time::Instant::now();
         let mut air_line: usize = 0;
         let (mut w, mut h) = self.image.dimensions();
-        let (width, height) = terminal_size::terminal_size().unwrap();
+        let (width, height) = terminal_size::terminal_size()
+            .map_or(Err(ConvertError::GetTerminalSizeError), |size| Ok(size))?;
         match self.option.resize_mode {
             Auto(option) => {
                 if self.option.mode.is_normal() {
