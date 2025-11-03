@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+};
 
 /// The source of an error context, indicating where the error occurred
 #[derive(Debug, PartialEq, Eq)]
@@ -12,12 +15,20 @@ pub enum ConvertErrorContextSource {
 }
 
 /// Context information for an error, including the source and a descriptive message
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct ConvertErrorContext {
     /// The source where the error occurred
     pub source: ConvertErrorContextSource,
     /// A descriptive message explaining the error
     pub message: String,
+    /// The optional source error
+    pub inner: Option<Box<dyn Error>>,
+}
+
+impl PartialEq for ConvertErrorContext {
+    fn eq(&self, other: &Self) -> bool {
+        self.source == other.source && self.message == other.message
+    }
 }
 
 impl ConvertErrorContext {
@@ -32,7 +43,18 @@ impl ConvertErrorContext {
     ///
     /// A new `ConvertErrorContext` instance
     pub fn new(source: ConvertErrorContextSource, message: String) -> Self {
-        Self { source, message }
+        Self {
+            source,
+            message,
+            inner: None,
+        }
+    }
+
+    pub fn with_inner(self, inner: Box<dyn Error>) -> Self {
+        Self {
+            inner: Some(inner),
+            ..self
+        }
     }
 }
 
@@ -56,7 +78,7 @@ pub enum ConvertError {
     /// The inner value is the maximum supported value.
     ///
     /// > tips: This error is from the `quantette`
-    AboveMaxLength(u32),
+    AboveMaxLength(u32, ConvertErrorContext),
     /// An error occurred while trying to acquire a lock
     LockError(ConvertErrorContext),
     /// An error related with image
@@ -76,11 +98,27 @@ impl Display for ConvertError {
                 expect_type, actual_type
             ),
             ConvertError::GetTerminalSizeError => write!(f, "Terminal size error"),
-            ConvertError::AboveMaxLength(len) => {
+            ConvertError::AboveMaxLength(len, _) => {
                 write!(f, "above the maximum length of {}", len)
             }
             ConvertError::LockError(context) => write!(f, "{}", context.message),
             ConvertError::ImageError(context) => write!(f, "{}", context.message),
+        }
+    }
+}
+
+impl Error for ConvertError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::EmptyData
+            | Self::GetTerminalSizeError
+            | Self::WrongImageType {
+                actual_type: _,
+                expect_type: _,
+            } => None,
+            Self::AboveMaxLength(_, context)
+            | Self::LockError(context)
+            | Self::ImageError(context) => context.inner.as_ref().map(|e| e.as_ref()),
         }
     }
 }

@@ -912,7 +912,13 @@ impl ImageConverter {
             self.option.dither,
             self.option.dither_method,
         )
-        .map_err(|err| ConvertError::AboveMaxLength(err.0))?;
+        .map_err(|err| {
+            ConvertError::AboveMaxLength(
+                err.0,
+                ConvertErrorContext::new(ConvertErrorContextSource::SixelConvert, err.to_string())
+                    .with_inner(Box::new(err)),
+            )
+        })?;
         let mut result = String::from(if self.full { "\x1bP9;1q" } else { "\x1bPq" });
         let palette_count = img.palette.len();
         let (width, height) = (img.width, img.height);
