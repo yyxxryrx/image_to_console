@@ -1,16 +1,44 @@
+/*!
+* # image_to_console_core
+*
+* A library for converting images to terminal friendly format.
+*
+* ## Basic usage example
+* ```rust
+* use image::error::ImageResult;
+* use image_to_console_core::processor::{ImageProcessor, ImageProcessorOptions};
+*
+* fn main() -> ImageResult<()> {
+*     let img = image::open("path/to/image.png")?;
+*
+*     // Use default config
+*     let option = ImageProcessorOptions::default();
+*
+*     let mut processor = ImageProcessor::new(img, option);
+*     let result = processor.process();
+*     // Exception handling (this is only shown, not handled, please refer to the actual use of the need)
+*     let result = result.expect("Process image failed");
+*     // result.lines contains the formatted terminal output
+*     // you also can use display method to print
+*     println!("{}", result.display());
+*     Ok(())
+* }
+* ```
+*/
+
 pub mod converter;
+pub mod error;
 #[cfg(feature = "gif")]
 pub mod gif_processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
 pub mod processor;
 pub mod protocol;
-pub mod error;
 
 pub extern crate image;
-pub extern crate rayon;
 #[cfg(feature = "sixel")]
 pub extern crate quantette;
+pub extern crate rayon;
 
 #[cfg(feature = "sixel")]
 use image::RgbImage;
@@ -246,11 +274,16 @@ impl DisplayMode {
             #[cfg(feature = "sixel")]
             Self::SixelHalf | Self::SixelFull => img_type.is_color2(),
             Self::HalfColor | Self::Kitty | Self::Iterm2 | Self::WezTerm => img_type.is_color(),
-            Self::Ascii | Self::FullNoColor | Self::KittyNoColor | Self::Iterm2NoColor | Self::WezTermNoColor => img_type.is_no_color(),
+            Self::Ascii
+            | Self::FullNoColor
+            | Self::KittyNoColor
+            | Self::Iterm2NoColor
+            | Self::WezTermNoColor => img_type.is_no_color(),
         }
     }
 }
 
+/// Represents an image that has been processed for display purposes
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProcessedImage {
     /// A color image represented as RGBA pixels
@@ -404,6 +437,7 @@ impl ProcessedImage {
     }
 }
 
+/// AutoResize Option struct
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AutoResizeOption {
     /// Resize with terminal width
@@ -477,6 +511,7 @@ impl AutoResizeOption {
     }
 }
 
+/// CustomResize Option struct
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct CustomResizeOption {
     pub width: Option<u32>,
@@ -534,6 +569,7 @@ impl CustomResizeOption {
     }
 }
 
+/// Resize Mode enum
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ResizeMode {
     /// Resize with terminal size
@@ -596,15 +632,16 @@ macro_rules! show_image {
         _show_image($image);
     };
     ($image: expr, $option: expr) => {
-        fn _show_image<T>(
-            image: T,
-            option: $crate::processor::ImageProcessorOptions,
-        ) where
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
             $crate::processor::ImageProcessorOptions:
                 $crate::processor::ImageProcessorOptionsCreate<T>,
         {
             use $crate::processor::ImageProcessorOptionsCreate;
-            let result = option.create_processor(image).process().expect("Process image failed");
+            let result = option
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
             println!("{}", result.display());
         }
         _show_image($image, $option);
@@ -769,7 +806,7 @@ macro_rules! __vec_process_images {
         }
     };
     ($images: expr, $mode:ident, $var:ident, options: $options: expr, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
-        { 
+        {
             use $crate::processor::ImageProcessorOptionsCreate;
 
             let options: $crate::processor::ImageProcessorOptions = $options;
