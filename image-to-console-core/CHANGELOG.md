@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add `ConvertErrorContext` struct
     - Add `ConvertErrorContextSource` enum
     - Add `ConvertResult` alias type
-- `DisplayMode` enum add `check_image_tpye` function
+- `DisplayMode` enum add `check_image_type` function
+- `DisplayMode` enum add `expect_image_type` function
 
 ### Refactored
 
