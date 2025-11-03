@@ -3,10 +3,8 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug)]
 pub enum ConvertErrorContextSource {
     Pixel(u32, u32),
-    Image,
     SixelConvert,
     Function(String),
-    Unknown,
 }
 
 #[derive(Debug)]
