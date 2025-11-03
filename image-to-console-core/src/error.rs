@@ -42,7 +42,12 @@ pub enum ConvertError {
     /// The input data is empty
     EmptyData,
     /// The image type is not supported
-    UnsupportedImageType,
+    UnsupportedImageType {
+        /// The expected image type
+        expect_type: String,
+        /// The actual image type
+        actual_type: String,
+    },
     /// An error related to terminal size occurred
     TerminalSizeError,
     /// The output exceeds the maximum allowed length
@@ -55,11 +60,20 @@ pub enum ConvertError {
 
 impl Display for ConvertError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self { 
+        match self {
             ConvertError::EmptyData => write!(f, "Empty data"),
-            ConvertError::UnsupportedImageType => write!(f, "Unsupported image type"),
+            ConvertError::UnsupportedImageType {
+                actual_type,
+                expect_type,
+            } => write!(
+                f,
+                "Unsupported Image Type, expect {}, but actual {}",
+                expect_type, actual_type
+            ),
             ConvertError::TerminalSizeError => write!(f, "Terminal size error"),
-            ConvertError::AboveMaxLength(len) => write!(f, "Length of the string is above max length: {}", len),
+            ConvertError::AboveMaxLength(len) => {
+                write!(f, "Length of the string is above max length: {}", len)
+            }
             ConvertError::LockError(context) => write!(f, "{}", context.message),
             ConvertError::ImageWriteError(context) => write!(f, "{}", context.message),
         }

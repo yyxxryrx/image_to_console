@@ -281,6 +281,42 @@ impl DisplayMode {
             | Self::WezTermNoColor => img_type.is_no_color(),
         }
     }
+
+    /// Get the expected image type name for this display mode
+    ///
+    /// This method returns a human-readable string indicating what type of
+    /// processed image data is required for this display mode. This can be
+    /// useful for debugging, validation, or user interface purposes.
+    ///
+    /// # Returns
+    /// A static string slice representing the expected image type:
+    /// * "Both" - For modes requiring both color and grayscale data (FullColor)
+    /// * "Color2" - For modes requiring RGB data (SixelHalf, SixelFull)
+    /// * "Color" - For modes requiring RGBA color data (HalfColor, Kitty, Iterm2, WezTerm)
+    /// * "NoColor" - For modes requiring grayscale data (Ascii, FullNoColor, KittyNoColor, Iterm2NoColor, WezTermNoColor)
+    ///
+    /// # Examples
+    /// ```
+    /// use image_to_console_core::DisplayMode;
+    ///
+    /// assert_eq!(DisplayMode::HalfColor.expect_image_type(), "Color");
+    /// assert_eq!(DisplayMode::Ascii.expect_image_type(), "NoColor");
+    /// #[cfg(feature = "sixel")]
+    /// assert_eq!(DisplayMode::SixelHalf.expect_image_type(), "Color2");
+    /// ```
+    pub fn expect_image_type(&self) -> &'static str {
+        match self {
+            Self::FullColor => "Both",
+            #[cfg(feature = "sixel")]
+            Self::SixelHalf | Self::SixelFull => "Color2",
+            Self::HalfColor | Self::Kitty | Self::Iterm2 | Self::WezTerm => "Color",
+            Self::Ascii
+            | Self::FullNoColor
+            | Self::KittyNoColor
+            | Self::Iterm2NoColor
+            | Self::WezTermNoColor => "NoColor",
+        }
+    }
 }
 
 /// Represents an image that has been processed for display purposes

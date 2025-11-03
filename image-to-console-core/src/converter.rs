@@ -368,7 +368,10 @@ impl ImageConverter {
     /// Returns a vector of strings representing the converted image
     pub fn convert(&self) -> ConvertResult<Vec<String>> {
         if !self.option.mode.check_image_type(&self.img) {
-            return Err(ConvertError::UnsupportedImageType);
+            return Err(ConvertError::UnsupportedImageType {
+                actual_type: self.img.mode().to_string(),
+                expect_type: self.option.mode.expect_image_type().to_string(),
+            });
         }
         match self.option.mode {
             Kitty | KittyNoColor => self.kitty_convert(),
