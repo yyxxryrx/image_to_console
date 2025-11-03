@@ -9,6 +9,8 @@ pub mod error;
 
 pub extern crate image;
 pub extern crate rayon;
+#[cfg(feature = "sixel")]
+pub extern crate quantette;
 
 #[cfg(feature = "sixel")]
 use image::RgbImage;
@@ -159,6 +161,33 @@ impl DisplayMode {
         matches!(self, Self::SixelHalf | Self::SixelFull)
     }
 
+    /// Get the name of the display mode as a static string slice
+    ///
+    /// This method returns a human-readable name for each display mode variant,
+    /// which can be useful for debugging, logging, or user interface purposes.
+    ///
+    /// # Returns
+    /// A static string slice representing the name of the display mode:
+    /// * "HalfColor" - For half-block color mode
+    /// * "FullColor" - For full-block color mode
+    /// * "FullNoColor" - For full-block grayscale mode
+    /// * "Ascii" - For ASCII character-based rendering
+    /// * "WezTerm" - For WezTerm terminal protocol (color)
+    /// * "WezTermNoColor" - For WezTerm terminal protocol (grayscale)
+    /// * "Kitty" - For Kitty terminal protocol (color)
+    /// * "KittyNoColor" - For Kitty terminal protocol (grayscale)
+    /// * "Iterm2" - For iTerm2 terminal protocol (color)
+    /// * "Iterm2NoColor" - For iTerm2 terminal protocol (grayscale)
+    /// * "SixelHalf" - For Sixel graphics protocol (half-block, when `sixel` feature is enabled)
+    /// * "SixelFull" - For Sixel graphics protocol (full-block, when `sixel` feature is enabled)
+    ///
+    /// # Examples
+    /// ```
+    /// use image_to_console_core::DisplayMode;
+    ///
+    /// assert_eq!(DisplayMode::HalfColor.mode(), "HalfColor");
+    /// assert_eq!(DisplayMode::Ascii.mode(), "Ascii");
+    /// ```
     pub fn mode(&self) -> &'static str {
         match self {
             Self::HalfColor => "HalfColor",
@@ -178,6 +207,39 @@ impl DisplayMode {
         }
     }
 
+    /// Check if the given processed image type is compatible with this display mode
+    ///
+    /// This method verifies whether a ProcessedImage has been processed in a format
+    /// that is suitable for display with the current DisplayMode. Different display
+    /// modes require different image formats - some need color information, others
+    /// work with grayscale, and some need both.
+    ///
+    /// # Arguments
+    /// * `img_type` - A reference to the ProcessedImage to check for compatibility
+    ///
+    /// # Returns
+    /// * `true` - If the image type is compatible with this display mode
+    /// * `false` - If the image type is not compatible with this display mode
+    ///
+    /// # Compatibility Rules
+    /// * `FullColor` mode requires images with both color and grayscale data (`ProcessedImage::Both`)
+    /// * `SixelHalf` and `SixelFull` modes require RGB image data (`ProcessedImage::Color2`)
+    /// * `HalfColor`, `Kitty`, `Iterm2`, and `WezTerm` modes require color image data (`ProcessedImage::Color`)
+    /// * `Ascii`, `FullNoColor`, `KittyNoColor`, `Iterm2NoColor`, and `WezTermNoColor` modes require grayscale data (`ProcessedImage::NoColor`)
+    ///
+    /// # Examples
+    /// ```
+    /// use image_to_console_core::{DisplayMode, ProcessedImage};
+    /// use image::DynamicImage;
+    ///
+    /// let img = DynamicImage::new_rgba8(10, 10);
+    /// let color_image = ProcessedImage::new(DisplayMode::HalfColor, &img);
+    /// let ascii_image = ProcessedImage::new(DisplayMode::Ascii, &img);
+    ///
+    /// assert!(DisplayMode::HalfColor.check_image_type(&color_image));
+    /// assert!(!DisplayMode::HalfColor.check_image_type(&ascii_image));
+    /// assert!(DisplayMode::Ascii.check_image_type(&ascii_image));
+    /// ```
     pub fn check_image_type(&self, img_type: &ProcessedImage) -> bool {
         match self {
             Self::FullColor => img_type.is_both(),
@@ -289,28 +351,52 @@ impl ProcessedImage {
     /// Check if the processed image contains color data
     ///
     /// # Returns
-    /// * `true` - If the processed image contains color data (Color or Both variants)
-    /// * `false` - If the processed image only contains grayscale data (NoColor variant)
+    /// * `true` - If the processed image only color data (Color variants)
+    /// * `false` - If the processed image contains grayscale data (NoColor variant)
     pub fn is_color(&self) -> bool {
         matches!(self, Self::Color(_))
     }
 
+    /// Check if the processed image contains no color data (grayscale only)
+    ///
+    /// # Returns
+    /// * `true` - If the processed image contains only grayscale data (NoColor variant)
+    /// * `false` - If the processed image contains color data (Color, Color2, or Both variants)
     pub fn is_no_color(&self) -> bool {
         matches!(self, Self::NoColor(_))
     }
 
+    /// Check if the processed image contains both color and grayscale data
+    ///
+    /// # Returns
+    /// * `true` - If the processed image contains both color and grayscale data (Both variant)
+    /// * `false` - If the processed image contains only color or only grayscale data
     pub fn is_both(&self) -> bool {
         matches!(self, Self::Both(_, _))
     }
 
+    /// Check if the processed image contains RGB color data (available only when sixel feature is enabled)
+    ///
+    /// # Returns
+    /// * `true` - If the processed image contains RGB color data (Color2 variant)
+    /// * `false` - If the processed image contains other data types
     #[cfg(feature = "sixel")]
     pub fn is_color2(&self) -> bool {
         matches!(self, Self::Color2(_))
     }
 
+    /// Get the name of the processed image variant
+    ///
+    /// # Returns
+    /// A static string slice representing the variant name:
+    /// * "Color" - For RGBA image data
+    /// * "Color2" - For RGB image data (when sixel feature is enabled)
+    /// * "NoColor" - For grayscale image data
+    /// * "Both" - For images containing both RGBA and grayscale data
     pub fn mode(&self) -> &'static str {
         match self {
             Self::Color(_) => "Color",
+            #[cfg(feature = "sixel")]
             Self::Color2(_) => "Color2",
             Self::NoColor(_) => "NoColor",
             Self::Both(_, _) => "Both",
@@ -809,12 +895,12 @@ macro_rules! process_images {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
-                    .map(|mut image| option.create_processor(image).process())
+                    .map(|image| option.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
-                    .iter()
-                    .map(|image| option.create_processor(image.clone()).process())
+                    .into_iter()
+                    .map(|image| option.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
@@ -839,12 +925,12 @@ macro_rules! process_images {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
-                    .map(|mut image| options.create_processor(image).process())
+                    .map(|image| options.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
-                    .iter()
-                    .map(|image| options.create_processor(image.clone()).process())
+                    .into_iter()
+                    .map(|image| options.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
@@ -859,13 +945,13 @@ macro_rules! process_images {
                 .option_display_mode(display_mode)
                 .get_options();
         fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::error::ConvertResult<$crate::processor::ImageProcessorResult> {
-            return $crate::processor::ImageProcessor::new(image, option).process();
+            $crate::processor::ImageProcessor::new(image, option).process()
         }
         _process_image($image, option)}
     };
     ($image:expr,@with_options $options:expr) => {{
         fn _process_image(image: $crate::image::DynamicImage, option: $crate::processor::ImageProcessorOptions) -> $crate::error::ConvertResult<$crate::processor::ImageProcessorResult> {
-            return $crate::processor::ImageProcessor::new(image, option).process();
+            $crate::processor::ImageProcessor::new(image, option).process()
         }
         _process_image($image, $options)}
     };
@@ -876,25 +962,26 @@ macro_rules! process_images {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
-                    .map(|mut image| options.create_processor(image).process())
+                    .map(|image| options.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
-                    .iter()
-                    .map(|image| options.create_processor(image.clone()).process())
+                    .into_iter()
+                    .map(|image| options.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
         let options = $options;
-        let mut images = vec![$($image),+];
+        let images = vec![$($image),+];
         _process_images(images, options)
     }};
     ($($image:expr),+$(,)?) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
-            let display_mode = $crate::protocol::Protocol::Auto
-                    .builder()
-                    .build();
+            #[cfg(feature = "auto_select")]
+            let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+            #[cfg(not(feature = "auto_select"))]
+            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
@@ -903,12 +990,12 @@ macro_rules! process_images {
                 use $crate::rayon::prelude::*;
                 images
                     .into_par_iter()
-                    .map(|mut image| option.create_processor(image).process())
+                    .map(|image| option.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             } else {
                 images
-                    .iter()
-                    .map(|image| option.create_processor(image.clone()).process())
+                    .into_iter()
+                    .map(|image| option.create_processor(image).process())
                     .collect::<Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>>()
             }
         }
