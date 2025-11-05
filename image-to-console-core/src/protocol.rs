@@ -292,6 +292,7 @@ impl DisplayModeBuilder {
                 true => DisplayMode::WezTerm,
                 false => DisplayMode::WezTermNoColor,
             },
+            #[cfg(feature = "sixel")]
             Protocol::Sixel => match self.is_full {
                 true => DisplayMode::SixelFull,
                 false => DisplayMode::SixelHalf,
