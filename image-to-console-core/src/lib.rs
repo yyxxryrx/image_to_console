@@ -654,10 +654,7 @@ macro_rules! show_image {
                 $crate::processor::ImageProcessorOptionsCreate<T>,
         {
             use $crate::processor::ImageProcessorOptionsCreate;
-            #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-            #[cfg(not(feature = "auto_select"))]
-            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let result = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .create_processor(image)
@@ -723,10 +720,7 @@ macro_rules! show_image {
 macro_rules! show_images {
     (@vec $images:expr) => {
         use $crate::processor::ImageProcessorOptionsCreate;
-        #[cfg(feature = "auto_select")]
         let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-        #[cfg(not(feature = "auto_select"))]
-        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
@@ -785,10 +779,7 @@ macro_rules! show_images {
     };
     ($($image:expr),+) => {
         use $crate::processor::ImageProcessorOptionsCreate;
-        #[cfg(feature = "auto_select")]
         let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-        #[cfg(not(feature = "auto_select"))]
-        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
             .option_display_mode(display_mode)
             .get_options();
@@ -811,10 +802,7 @@ macro_rules! __vec_process_images {
     ($images: expr, $mode:ident, $var:ident, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
         {
             use $crate::processor::ImageProcessorOptionsCreate;
-            #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-            #[cfg(not(feature = "auto_select"))]
-            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
@@ -958,10 +946,7 @@ macro_rules! process_images {
     (@vec $images:expr) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
-            #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-            #[cfg(not(feature = "auto_select"))]
-            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
@@ -1012,10 +997,7 @@ macro_rules! process_images {
         _process_images($images, $options)}
     };
     ($image:expr) => {{
-        #[cfg(feature = "auto_select")]
         let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-        #[cfg(not(feature = "auto_select"))]
-        let display_mode = $crate::protocol::Protocol::default().builder().build();
         let option = $crate::processor::ImageProcessorOptions::default()
                 .option_display_mode(display_mode)
                 .get_options();
@@ -1053,10 +1035,7 @@ macro_rules! process_images {
     ($($image:expr),+$(,)?) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {
             use $crate::processor::ImageProcessorOptionsCreate;
-            #[cfg(feature = "auto_select")]
             let display_mode = $crate::protocol::Protocol::Auto.builder().build();
-            #[cfg(not(feature = "auto_select"))]
-            let display_mode = $crate::protocol::Protocol::default().builder().build();
             let option = $crate::processor::ImageProcessorOptions::default()
                     .option_display_mode(display_mode)
                     .get_options();
