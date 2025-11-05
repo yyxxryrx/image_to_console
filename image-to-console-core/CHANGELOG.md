@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.2.1] - 2025-11-05
+
+### Fixed
+
+- Fix the convert logic problem in `Wezterm` protocol that not init the vector
+- Remove all the conditional compilation about `auto_select` feature in all macros
+
 ## [v0.2.0] - 2025-11-05
 
 ### Added
@@ -22,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Remove some `clap` crate dependency feature
-- Changed the `ImageProcessorOptions` chaining calling functions name(remove `option` head)
 
 ### Refactored
 
