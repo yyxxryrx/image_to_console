@@ -1,6 +1,6 @@
 # image_to_console
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Last Version](https://img.shields.io/github/v/release/yyxxryrx/image_to_console)](https://github.com/yyxxryrx/image_to_console/releases/latest) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yyxxryrx/image_to_console)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Last Version](https://img.shields.io/github/v/release/yyxxryrx/image_to_console)](https://github.com/yyxxryrx/image_to_console/releases/latest)
 
 A high-performance terminal image viewer written in Rust.
 
