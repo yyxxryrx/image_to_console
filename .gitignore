@@ -1,3 +1,5 @@
 /target
 /.idea
 /.vscode
+/image-to-console-core/.codeql-db
+*.sarif
