@@ -108,6 +108,12 @@ This example show how to process multiple images with use `process_images!` macr
 
 This example show if you give nothing to `process_images!` macro, it will return empty `Vec`
 
+### Converter Example
+
+> converter-example.rs
+
+This example show how to use `ImageConverter` without `ImageProcessor`
+
 ## CLI Example
 
 > example-cli/

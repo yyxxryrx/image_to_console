@@ -125,6 +125,10 @@ name = "process-images-nothing"
 path = "examples/process-images-nothing.rs"
 
 [[example]]
+name = "converter-example"
+path = "examples/converter-example.rs"
+
+[[example]]
 name = "example-cli"
 path = "examples/example-cli/src/main.rs"
 
@@ -142,6 +146,7 @@ version = "0.13.3"
 [dependencies.clap]
 optional = true
 version = "4.5.51"
+features = ["std"]
 default-features = false
 
 [dependencies.image]
