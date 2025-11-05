@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v0.2.0] - 2025-11-05
 
 ### Added
 
@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add `ConvertResult` alias type
 - `DisplayMode` enum add `check_image_type` function
 - `DisplayMode` enum add `expect_image_type` function
+
+### Changed
+
+- Remove some `clap` crate dependency feature
+- Changed the `ImageProcessorOptions` chaining calling functions name(remove `option` head)
 
 ### Refactored
 
