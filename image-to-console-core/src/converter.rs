@@ -693,7 +693,7 @@ impl ImageConverter {
     fn wezterm_convert(&self) -> ConvertResult<Vec<String>> {
         let image_data = self.get_image_data()?;
         // Add space to prevent misalignment
-        let mut lines: Vec<String> = Vec::with_capacity(1);
+        let mut lines: Vec<String> = vec![String::new()];
         lines[0] = if !self.option.center {
             format!(
                 "\x1b]1337;File=size={};inline=1:{}\x1b\\",
