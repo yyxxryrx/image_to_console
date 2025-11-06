@@ -1195,7 +1195,22 @@ macro_rules! __vec_process_images {
 /// * For map operations: `Vec<T>` where T is the return type of the map block
 macro_rules! process_images {
     () => {
-        Vec::<$crate::processor::ImageProcessorResult>::new()
+        Vec::<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>::new()
+    };
+    ($(@with_options $options:expr,)?$([]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        $(let $($mut )?$name = $crate::process_images!();)*
+    };
+    (@with_options $options:expr,$([$($image:expr),*]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let options: $crate::processor::ImageProcessorOptions = $options;
+        $(let $($mut )?$name = $crate::process_images!(@vec vec![$($image),*], @with_options options);)*
+    };
+    ($([$($image:expr),*]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
+        let options = $crate::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .get_options();
+        $(let $($mut )?$name = $crate::process_images!(@vec vec![$($image),*], @with_options options);)*
     };
     ($($image:expr=>$(@$mut:tt)?$name:ident$(@$end:tt)?),*$(,)?) => {
         use $crate::processor::ImageProcessorOptionsCreate;
@@ -1328,7 +1343,6 @@ macro_rules! process_images {
     }
 }
 
-
 #[macro_export]
 #[cfg(feature = "auto_select")]
 /// A macro to process one or more images and return the processed results.
@@ -1411,7 +1425,22 @@ macro_rules! process_images {
 /// * For map operations: `Vec<T>` where T is the return type of the map block
 macro_rules! process_images {
     () => {
-        Vec::<$crate::processor::ImageProcessorResult>::new()
+        Vec::<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>>::new()
+    };
+    ($(@with_options $options:expr,)?$([]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        $(let $($mut )?$name = $crate::process_images!();)*
+    };
+    (@with_options $options:expr,$([$($image:expr),*]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let options: $crate::processor::ImageProcessorOptions = $options;
+        $(let $($mut )?$name = $crate::process_images!(@vec vec![$($image),*], @with_options options);)*
+    };
+    ($([$($image:expr),*]=>$(@$mut:tt)?$name:ident),*$(,)?) => {
+        let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        let options = $crate::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .get_options();
+        $(let $($mut )?$name = $crate::process_images!(@vec vec![$($image),*], @with_options options);)*
     };
     ($($image:expr=>$(@$mut:tt)?$name:ident$(@$end:tt)?),*$(,)?) => {
         use $crate::processor::ImageProcessorOptionsCreate;
