@@ -125,6 +125,30 @@ name = "process-images-nothing"
 path = "examples/process-images-nothing.rs"
 
 [[example]]
+name = "process-images-example2"
+path = "examples/process-images-example2.rs"
+
+[[example]]
+name = "process-images-example2-with-options"
+path = "examples/process-images-example2-with-options.rs"
+
+[[example]]
+name = "process-images-example2-vec"
+path = "examples/process-images-example2-vec.rs"
+
+[[example]]
+name = "process-images-example2-vec-mut"
+path = "examples/process-images-example2-vec-mut.rs"
+
+[[example]]
+name = "process-images-example2-vec-with-options"
+path = "examples/process-images-example2-vec-with-options.rs"
+
+[[example]]
+name = "process-images-example2-vec-nothing"
+path = "examples/process-images-example2-vec-nothing.rs"
+
+[[example]]
 name = "converter-example"
 path = "examples/converter-example.rs"
 

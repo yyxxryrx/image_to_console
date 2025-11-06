@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add more tests for `ImageProcessor` and `ImageConverter`
 - Enhance `process_images!` macro, now you can write `image => variable` to assign the image to a variable
+- Add more examples
 
 ### Fixed
 
