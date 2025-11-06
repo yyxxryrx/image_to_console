@@ -100,6 +100,24 @@ fn main() -> ImageResult<()> {
 ```
 
 or
+> you can see in [examples/simple-example3.rs](examples/simple-example3.rs)
+
+```rust
+use image::error::ImageResult;
+use image_to_console_core::{print, processor::ImageProcessorOptions};
+
+fn main() -> ImageResult<()> {
+  let img = image::open("path/to/image.png")?;
+  // create config
+  let config = ImageProcessorOptions::default();
+  // show image
+  print(&img, &config).expect("Show image error");
+  Ok(())
+}
+
+```
+
+or
 > you can see in [examples/simple-example2.rs](examples/simple-example2.rs)
 
 ```rust

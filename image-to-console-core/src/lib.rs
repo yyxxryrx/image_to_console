@@ -40,9 +40,11 @@ pub extern crate image;
 pub extern crate quantette;
 pub extern crate rayon;
 
+use error::ConvertResult;
 #[cfg(feature = "sixel")]
 use image::RgbImage;
 use image::{DynamicImage, GrayImage, RgbaImage};
+use processor::ImageProcessorOptionsCreate;
 
 /// The protocol of display
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -623,7 +625,75 @@ impl Default for ResizeMode {
     }
 }
 
+pub fn print(
+    image: &image::DynamicImage,
+    config: &crate::processor::ImageProcessorOptions,
+) -> ConvertResult<()> {
+    println!("{}", config.create_processor(image).process()?.display());
+    Ok(())
+}
+
 #[macro_export]
+/// A macro to display a single image to the terminal using default options or custom options.
+///
+/// This macro provides a convenient way to display images without manually setting up
+/// the image processor and display protocol. It automatically detects the best terminal
+/// protocol to use and processes the image accordingly.
+///
+/// # Arguments
+///
+/// * `$image` - An image of type `image::DynamicImage` to be displayed
+/// * `$option` (optional) - Custom `ImageProcessorOptions` to control how the image is processed
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Display an image with default options
+/// show_image!(my_image);
+///
+/// // Display an image with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_display_mode(DisplayMode::Ascii);
+/// show_image!(my_image, options);
+/// ```
+#[cfg(not(feature = "auto_select"))]
+macro_rules! show_image {
+    ($image:expr) => {
+        fn _show_image<T>(image: T)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            let display_mode = $crate::protocol::Protocol::default().builder().build();
+            let result = $crate::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
+            println!("{}", result.display());
+        }
+        _show_image($image);
+    };
+    ($image: expr, $option: expr) => {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            let result = option
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
+            println!("{}", result.display());
+        }
+        _show_image($image, $option);
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "auto_select")]
 /// A macro to display a single image to the terminal using default options or custom options.
 ///
 /// This macro provides a convenient way to display images without manually setting up
@@ -682,6 +752,123 @@ macro_rules! show_image {
 }
 
 #[macro_export]
+#[cfg(not(feature = "auto_select"))]
+/// A macro to display multiple images to the terminal.
+///
+/// This macro allows displaying multiple images either with default options or with
+/// shared custom options. It's useful when you want to display a series of images
+/// with the same processing settings.
+///
+/// # Arguments
+///
+/// * `@vec $images` - A vector of images of type `Vec<image::DynamicImage>` to be displayed
+/// * `$image` - One or more images of type `image::DynamicImage` to be displayed
+/// * `@with_options $option` (optional) - Custom `ImageProcessorOptions` to control
+///   how all images are processed
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Display multiple images with default options
+/// show_images!(image1, image2, image3);
+///
+/// // Display multiple images with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_resize_mode(ResizeMode::Custom(CustomResizeOption::new(80, 40)))
+///     .get_options();
+/// show_images!(image1, image2, image3, @with_options options);
+///
+/// // Display images from a vector with default options
+/// let image_vec = vec![image1, image2, image3];
+/// show_images!(@vec image_vec);
+///
+/// // Display images from a vector with custom options
+/// let options = ImageProcessorOptions::default()
+///     .option_display_mode(DisplayMode::Ascii)
+///     .get_options();
+/// show_images!(@vec image_vec, @with_options options);
+/// ```
+macro_rules! show_images {
+    (@vec $images:expr) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
+        let option = $crate::processor::ImageProcessorOptions::default()
+            .option_display_mode(display_mode)
+            .get_options();
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            let result = option
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
+            println!("{}", result.display());
+        }
+        let images: Vec<$crate::image::DynamicImage> = $images;
+        for image in images {
+            _show_image(image, option);
+        }
+    };
+    (@vec $images:expr, @with_options $option: expr) => {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            let result = option
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
+            println!("{}", result.display());
+        }
+        let option: $crate::processor::ImageProcessorOptions = $option;
+        let images: Vec<$crate::image::DynamicImage> = $images;
+        for image in images {
+            _show_image(image, option);
+        }
+    };
+    ($($image:expr),+, @with_options $option: expr) => {
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            use $crate::processor::ImageProcessorOptionsCreate;
+            let result = option
+                .create_processor(image)
+                .process()
+                .expect("Process image failed");
+            println!("{}", result.display());
+        }
+        let option: $crate::processor::ImageProcessorOptions = $option;
+        $(
+            _show_image($image, option);
+        )+
+    };
+    ($($image:expr),+) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let display_mode = $crate::protocol::Protocol::default().builder().build();
+        let option = $crate::processor::ImageProcessorOptions::default()
+            .option_display_mode(display_mode)
+            .get_options();
+        fn _show_image<T>(image: T, option: $crate::processor::ImageProcessorOptions)
+        where
+            $crate::processor::ImageProcessorOptions:
+                $crate::processor::ImageProcessorOptionsCreate<T>,
+        {
+            println!("{}", option.create_processor(image).process().expect("Process image failed").display());
+        }
+        $(
+            _show_image($image, option);
+        )+
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "auto_select")]
 /// A macro to display multiple images to the terminal.
 ///
 /// This macro allows displaying multiple images either with default options or with
@@ -942,6 +1129,19 @@ macro_rules! __vec_process_images {
 macro_rules! process_images {
     () => {
         Vec::<$crate::processor::ImageProcessorResult>::new()
+    };
+    ($($image:expr=>$(@$mut:tt)?$name:ident$(@$end:tt)?),*$(,)?) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let display_mode = $crate::protocol::Protocol::Auto.builder().build();
+        let options = $crate::processor::ImageProcessorOptions::default()
+                .option_display_mode(display_mode)
+                .get_options();
+        $(let $($mut )?$name = options.create_processor($image).process()$($end)?;)*
+    };
+    (@with_options $options:expr,$($image:expr=>$(@$mut:tt)?$name:ident$(@$end:tt)?),*$(,)?) => {
+        use $crate::processor::ImageProcessorOptionsCreate;
+        let options: $crate::processor::ImageProcessorOptions = $options;
+        $(let $($mut )?$name = options.create_processor($image).process()$($end)?;)*
     };
     (@vec $images:expr) => {{
         fn _process_images(images: Vec<$crate::image::DynamicImage>) -> Vec<$crate::error::ConvertResult<$crate::processor::ImageProcessorResult>> {

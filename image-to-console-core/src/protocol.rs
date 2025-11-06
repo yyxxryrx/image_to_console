@@ -23,7 +23,6 @@ use crate::DisplayMode;
 ///
 /// This function is only available when the `auto_check` feature is enabled.
 pub fn get_terminal_protocol() -> Protocol {
-    use std::io::Write;
     let term_program = std::env::var("TERM_PROGRAM")
         .unwrap_or_default()
         .to_lowercase();
@@ -41,7 +40,7 @@ pub fn get_terminal_protocol() -> Protocol {
         #[cfg(feature = "crossterm")]
         {
             fn check_sixel() -> std::io::Result<Protocol> {
-                use std::io::BufRead;
+                use std::io::{BufRead, Write};
                 crossterm::terminal::enable_raw_mode()?;
                 // Send the escape sequence
                 std::io::stdout().write_all(b"\x1b[>c")?;

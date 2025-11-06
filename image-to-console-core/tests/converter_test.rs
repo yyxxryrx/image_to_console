@@ -52,3 +52,35 @@ fn test_image_converter_convert() {
     let result = converter.convert();
     assert!(result.is_ok());
 }
+
+#[test]
+fn test_all_protocol_convert() {
+    let img = image::DynamicImage::new(10, 10, image::ColorType::Rgba8);
+    let modes = vec![
+        DisplayMode::HalfColor,
+        DisplayMode::FullColor,
+        DisplayMode::Ascii,
+        DisplayMode::FullNoColor,
+        DisplayMode::Kitty,
+        DisplayMode::KittyNoColor,
+        DisplayMode::Iterm2,
+        DisplayMode::Iterm2NoColor,
+        DisplayMode::WezTerm,
+        DisplayMode::WezTermNoColor,
+        #[cfg(feature = "sixel")]
+        DisplayMode::SixelFull,
+        #[cfg(feature = "sixel")]
+        DisplayMode::SixelHalf,
+    ];
+    for mode in modes {
+        let processed_img = ProcessedImage::new(mode, &img);
+        let options = ImageConverterOption::default()
+            .mode(mode)
+            .width(img.width())
+            .height(img.height())
+            .get_options();
+        let converter = ImageConverter::new(processed_img, options);
+        let result = converter.convert();
+        assert!(result.is_ok());
+    }
+}
