@@ -92,7 +92,7 @@ This example show how to use `show_images!` macro
 
 #### 1. One image
 
-> process-images-example-*.rs
+> process-image-example-*.rs
 
 This example show how to process one image with use `process_images!` macro
 
@@ -102,7 +102,13 @@ This example show how to process one image with use `process_images!` macro
 
 This example show how to process multiple images with use `process_images!` macro
 
-#### 3. Nothing
+#### 3. Binding result to variable
+
+> process-images-example2*.rs
+
+This example show how to bind result to variable with `process_images!` macro
+
+#### 4. Nothing
 
 > process-images-nothing.rs
 
