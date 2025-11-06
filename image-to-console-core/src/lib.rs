@@ -1139,6 +1139,11 @@ macro_rules! __vec_process_images {
 /// * `@vec $images:expr, @with_options $options:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with custom options and for_each operation
 /// * `@vec $images:expr, @var $var:ident, @map $block:block` - Process a vector of images with default options and map operation
 /// * `@vec $images:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with default options and for_each operation
+/// * `@with_options $options:expr, []=> $($mut:tt)? $name:ident` - Create an empty result vector with a specified name and optional mutability
+/// * `@with_options $options:expr, [$($image:expr),*]=> $($mut:tt)? $name:ident` - Process multiple images into a named variable with optional mutability
+/// * `[$($image:expr),*]=> $($mut:tt)? $name:ident` - Process multiple images with default options into a named variable with optional mutability
+/// * `$image:expr=> $($mut:tt)? $name:ident` - Process a single image with default options into a named variable with optional mutability
+/// * `@with_options $options:expr, $image:expr=> $($mut:tt)? $name:ident` - Process a single image with custom options into a named variable with optional mutability
 ///
 /// # Examples
 ///
@@ -1185,13 +1190,30 @@ macro_rules! __vec_process_images {
 ///
 /// // Return an empty vector
 /// let empty_results: Vec<ImageProcessorResult> = process_images!();
+///
+/// // Create an empty result vector with a name
+/// process_images!{
+///     @with_options options,
+///     [] => @mut empty_result
+/// }
+///
+/// // Process multiple images into a named variable
+/// process_images! {
+///     [image1, image2, image3] => mut my_results
+/// }
+///
+/// // Process a single image into a named variable with custom options
+/// process_images! {
+///     @with_options options,
+///     image1 => result
+/// }
 /// ```
 ///
 /// # Returns
 ///
-/// * For single image processing: `ImageProcessorResult`
-/// * For multiple image processing: `Vec<ImageProcessorResult>`
-/// * For empty invocation: `Vec<ImageProcessorResult>` (empty vector)
+/// * For single image processing: `ConvertResult<ImageProcessorResult>`
+/// * For multiple image processing: `Vec<ConvertResult<ImageProcessorResult>>`
+/// * For empty invocation: `Vec<ConvertResult<ImageProcessorResult>>` (empty vector)
 /// * For map operations: `Vec<T>` where T is the return type of the map block
 macro_rules! process_images {
     () => {
@@ -1369,6 +1391,11 @@ macro_rules! process_images {
 /// * `@vec $images:expr, @with_options $options:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with custom options and for_each operation
 /// * `@vec $images:expr, @var $var:ident, @map $block:block` - Process a vector of images with default options and map operation
 /// * `@vec $images:expr, @var $var:ident, @for_each $block:block` - Process a vector of images with default options and for_each operation
+/// * `@with_options $options:expr, []=> $($mut:tt)? $name:ident` - Create an empty result vector with a specified name and optional mutability
+/// * `@with_options $options:expr, [$($image:expr),*]=> $($mut:tt)? $name:ident` - Process multiple images into a named variable with optional mutability
+/// * `[$($image:expr),*]=> $($mut:tt)? $name:ident` - Process multiple images with default options into a named variable with optional mutability
+/// * `$image:expr=> $($mut:tt)? $name:ident` - Process a single image with default options into a named variable with optional mutability
+/// * `@with_options $options:expr, $image:expr=> $($mut:tt)? $name:ident` - Process a single image with custom options into a named variable with optional mutability
 ///
 /// # Examples
 ///
@@ -1415,13 +1442,30 @@ macro_rules! process_images {
 ///
 /// // Return an empty vector
 /// let empty_results: Vec<ImageProcessorResult> = process_images!();
+///
+/// // Create an empty result vector with a name
+/// process_images!{
+///     @with_options options,
+///     [] => @mut empty_result
+/// }
+///
+/// // Process multiple images into a named variable
+/// process_images! {
+///     [image1, image2, image3] => mut my_results
+/// }
+///
+/// // Process a single image into a named variable with custom options
+/// process_images! {
+///     @with_options options,
+///     image1 => result
+/// }
 /// ```
 ///
 /// # Returns
 ///
-/// * For single image processing: `ImageProcessorResult`
-/// * For multiple image processing: `Vec<ImageProcessorResult>`
-/// * For empty invocation: `Vec<ImageProcessorResult>` (empty vector)
+/// * For single image processing: `ConvertResult<ImageProcessorResult>`
+/// * For multiple image processing: `Vec<ConvertResult<ImageProcessorResult>>`
+/// * For empty invocation: `Vec<ConvertResult<ImageProcessorResult>>` (empty vector)
 /// * For map operations: `Vec<T>` where T is the return type of the map block
 macro_rules! process_images {
     () => {
