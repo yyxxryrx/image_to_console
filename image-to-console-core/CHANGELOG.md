@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.2.2] - 2025-11-06
+
+### Added
+
+- Add more tests for `ImageProcessor` and `ImageConverter`
+- Enhance `process_images!` macro, now you can write `image => variable` to assign the image to a variable
+
+### Fixed
+
+- Fix the macros cannot find `Protocol::Auto` when `sixel` feature is disabled
+- Fix the `Protocol` enum `build` method cannot find `SixelFull` and `SixelHalf` when `sixel` feature is disabled
+
 ## [v0.2.1] - 2025-11-05
 
 ### Fixed
