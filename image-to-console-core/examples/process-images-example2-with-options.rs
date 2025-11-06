@@ -16,6 +16,7 @@ fn main() -> ConvertResult<()> {
     .expect("Cannot found image");
 
     let options = ImageProcessorOptions::default();
+    // `@?` and `@mut` are all optional
     process_images! {
         @with_options options,
         img1 => result1@?,
