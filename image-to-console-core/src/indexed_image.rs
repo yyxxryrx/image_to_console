@@ -1,3 +1,4 @@
+#![cfg(feature = "sixel")]
 use quantette::{
     AboveMaxLen,
     palette::{encoding::Srgb, rgb::Rgb},

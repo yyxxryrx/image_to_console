@@ -1,9 +1,11 @@
+#![cfg(feature = "processor")]
 use image_to_console_core::{
     DisplayMode, ResizeMode,
     processor::{ImageProcessor, ImageProcessorOptions, ImageProcessorOptionsCreate},
 };
 
 #[test]
+
 fn test_image_processor_creation() {
     let img = image::DynamicImage::new_rgba8(10, 10);
     let options = ImageProcessorOptions {

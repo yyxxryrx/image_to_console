@@ -1,3 +1,4 @@
+#![cfg(feature = "processor")]
 use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
 use crate::error::{ConvertError, ConvertResult};
@@ -463,6 +464,7 @@ impl ImageProcessor {
                 enable_compression: self.option.enable_compression,
                 #[cfg(feature = "sixel")]
                 max_colors: self.option.max_colors,
+                terminal_size: (width.0 as u32, height.0 as u32),
                 ..ImageConverterOption::default()
             },
         );

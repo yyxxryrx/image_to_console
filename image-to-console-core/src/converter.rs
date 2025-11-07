@@ -5,7 +5,7 @@ use crate::{
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rayon::iter::*;
-use std::{io::Cursor, ops::Div};
+use std::{io::Cursor};
 
 /// Represents a pixel color with RGBA components
 #[derive(Copy, Clone)]
@@ -124,6 +124,8 @@ pub struct ImageConverterOption {
     /// Dither method to use (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub dither_method: quantette::QuantizeMethod,
+    /// Terminal size
+    pub terminal_size: (u32, u32)
 }
 
 impl Default for ImageConverterOption {
@@ -142,6 +144,7 @@ impl Default for ImageConverterOption {
             max_colors: 256,
             #[cfg(feature = "sixel")]
             dither_method: quantette::QuantizeMethod::wu(),
+            terminal_size: (0, 0)
         }
     }
 }
@@ -701,10 +704,7 @@ impl ImageConverter {
                 STANDARD.encode(image_data)
             )
         } else {
-            let (w, h) = terminal_size::terminal_size()
-                .map_or(Err(ConvertError::GetTerminalSizeError), |(w, h)| {
-                    Ok((w.0.div(2) as u32, h.0 as u32))
-                })?;
+            let (w, h) = self.option.terminal_size;
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;
             format!(
@@ -779,10 +779,7 @@ impl ImageConverter {
                 STANDARD.encode(image_data)
             )
         } else {
-            let (w, h) = terminal_size::terminal_size()
-                .map_or(Err(ConvertError::GetTerminalSizeError), |(w, h)| {
-                    Ok((w.0.div(2) as u32, h.0 as u32))
-                })?;
+            let (w, h) = self.option.terminal_size;
             let r = self.option.width as f32 / self.option.height as f32;
             let tr = w as f32 / h as f32;
             format!(

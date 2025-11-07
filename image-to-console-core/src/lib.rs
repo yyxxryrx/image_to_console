@@ -32,6 +32,7 @@ pub mod error;
 pub mod gif_processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
+#[cfg(feature = "processor")]
 pub mod processor;
 pub mod protocol;
 
@@ -44,6 +45,7 @@ use error::ConvertResult;
 #[cfg(feature = "sixel")]
 use image::RgbImage;
 use image::{DynamicImage, GrayImage, RgbaImage};
+#[cfg(feature = "processor")]
 use processor::ImageProcessorOptionsCreate;
 
 /// The protocol of display
@@ -625,11 +627,18 @@ impl Default for ResizeMode {
     }
 }
 
-pub fn print(
-    image: &image::DynamicImage,
-    config: &crate::processor::ImageProcessorOptions,
-) -> ConvertResult<()> {
+#[cfg(feature = "processor")]
+pub fn print(image: &DynamicImage, config: &processor::ImageProcessorOptions) -> ConvertResult<()> {
     println!("{}", config.create_processor(image).process()?.display());
+    Ok(())
+}
+
+#[cfg(not(feature = "processor"))]
+pub fn print(image: &DynamicImage, config: &converter::ImageConverterOption) -> ConvertResult<()> {
+    let image = ProcessedImage::new(config.mode, image);
+    let converter = converter::ImageConverter::new(image, config.clone());
+    let result = converter.convert()?;
+    print!("{}", result.join("\n"));
     Ok(())
 }
 
@@ -656,7 +665,7 @@ pub fn print(
 ///     .option_display_mode(DisplayMode::Ascii);
 /// show_image!(my_image, options);
 /// ```
-#[cfg(not(feature = "auto_select"))]
+#[cfg(all(not(feature = "auto_select"), feature = "processor"))]
 macro_rules! show_image {
     ($image:expr) => {
         fn _show_image<T>(image: T)
@@ -752,7 +761,7 @@ macro_rules! show_image {
 }
 
 #[macro_export]
-#[cfg(not(feature = "auto_select"))]
+#[cfg(all(not(feature = "auto_select"), feature = "processor"))]
 /// A macro to display multiple images to the terminal.
 ///
 /// This macro allows displaying multiple images either with default options or with
@@ -868,7 +877,7 @@ macro_rules! show_images {
 }
 
 #[macro_export]
-#[cfg(feature = "auto_select")]
+#[cfg(all(feature = "auto_select", feature = "processor"))]
 /// A macro to display multiple images to the terminal.
 ///
 /// This macro allows displaying multiple images either with default options or with
@@ -984,7 +993,7 @@ macro_rules! show_images {
 }
 
 #[doc(hidden)]
-#[cfg(not(feature = "auto_select"))]
+#[cfg(all(not(feature = "auto_select"), feature = "processor"))]
 #[macro_export]
 macro_rules! __vec_process_images {
     ($images: expr, $mode:ident, $var:ident, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
@@ -1049,7 +1058,7 @@ macro_rules! __vec_process_images {
 }
 
 #[doc(hidden)]
-#[cfg(feature = "auto_select")]
+#[cfg(all(feature = "auto_select", feature = "processor"))]
 #[macro_export]
 macro_rules! __vec_process_images {
     ($images: expr, $mode:ident, $var:ident, $(ty: $ty:ident,)?$(collect: $collect:ident$(,)?)?$(result: $result:ident$(,)?)?$(block: $block:block$(,)?)?$(end: $end:tt$(,)?)?) => {
@@ -1114,7 +1123,7 @@ macro_rules! __vec_process_images {
 }
 
 #[macro_export]
-#[cfg(not(feature = "auto_select"))]
+#[cfg(all(not(feature = "auto_select"), feature = "processor"))]
 /// A macro to process one or more images and return the processed results.
 ///
 /// This macro provides flexible ways to process images with various options and
@@ -1366,7 +1375,7 @@ macro_rules! process_images {
 }
 
 #[macro_export]
-#[cfg(feature = "auto_select")]
+#[cfg(all(feature = "auto_select", feature = "processor"))]
 /// A macro to process one or more images and return the processed results.
 ///
 /// This macro provides flexible ways to process images with various options and

@@ -1,3 +1,4 @@
+#![cfg(feature = "gif")]
 use gif::DisposalMethod;
 use image::{DynamicImage, ImageBuffer, Rgba};
 
