@@ -5,7 +5,7 @@ use crate::{
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rayon::iter::*;
-use std::{io::Cursor};
+use std::io::Cursor;
 
 /// Represents a pixel color with RGBA components
 #[derive(Copy, Clone)]
@@ -121,11 +121,14 @@ pub struct ImageConverterOption {
     /// Maximum number of colors (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
-    /// Dither method to use (requires `sixel` feature)
+    /// Quantize method to use (requires `sixel` feature)
     #[cfg(feature = "sixel")]
-    pub dither_method: quantette::QuantizeMethod,
+    pub quantize_method: quantette::QuantizeMethod,
+    /// Color space to use (requires `sixel` feature)
+    #[cfg(feature = "sixel")]
+    pub color_space: quantette::ColorSpace,
     /// Terminal size
-    pub terminal_size: (u32, u32)
+    pub terminal_size: (u32, u32),
 }
 
 impl Default for ImageConverterOption {
@@ -143,8 +146,10 @@ impl Default for ImageConverterOption {
             #[cfg(feature = "sixel")]
             max_colors: 256,
             #[cfg(feature = "sixel")]
-            dither_method: quantette::QuantizeMethod::wu(),
-            terminal_size: (0, 0)
+            quantize_method: quantette::QuantizeMethod::wu(),
+            #[cfg(feature = "sixel")]
+            color_space: quantette::ColorSpace::Srgb,
+            terminal_size: (0, 0),
         }
     }
 }
@@ -319,8 +324,23 @@ impl ImageConverterOption {
     /// Returns a mutable reference to self for chaining
 
     #[cfg(feature = "sixel")]
-    pub fn dither_method(&mut self, dither_method: quantette::QuantizeMethod) -> &mut Self {
-        self.dither_method = dither_method;
+    pub fn quantize_method(&mut self, quantize_method: quantette::QuantizeMethod) -> &mut Self {
+        self.quantize_method = quantize_method;
+        self
+    }
+
+    /// Sets the color space to use (requires `sixel` feature)
+    ///
+    /// # Arguments
+    ///
+    /// * `color_space` - The color space to use
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to self for chaining
+    #[cfg(feature = "sixel")]
+    pub fn color_space(&mut self, color_space: quantette::ColorSpace) -> &mut Self {
+        self.color_space = color_space;
         self
     }
 
@@ -907,7 +927,8 @@ impl ImageConverter {
             img,
             self.option.max_colors,
             self.option.dither,
-            self.option.dither_method,
+            self.option.quantize_method,
+            self.option.color_space,
         )
         .map_err(|err| {
             ConvertError::AboveMaxLength(

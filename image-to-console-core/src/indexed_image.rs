@@ -1,8 +1,5 @@
 #![cfg(feature = "sixel")]
-use quantette::{
-    AboveMaxLen,
-    palette::{encoding::Srgb, rgb::Rgb},
-};
+use quantette::{AboveMaxLen, palette::{encoding::Srgb, rgb::Rgb}, ColorSpace};
 
 /// An image represented with a limited color palette (indexed image)
 /// 
@@ -38,13 +35,14 @@ impl IndexedImage {
         img: &image::RgbImage,
         max_colors: u16,
         dither: bool,
-        dither_method: quantette::QuantizeMethod
+        dither_method: quantette::QuantizeMethod,
+        color_space: ColorSpace,
     ) -> Result<Self, AboveMaxLen<u32>> {
         let (width, height) = img.dimensions();
         let (palette, index_data) = quantette::ImagePipeline::try_from(img)?
             .palette_size(quantette::PaletteSize::from_clamped(max_colors))
             .dither(dither)
-            .colorspace(quantette::ColorSpace::Srgb)
+            .colorspace(color_space)
             .quantize_method(dither_method)
             .indexed_palette_par();
         Ok(Self {
