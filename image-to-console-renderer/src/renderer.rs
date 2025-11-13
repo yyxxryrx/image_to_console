@@ -237,6 +237,7 @@ pub fn render_video(
     // calculate the delay
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
+    let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     fn play_frame(
         frames: crossbeam_channel::Receiver<(String, usize)>,
         delay: f32,
@@ -244,6 +245,8 @@ pub fn render_video(
         is_sixel: bool,
         back_top: bool,
         offset: std::time::Duration,
+        max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+        fps: usize,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -256,13 +259,28 @@ pub fn render_video(
         let st2 = st.clone();
         // create a new timer
         let timer = std::time::Instant::now();
+        let max_frame_clone = max_frame.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
             // calculate the time
             let time = timer.elapsed();
-            play_frame(frames, delay, st2, is_sixel, back_top, time - d);
+            play_frame(
+                frames,
+                delay,
+                st2,
+                is_sixel,
+                back_top,
+                time - d,
+                max_frame_clone,
+                fps,
+            );
         });
         st.send(task).unwrap();
+
+        if index <= max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+            return;
+        }
+        max_frame.store(index, std::sync::atomic::Ordering::Relaxed);
 
         if back_top {
             print!("\x1b[1;1H");
@@ -271,7 +289,11 @@ pub fn render_video(
             print!("\r\x1b[s");
         }
 
-        println!("{}", frame);
+        println!("{frame}");
+        // Refresh every 2 seconds
+        if index % fps.saturating_mul(2) == 0 {
+            std::io::stdout().flush().unwrap();
+        }
         println!("current frame: {index}");
 
         if !back_top {
@@ -291,6 +313,8 @@ pub fn render_video(
         is_sixel,
         clear,
         std::time::Duration::default(),
+        max_frame.clone(),
+        fps as usize,
     );
 
     for task in rt.iter() {
