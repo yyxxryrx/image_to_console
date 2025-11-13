@@ -13,7 +13,7 @@ mod tests {
         img.put_pixel(1, 1, image::Rgb([255, 255, 255])); // White
 
         let indexed_img =
-            IndexedImage::from_image(&img, 256, false, quantette::QuantizeMethod::wu()).unwrap();
+            IndexedImage::from_image(&img, 256, false, quantette::QuantizeMethod::wu(), quantette::ColorSpace::Srgb).unwrap();
         assert_eq!(indexed_img.width, 2);
         assert_eq!(indexed_img.height, 2);
         assert!(!indexed_img.palette.is_empty());
@@ -29,7 +29,7 @@ mod tests {
         img.put_pixel(1, 1, image::Rgb([255, 255, 255])); // White
 
         let indexed_img =
-            IndexedImage::from_image(&img, 256, false, quantette::QuantizeMethod::wu()).unwrap();
+            IndexedImage::from_image(&img, 256, false, quantette::QuantizeMethod::wu(), quantette::ColorSpace::Srgb).unwrap();
         // Check we can access pixels
         let pixel00 = indexed_img.get_pixel(0, 0);
         let pixel10 = indexed_img.get_pixel(1, 0);
