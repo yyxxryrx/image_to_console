@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Add `processor` feature
+- Add `color_space` option in `ImageConverterOption`
+
+### Changed
+
+- Rename `dither_method` to `quantize_method` in `ImageConverterOption`
+
 ## [v0.2.2] - 2025-11-06
 
 ### Added
