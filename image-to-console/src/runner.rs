@@ -140,7 +140,7 @@ pub fn run_video(config: Result<Config, String>) {
                                                                 match image_processor.process() {
                                                                     Ok(result) => st
                                                                         .send((
-                                                                            result.lines.join("\n"),
+                                                                            result.lines,
                                                                             index,
                                                                         ))
                                                                         .map_err(|e| {

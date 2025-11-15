@@ -217,7 +217,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 #[allow(unused)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
-    vrx: crossbeam_channel::Receiver<(String, usize)>,
+    vrx: crossbeam_channel::Receiver<(Vec<String>, usize)>,
     #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,
@@ -239,7 +239,7 @@ pub fn render_video(
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     fn play_frame(
-        frames: crossbeam_channel::Receiver<(String, usize)>,
+        frames: crossbeam_channel::Receiver<(Vec<String>, usize)>,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
@@ -288,8 +288,12 @@ pub fn render_video(
             // Save current cursor position
             print!("\r\x1b[s");
         }
-
-        println!("{frame}");
+        for line in frame {
+            if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+                return;
+            }
+            println!("{line}");
+        }
         // Refresh every 2 seconds
         if index % fps.saturating_mul(2) == 0 {
             std::io::stdout().flush().unwrap();
