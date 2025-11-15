@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Introduce the `build-options` procedural macro package, providing the `Options` derive macro for chained invocation of
+  build configuration
+- Added a new function to control the refresh interval for video playback, supporting modes such as seconds, frames,
+  always, and never refresh
+- Add the `-F/--flush-interval` parameter for the video playback command, with a default value of "1s"
+- Add a `flush_interval` field to the `Config` struct to control the video refresh frequency
+
+### Changed
+
+- Refactor the configuration building method, replacing the original `from_cli` static method with the `From<&Cli>`
+  trait
+- Change the configuration building pattern to chained calls to improve code readability and maintainability
+- Enhance the robustness of `FlushInterval` parsing by adding validation for negative and zero values
+- Update the video renderer to use a configurable refresh interval instead of the fixed 2-second refresh mechanism
+- Optimize the `build-options` macro to correctly handle field visibility
+
+### Fixed
+
+- Fix the `Default` implementation of `ImageType` and provide a reasonable default value
+- Improve the error handling mechanism to ensure that invalid refresh interval parameters are correctly rejected
+
 ## [v0.1.18] - 2025-10-30
 
 ### Added
