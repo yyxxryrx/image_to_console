@@ -1,0 +1,15 @@
+[package]
+name = "build-options"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.42"
+proc-macro2 = "1.0.103"
+
+[dependencies.syn]
+version = "2.0.104"
+features = ["full"]

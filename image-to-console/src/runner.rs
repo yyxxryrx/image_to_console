@@ -120,6 +120,7 @@ pub fn run_video(config: Result<Config, String>) {
                                     #[cfg(feature = "audio_support")]
                                     let (vrx, audio_path, fps) = args;
                                     let (st, rt) = bounded(10);
+                                    let flush_interval = config_clone.flush_interval.to_frames(fps);
                                     let config_clone = config_clone.clone();
                                     let task = std::thread::spawn(move || {
                                         loop {
@@ -177,22 +178,23 @@ pub fn run_video(config: Result<Config, String>) {
                                             fps,
                                             config.mode.is_sixel(),
                                             config.clear,
+                                            flush_interval,
                                         );
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
                                             feature = "audio_support"
                                         ))]
-                                        render_video(rt, audio_path, fps, false, config.clear);
+                                        render_video(rt, audio_path, fps, false, config.clear, flush_interval);
                                         #[cfg(all(
                                             feature = "sixel_support",
                                             not(feature = "audio_support")
                                         ))]
-                                        render_video(rt, fps, config.mode.is_sixel(), config.clear);
+                                        render_video(rt, fps, config.mode.is_sixel(), config.clear, flush_interval);
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
                                             not(feature = "audio_support")
                                         ))]
-                                        render_video(rt, fps, false, config.clear);
+                                        render_video(rt, fps, false, config.clear, flush_interval);
                                     });
                                     task.join().unwrap();
                                     render_task.join().unwrap();

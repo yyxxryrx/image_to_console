@@ -222,6 +222,7 @@ pub fn render_video(
     fps: f32,
     is_sixel: bool,
     clear: bool,
+    flush_interval: usize,
 ) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
@@ -246,7 +247,7 @@ pub fn render_video(
         back_top: bool,
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
-        fps: usize,
+        flush_interval: usize,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -272,7 +273,7 @@ pub fn render_video(
                 back_top,
                 time - d,
                 max_frame_clone,
-                fps,
+                flush_interval,
             );
         });
         st.send(task).unwrap();
@@ -295,7 +296,7 @@ pub fn render_video(
             println!("{line}");
         }
         // Refresh every 2 seconds
-        if index % fps.saturating_mul(2) == 0 {
+        if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
         println!("current frame: {index}");
@@ -318,7 +319,7 @@ pub fn render_video(
         clear,
         std::time::Duration::default(),
         max_frame.clone(),
-        fps as usize,
+        flush_interval,
     );
 
     for task in rt.iter() {

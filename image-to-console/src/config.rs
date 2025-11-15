@@ -7,6 +7,7 @@ use crate::{
     },
 };
 use base64::Engine;
+use build_options::Options;
 use clap::{
     Parser, Subcommand,
     builder::{
@@ -17,13 +18,11 @@ use clap::{
 #[allow(unused)]
 #[cfg(any(feature = "gif_player", feature = "video_player"))]
 use crossbeam_channel::{bounded, unbounded};
-use image_to_console_core::protocol::Protocol;
-use image_to_console_core::{DisplayMode, ResizeMode};
+use image_to_console_core::{DisplayMode, ResizeMode, protocol::Protocol};
 #[cfg(feature = "audio_support")]
 use image_to_console_renderer::audio_path::AudioPath;
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
-use std::io::Read;
-use std::path::Path;
+use std::{io::Read, path::Path};
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightGreen))))
@@ -188,6 +187,8 @@ pub struct UrlArgs {
 #[cfg(feature = "video_player")]
 #[derive(Clone, Parser)]
 pub struct VideoArgs {
+    #[clap(short = 'F', long, help = "Set flush interval", default_value = "1s")]
+    pub flush_interval: crate::types::FlushInterval,
     #[clap(long, help = "Audio file path")]
     pub audio: Option<String>,
     #[clap(help = "Path to the video")]
@@ -234,7 +235,7 @@ impl Default for Cli {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Options, Default)]
 pub struct Config {
     pub clear: bool,
     pub pause: bool,
@@ -260,37 +261,23 @@ pub struct Config {
     pub file_name: Option<String>,
     #[cfg(feature = "sixel_support")]
     pub max_colors: u16,
+    #[cfg(feature = "video_player")]
+    pub flush_interval: crate::types::FlushInterval,
 }
 
-impl Config {
-    fn from_cli(
-        cli: &Cli,
-        image: ImageType,
-        output: Option<String>,
-        file_name: Option<String>,
-        show_file_name: bool,
-        fps: Option<u64>,
-        loop_play: bool,
-        #[cfg(feature = "audio_support")] audio: AudioPath,
-    ) -> Self {
+impl From<&Cli> for Config {
+    fn from(cli: &Cli) -> Self {
         Self {
-            fps,
-            #[cfg(feature = "audio_support")]
-            audio,
-            file_name,
-            loop_play,
-            image,
-            show_file_name,
             clear: cli.clear,
             center: cli.center,
             no_color: cli.no_color,
             show_time: cli.show_time,
+            output: cli.output.clone(),
             resize_mode: ResizeMode::from(cli),
-            output: output.or(cli.output.clone()),
+            full_resolution: !cli.half_resolution,
             black_background: cli.black_background,
             enable_compression: cli.enable_compression,
             pause: cli.pause && !cli.command.is_directory(),
-            full_resolution: !cli.half_resolution,
             disable_info: cli.disable_info || cli.command.is_directory(),
             disable_print: cli.disable_print || cli.command.is_directory(),
             mode: cli
@@ -303,9 +290,57 @@ impl Config {
             max_colors: cli.max_colors,
             #[cfg(feature = "sixel_support")]
             disable_dither: cli.disable_dither,
+            ..Default::default()
         }
     }
 }
+
+// impl Config {
+//     fn from_cli(
+//         cli: &Cli,
+//         image: ImageType,
+//         output: Option<String>,
+//         file_name: Option<String>,
+//         show_file_name: bool,
+//         fps: Option<u64>,
+//         loop_play: bool,
+//         #[cfg(feature = "audio_support")] audio: AudioPath,
+//     ) -> Self {
+//         Self {
+//             fps,
+//             #[cfg(feature = "audio_support")]
+//             audio,
+//             file_name,
+//             loop_play,
+//             image,
+//             show_file_name,
+//             clear: cli.clear,
+//             center: cli.center,
+//             no_color: cli.no_color,
+//             show_time: cli.show_time,
+//             resize_mode: ResizeMode::from(cli),
+//             output: output.or(cli.output.clone()),
+//             black_background: cli.black_background,
+//             enable_compression: cli.enable_compression,
+//             pause: cli.pause && !cli.command.is_directory(),
+//             full_resolution: !cli.half_resolution,
+//             disable_info: cli.disable_info || cli.command.is_directory(),
+//             disable_print: cli.disable_print || cli.command.is_directory(),
+//             mode: cli
+//                 .protocol
+//                 .builder()
+//                 .option_is_full(!cli.half_resolution)
+//                 .option_has_color(!cli.no_color)
+//                 .build(),
+//             #[cfg(feature = "sixel_support")]
+//             max_colors: cli.max_colors,
+//             #[cfg(feature = "sixel_support")]
+//             disable_dither: cli.disable_dither,
+//             #[cfg(feature = "video_player")]
+//             flush_interval: FlushInterval::default(),
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub enum RunMode {
@@ -353,17 +388,14 @@ pub fn parse() -> RunMode {
                 return Once(Err("Path is not a file".to_string()));
             }
             let img = image::open(&args.path).expect("Failed to open image");
-            Once(Ok(Config::from_cli(
-                &cli,
-                Image(img),
-                None,
-                Some(path.file_name().unwrap().to_string_lossy().to_string()),
-                !args.hide_filename,
-                None,
-                false,
-                #[cfg(feature = "audio_support")]
-                AudioPath::None,
-            )))
+            let config = Config::from(&cli)
+                .image(Image(img))
+                .file_name(Some(
+                    path.file_name().unwrap().to_string_lossy().to_string(),
+                ))
+                .show_time(!args.hide_filename)
+                .get_options();
+            Once(Ok(config))
         }
         Commands::Directory(ref args) => {
             let path = Path::new(&args.path);
@@ -408,21 +440,17 @@ pub fn parse() -> RunMode {
                                             path.parent().unwrap().join(&path.file_stem().unwrap())
                                         }
                                     };
-                                    Some(Ok(Config::from_cli(
-                                        &cli,
-                                        if args.read_all {
-                                            Image(image::open(&path).unwrap())
-                                        } else {
-                                            ImageType::Path(path.to_str().unwrap().to_string())
-                                        },
-                                        Some(output.to_str().unwrap().to_string() + ".txt"),
-                                        None,
-                                        false,
-                                        None,
-                                        false,
-                                        #[cfg(feature = "audio_support")]
-                                        AudioPath::None,
-                                    )))
+                                    let img = if args.read_all {
+                                        Image(image::open(&path).unwrap())
+                                    } else {
+                                        ImageType::Path(path.to_str().unwrap().to_string())
+                                    };
+                                    let config = Config::from(&cli)
+                                        .image(img)
+                                        .output(Some(output.to_str().unwrap().to_string() + ".txt"))
+                                        .show_file_name(false)
+                                        .get_options();
+                                    Some(Ok(config))
                                 }
                                 None => None,
                             }
@@ -470,19 +498,21 @@ pub fn parse() -> RunMode {
                                 }
                             }
                         });
-                        Video(Ok(Config::from_cli(
-                            &cli2,
-                            Gif(rx),
-                            None,
-                            None,
-                            false,
-                            args.fps,
-                            args.loop_play,
-                            #[cfg(feature = "audio_support")]
-                            args.audio
+                        #[allow(unused_mut)]
+                        let mut config = Config::from(&cli2)
+                            .image(Gif(rx))
+                            .fps(args.fps)
+                            .loop_play(args.loop_play)
+                            .get_options();
+                        #[cfg(feature = "audio_support")]
+                        {
+                            config.audio = args
+                                .audio
                                 .map(|path| AudioPath::Custom(Path::new(&path).to_path_buf()))
-                                .unwrap_or_default(),
-                        )))
+                                .unwrap_or_default();
+                        }
+
+                        Video(Ok(config))
                     }
                     Err(err) => Once(Err(err.to_string())),
                 }
@@ -492,17 +522,7 @@ pub fn parse() -> RunMode {
         Commands::Base64(ref args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64.clone()) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(Config::from_cli(
-                        &cli,
-                        Image(img),
-                        None,
-                        None,
-                        false,
-                        None,
-                        false,
-                        #[cfg(feature = "audio_support")]
-                        AudioPath::None,
-                    ))),
+                    Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -512,17 +532,7 @@ pub fn parse() -> RunMode {
             let mut buffer = Vec::new();
             match std::io::stdin().lock().read_to_end(&mut buffer) {
                 Ok(_) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(Config::from_cli(
-                        &cli,
-                        Image(img),
-                        None,
-                        None,
-                        false,
-                        None,
-                        false,
-                        #[cfg(feature = "audio_support")]
-                        AudioPath::None,
-                    ))),
+                    Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
                     Err(e) => Once(Err(e.to_string())),
                 },
                 Err(e) => Once(Err(e.to_string())),
@@ -563,17 +573,7 @@ pub fn parse() -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => Once(Ok(Config::from_cli(
-                                &cli,
-                                Image(img),
-                                None,
-                                None,
-                                false,
-                                None,
-                                false,
-                                #[cfg(feature = "audio_support")]
-                                AudioPath::None,
-                            ))),
+                            Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
                             Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
                         }
                     } else {
@@ -684,17 +684,10 @@ pub fn parse() -> RunMode {
                 .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
-            Video(Ok(Config::from_cli(
-                &cli2,
-                ImageType::Video(erx),
-                None,
-                None,
-                false,
-                None,
-                false,
-                #[cfg(feature = "audio_support")]
-                AudioPath::None,
-            )))
+            Video(Ok(Config::from(&cli2)
+                .image(ImageType::Video(erx))
+                .flush_interval(args.flush_interval)
+                .get_options()))
         }
     }
 }
