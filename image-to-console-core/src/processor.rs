@@ -29,6 +29,8 @@ pub struct ImageProcessorOptions {
     /// Maximum number of colors (requires `sixel` feature)
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
+    #[cfg(feature = "sixel")]
+    pub color_space: quantette::ColorSpace
 }
 
 impl Default for ImageProcessorOptions {
@@ -47,6 +49,8 @@ impl Default for ImageProcessorOptions {
             enable_compression: true,
             #[cfg(feature = "sixel")]
             max_colors: 256,
+            #[cfg(feature = "sixel")]
+            color_space: quantette::ColorSpace::Srgb,
         }
     }
 }
@@ -102,6 +106,7 @@ impl ImageProcessorOptions {
             enable_compression: true,
             #[cfg(feature = "sixel")]
             max_colors: 256,
+            ..Self::default()
         }
     }
 
@@ -210,6 +215,12 @@ impl ImageProcessorOptions {
     #[cfg(feature = "sixel")]
     pub fn option_dither(&mut self, enabled: bool) -> &mut Self {
         self.dither = enabled;
+        self
+    }
+    
+    #[cfg(feature = "sixel")]
+    pub fn option_color_space(&mut self, color_space: quantette::ColorSpace) -> &mut Self {
+        self.color_space = color_space;
         self
     }
 

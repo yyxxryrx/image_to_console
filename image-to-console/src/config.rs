@@ -112,6 +112,9 @@ pub struct Cli {
         default_value_t = false
     )]
     pub disable_dither: bool,
+    #[cfg(feature = "sixel_support")]
+    #[clap(long, help = "", default_value = "srgb")]
+    pub color_space: crate::types::ColorSpace,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -230,6 +233,8 @@ impl Default for Cli {
             max_colors: 256,
             #[cfg(feature = "sixel_support")]
             disable_dither: false,
+            #[cfg(feature = "sixel_support")]
+            color_space: Default::default(),
         }
     }
 }
@@ -261,6 +266,8 @@ pub struct Config {
     pub file_name: Option<String>,
     #[cfg(feature = "sixel_support")]
     pub max_colors: u16,
+    #[cfg(feature = "sixel_support")]
+    pub color_space: crate::types::ColorSpace,
     #[cfg(feature = "video_player")]
     pub flush_interval: crate::types::FlushInterval,
 }
@@ -290,6 +297,8 @@ impl From<&Cli> for Config {
             max_colors: cli.max_colors,
             #[cfg(feature = "sixel_support")]
             disable_dither: cli.disable_dither,
+            #[cfg(feature = "sixel_support")]
+            color_space: cli.color_space,
             ..Default::default()
         }
     }

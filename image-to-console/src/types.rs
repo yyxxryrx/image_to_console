@@ -190,6 +190,47 @@ impl FlushInterval {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum ColorSpace {
+    Srgb,
+    Oklab,
+    Lab,
+}
+
+impl Default for ColorSpace {
+    fn default() -> Self {
+        ColorSpace::Srgb
+    }
+}
+
+impl From<&ColorSpace> for image_to_console_core::quantette::ColorSpace {
+    fn from(color_space: &ColorSpace) -> Self {
+        match color_space {
+            ColorSpace::Srgb => Self::Srgb,
+            ColorSpace::Oklab => Self::Oklab,
+            ColorSpace::Lab => Self::Lab,
+        }
+    }
+}
+
+impl ValueEnum for ColorSpace {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            Self::Srgb,
+            Self::Oklab,
+            Self::Lab,
+        ]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        match self {
+            Self::Srgb => Some(PossibleValue::new("srgb")),
+            Self::Oklab => Some(PossibleValue::new("oklab")),
+            Self::Lab => Some(PossibleValue::new("lab")),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[allow(unused_imports)]

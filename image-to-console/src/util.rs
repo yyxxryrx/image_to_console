@@ -6,6 +6,7 @@ use crate::{
     },
 };
 use image_to_console_core::{
+    quantette::ColorSpace,
     AutoResizeOption, CustomResizeOption, ResizeMode,
     processor::{ImageProcessor, ImageProcessorOptions},
 };
@@ -29,6 +30,8 @@ impl CreateIPFromConfig for ImageProcessor {
             enable_compression: config.enable_compression,
             #[cfg(feature = "sixel_support")]
             max_colors: config.max_colors,
+            #[cfg(feature = "sixel_support")]
+            color_space: ColorSpace::from(&config.color_space),
         };
         match config.image.clone() {
             Image(image) => Ok(Self::new(image, option)),

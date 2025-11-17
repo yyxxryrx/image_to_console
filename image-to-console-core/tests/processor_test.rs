@@ -19,6 +19,7 @@ fn test_image_processor_creation() {
         enable_compression: false,
         #[cfg(feature = "sixel")]
         max_colors: 256,
+        ..Default::default()
     };
 
     let processor = ImageProcessor::new(img, options);

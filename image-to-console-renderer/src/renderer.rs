@@ -217,7 +217,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 #[allow(unused)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
-    vrx: crossbeam_channel::Receiver<(Vec<String>, usize)>,
+    vrx: crossbeam_channel::Receiver<(String, usize)>,
     #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,
@@ -240,7 +240,7 @@ pub fn render_video(
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     fn play_frame(
-        frames: crossbeam_channel::Receiver<(Vec<String>, usize)>,
+        frames: crossbeam_channel::Receiver<(String, usize)>,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
@@ -289,13 +289,16 @@ pub fn render_video(
             // Save current cursor position
             print!("\r\x1b[s");
         }
-        for line in frame {
+        let lines = frame.as_bytes();
+        for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
             if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
                 return;
             }
-            println!("{line}");
+            if std::io::stdout().lock().write_all(line).is_err() {
+                return;
+            }
         }
-        // Refresh every 2 seconds
+        // Refresh
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
