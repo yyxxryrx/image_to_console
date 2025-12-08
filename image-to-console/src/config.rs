@@ -619,7 +619,11 @@ pub fn parse() -> RunMode {
                         .map(|path| AudioPath::Temp(path))
                         .unwrap_or_default()
                 } else {
-                    AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
+                    if args.audio.as_ref().map(|s| s.to_lowercase() == "none").unwrap_or_default() {
+                        AudioPath::None
+                    } else {
+                        AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
+                    }
                 };
                 // And then, extract the video
                 // We will to use ffmpeg-next lib to do this
