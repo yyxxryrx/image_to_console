@@ -247,26 +247,26 @@ Supports most common image formats, including but not limited to:
 
 ## Dependencies
 
-| Crate                                                           | Version | License          | Purpose                                 |
-|-----------------------------------------------------------------|---------|------------------|-----------------------------------------|
-| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | Command line argument parsing           |
-| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | Data parallel computing                 |
-| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | Get logical CPU core count              |
-| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | Image encoding/decoding and processing  |
-| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
-| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | Terminal progress bars                  |
-| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | Detect terminal size                    |
-| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | Terminal control and input (optional)   |
-| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
-| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF animation decoding (optional)       |
+| Crate                                                        | Version | License          | Purpose                                 |
+| ------------------------------------------------------------ | ------- | ---------------- | --------------------------------------- |
+| [clap](https://crates.io/crates/clap)                        | 4.5.20  | MIT / Apache-2.0 | Command line argument parsing           |
+| [rayon](https://crates.io/crates/rayon)                      | 1.11.0  | MIT / Apache-2.0 | Data parallel computing                 |
+| [num_cpus](https://crates.io/crates/num_cpus)                | 1.17.0  | MIT              | Get logical CPU core count              |
+| [image](https://crates.io/crates/image)                      | 0.25.4  | MIT              | Image encoding/decoding and processing  |
+| [base64](https://crates.io/crates/base64)                    | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
+| [indicatif](https://crates.io/crates/indicatif)              | 0.17.8  | MIT              | Terminal progress bars                  |
+| [terminal_size](https://crates.io/crates/terminal_size)      | 0.4.0   | MIT              | Detect terminal size                    |
+| [crossterm](https://crates.io/crates/crossterm)              | 0.29.0  | MIT              | Terminal control and input (optional)   |
+| [reqwest](https://crates.io/crates/reqwest)                  | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
+| [gif](https://crates.io/crates/gif)                          | 0.13.3  | MIT              | GIF animation decoding (optional)       |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | Cross-thread communication   (optional) |
-| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
-| [ez-ffmpeg](https://crates.io/crates/ez-ffmpeg)                 | 0.5.3   | MIT              | Video processing (optional)             |
-| [video-rs](https://crates.io/crates/video-rs)                   | 0.10.3  | MIT              | Video processing (optional)             |
-| [ndarray](https://crates.io/crates/ndarray)                     | 0.16.1  | MIT              | N-dimensional array (optional)          |
-| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel image quantization (optional)     |
-| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel Fast Hash (Optional)              |
-| [pyo3](https://crates.io/crates/pyo3)                           | 0.27.1  | MIT / Apache-2.0 | Python bindings (optional)              |
+| [rodio](https://crates.io/crates/rodio)                      | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)          | 8.0.0   | WTFPL            | Audio processing (optional)             |
+| [video-rs](https://crates.io/crates/video-rs)                | 0.11.0  | MIT              | Video processing (optional)             |
+| [ndarray](https://crates.io/crates/ndarray)                  | 0.17.2  | MIT              | N-dimensional array (optional)          |
+| [quantette](https://crates.io/crates/quantette)              | 0.3.0   | MIT              | Sixel image quantization (optional)     |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)      | 0.2.0   | MIT              | Sixel Fast Hash (Optional)              |
+| [pyo3](https://crates.io/crates/pyo3)                        | 0.27.1  | MIT / Apache-2.0 | Python bindings (optional)              |
 
 ## License
 
