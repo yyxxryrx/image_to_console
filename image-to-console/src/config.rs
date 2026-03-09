@@ -607,13 +607,8 @@ pub fn parse() -> RunMode {
                         let audio_path = std::env::temp_dir().join(
                             path.file_stem().unwrap().to_str().unwrap().to_owned() + "-tmp.aac",
                         );
-                        ez_ffmpeg::FfmpegContext::builder()
-                            .input(args.path.as_str())
-                            .output(audio_path.to_str().unwrap())
-                            .build()?
-                            .start()?
-                            .wait()?;
-                        Ok::<std::path::PathBuf, ez_ffmpeg::error::Error>(audio_path)
+                        crate::util::pick_audio(path, &audio_path)?;
+                        Ok::<std::path::PathBuf, ffmpeg_next::error::Error>(audio_path)
                     };
                     function()
                         .map(|path| AudioPath::Temp(path))

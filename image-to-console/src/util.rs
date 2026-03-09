@@ -6,9 +6,9 @@ use crate::{
     },
 };
 use image_to_console_core::{
-    quantette::ColorSpace,
     AutoResizeOption, CustomResizeOption, ResizeMode,
     processor::{ImageProcessor, ImageProcessorOptions},
+    quantette::ColorSpace,
 };
 
 pub trait CreateIPFromConfig {
@@ -101,4 +101,36 @@ impl From<&Config> for image_to_console_renderer::config::Config {
             mode: config.mode,
         }
     }
+}
+
+#[cfg(feature = "video_player")]
+pub fn pick_audio(
+    path: &std::path::Path,
+    target: &std::path::Path,
+) -> Result<(), ffmpeg_next::Error> {
+    let mut input_ctx = ffmpeg_next::format::input(path)?;
+    let index = input_ctx
+        .streams()
+        .best(ffmpeg_next::media::Type::Audio)
+        .ok_or(ffmpeg_next::error::Error::StreamNotFound)?
+        .index();
+    let input_stream = input_ctx.stream(index).unwrap();
+
+    let mut output_ctx = ffmpeg_next::format::output(target)?;
+    let mut output_stream = output_ctx.add_stream_with(
+        &ffmpeg_next::codec::Context::from_parameters(input_stream.parameters())?,
+    )?;
+
+    output_stream.set_parameters(input_stream.parameters());
+    output_ctx.write_header()?;
+
+    for (stream, mut packet) in input_ctx.packets() {
+        if stream.index() == index {
+            packet.set_stream(0);
+            packet.write_interleaved(&mut output_ctx)?;
+        }
+    }
+
+    output_ctx.write_trailer()?;
+    Ok(())
 }

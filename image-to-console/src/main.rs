@@ -13,6 +13,9 @@ use config::RunMode::*;
 
 fn main() {
     let config = config::parse();
+    // 这里可以 unwrap，ffmpeg 都无法启动可以看作是严重问题
+    #[cfg(feature = "video_player")]
+    ffmpeg_next::init().unwrap();
     match config {
         Once(config) => run(config),
         Multiple(configs) => run_multiple(configs),

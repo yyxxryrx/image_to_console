@@ -16,7 +16,7 @@ categories = ["command-line-utilities", "development-tools", "multimedia::images
 
 [features]
 default = ["reqwest", "gif_player", "sixel_support", "use_crossterm"]
-video_player = ["ndarray", "video-rs", "ez-ffmpeg", "crossbeam-channel", "image_to_console_renderer/video_player"]
+video_player = ["ndarray", "video-rs", "ffmpeg-next", "crossbeam-channel", "image_to_console_renderer/video_player"]
 gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel", "image_to_console_renderer/gif_player"]
 sixel_support = ["image_to_console_core/sixel", "image_to_console_renderer/sixel_support"]
 audio_support = ["image_to_console_renderer/rodio"]
@@ -45,18 +45,18 @@ features = ["blocking"]
 optional = true
 version = "0.29.0"
 
-[dependencies.ez-ffmpeg]
-optional = true
-version = "0.5.3"
-
 [dependencies.ndarray]
 optional = true
-version = "0.16.1"
+version = "0.17.2"
 
 [dependencies.video-rs]
 optional = true
-version = "0.10.5"
+version = "0.11.0"
 features = ["ndarray"]
+
+[dependencies.ffmpeg-next]
+optional = true
+version = "8.0.0"
 
 [dependencies.crossbeam-channel]
 optional = true
