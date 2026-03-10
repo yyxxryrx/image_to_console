@@ -1,5 +1,8 @@
 pub(crate) mod cli;
 
+#[cfg(feature = "dot_file")]
+mod dot_file;
+
 use cli::*;
 use crate::{
     config::RunMode::*,
@@ -114,8 +117,7 @@ impl RunMode {
     }
 }
 
-pub fn parse() -> RunMode {
-    let cli = Cli::parse();
+pub fn parse2(cli: Cli) -> RunMode {
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
     let cli2 = cli.clone();
     let output_base = cli.output.clone();
@@ -392,7 +394,7 @@ pub fn parse() -> RunMode {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                        .map(|img| DynamicImage::from(img));
+                                            .map(|img| DynamicImage::from(img));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()
@@ -420,14 +422,28 @@ pub fn parse() -> RunMode {
                     }
                     vtx.send(Err(FrameError::EOF)).unwrap();
                 })
-                .join()
-                .unwrap();
+                    .join()
+                    .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(Config::from(&cli2)
                 .image(ImageType::Video(erx))
                 .flush_interval(args.flush_interval)
                 .get_options()))
+        },
+        #[cfg(feature = "dot_file")]
+        Commands::DotFile(args) => {
+            let mut file = std::fs::File::open(args.path).expect("cannot open dot file");
+            let mut content = String::new();
+            file.read_to_string(&mut content).expect("cannot read file");
+            let content = toml::from_str::<dot_file::DotFileContent>(&content).expect("cannot parse dot file");
+            let cli = Cli::from(&content);
+            parse2(cli)
         }
     }
+}
+
+pub fn parse() -> RunMode {
+    let cli = Cli::parse();
+    parse2(cli)
 }

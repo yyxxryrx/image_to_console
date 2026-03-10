@@ -122,6 +122,9 @@ pub enum Commands {
     #[cfg(feature = "video_player")]
     #[clap(about = "Load a video from a file")]
     Video(VideoArgs),
+    #[cfg(feature = "dot_file")]
+    #[clap(about = "Run with a dot file")]
+    DotFile(DotFileArgs)
 }
 
 #[derive(Clone, Parser)]
@@ -180,6 +183,13 @@ pub struct VideoArgs {
     pub audio: Option<String>,
     #[clap(help = "Path to the video")]
     pub path: String,
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Parser)]
+pub struct DotFileArgs {
+    #[arg(help = "Dot file path")]
+    pub path: String
 }
 
 impl Commands {
