@@ -1,5 +1,5 @@
 use crate::{
-    config::{Cli, Config},
+    config::{cli::Cli, Config},
     types::{
         ClapResizeMode,
         ImageType::{Image, Path},
