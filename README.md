@@ -22,6 +22,7 @@ English | [简体中文](README_zh-CN.md)
 - 🎥 **Video Playback Support**: Play video files in terminal (requires `video_player` feature and FFmpeg)
 - 🔊 **Audio Support**: Add audio tracks to GIF animations (requires `audio_support` feature)
 - 🗜️ **Compression Support**: Compress output in normal protocol mode
+- 📄 **TOML Configuration Support**: Run complex tasks via TOML configuration files (requires `dot_file` feature)
 
 ## Supported Protocols
 - [x] WezTerm
@@ -30,14 +31,15 @@ English | [简体中文](README_zh-CN.md)
 - [x] Sixel
 
 ## Features 
-| Feature       | Dependencies                                       | Description                                                      | Is Default                          |
-|---------------|----------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
-| reqwest       | reqwest                                            | HTTP client library                                              | <span style="color: green">✓</span> |
-| audio_support | rodio                                              | Play audio support                                               | <span style="color: red">✗</span>   |
-| use_crossterm | crossterm                                          | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
-| gif_player    | gif, crossbeam-channel                             | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
-| video_player  | ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
-| sixel_support | quantette, nohash-hasher                           | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
+| Feature       | Dependencies                                         | Description                                                      | Is Default                          |
+|---------------|------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
+| reqwest       | reqwest                                              | HTTP client library                                              | <span style="color: green">✓</span> |
+| audio_support | rodio                                                | Play audio support                                               | <span style="color: red">✗</span>   |
+| use_crossterm | crossterm                                            | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
+| gif_player    | gif, crossbeam-channel                               | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
+| video_player  | ffmpeg-next, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                             | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
+| dot_file      | toml, serde                                          | TOML configuration file support                                  | <span style="color: red">✗</span>   |
 
 ## Installation
 
@@ -94,6 +96,9 @@ cat image.jpg | image_to_console bytes
 
 # Load video from file (requires video feature)
 image_to_console video path/to/video.mp4
+
+# Load and run from TOML configuration file (requires dot_file feature)
+image_to_console dot-file config.toml
 ```
 
 ### Command Line Options
@@ -214,6 +219,63 @@ image_to_console video path/to/video.mp4
 image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
+### Dot File Subcommand Options
+
+> **Note**: This feature requires `dot_file` feature.
+
+```bash
+# Run from TOML configuration file
+image_to_console dot-file config.toml
+```
+
+Example TOML configuration file:
+
+```toml
+# type is the name of each subcommand, e.g., file | url | bytes, etc
+type = "file"
+# path is the input for each subcommand, leaving blank if type = "bytes"
+path = "path/to/image.jpg"
+
+# The following are optional
+center = false
+clear = false
+pause = false
+show-time = false
+half-resolution = false
+disable-print = false
+disable-info = false
+no-color = false
+black-background = false
+no-resize = false
+protocol = "auto"
+resize-mode = "auto"
+enable-compression = false
+
+# Sixel protocol specific options
+max-colors = 256
+disable-dither = false
+color-space = "srgb"
+
+# File specific options (optional)
+[file]
+hide_filename = false
+
+# Directory specific options (optional)
+[directory]
+read_all = false
+
+# GIF specific options (optional)
+[gif]
+fps = 24
+loop-play = true
+audio = "path/to/audio.mp3"
+
+# Video specific options (optional)
+[video]
+flush-interval = "1s"
+audio = "path/to/audio.mp3"
+```
+
 ## Display Mode Description
 
 ### Color Modes
@@ -247,26 +309,26 @@ Supports most common image formats, including but not limited to:
 
 ## Dependencies
 
-| Crate                                                        | Version | License          | Purpose                                 |
-| ------------------------------------------------------------ | ------- | ---------------- | --------------------------------------- |
-| [clap](https://crates.io/crates/clap)                        | 4.5.20  | MIT / Apache-2.0 | Command line argument parsing           |
-| [rayon](https://crates.io/crates/rayon)                      | 1.11.0  | MIT / Apache-2.0 | Data parallel computing                 |
-| [num_cpus](https://crates.io/crates/num_cpus)                | 1.17.0  | MIT              | Get logical CPU core count              |
-| [image](https://crates.io/crates/image)                      | 0.25.4  | MIT              | Image encoding/decoding and processing  |
-| [base64](https://crates.io/crates/base64)                    | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
-| [indicatif](https://crates.io/crates/indicatif)              | 0.17.8  | MIT              | Terminal progress bars                  |
-| [terminal_size](https://crates.io/crates/terminal_size)      | 0.4.0   | MIT              | Detect terminal size                    |
-| [crossterm](https://crates.io/crates/crossterm)              | 0.29.0  | MIT              | Terminal control and input (optional)   |
-| [reqwest](https://crates.io/crates/reqwest)                  | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
-| [gif](https://crates.io/crates/gif)                          | 0.13.3  | MIT              | GIF animation decoding (optional)       |
+| Crate                                                           | Version | License          | Purpose                                 |
+|-----------------------------------------------------------------|---------|------------------|-----------------------------------------|
+| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | Command line argument parsing           |
+| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | Data parallel computing                 |
+| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | Get logical CPU core count              |
+| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | Image encoding/decoding and processing  |
+| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 encoding/decoding                |
+| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | Terminal progress bars                  |
+| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | Detect terminal size                    |
+| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | Terminal control and input (optional)   |
+| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
+| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF animation decoding (optional)       |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | Cross-thread communication   (optional) |
-| [rodio](https://crates.io/crates/rodio)                      | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
-| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)          | 8.0.0   | WTFPL            | Audio processing (optional)             |
-| [video-rs](https://crates.io/crates/video-rs)                | 0.11.0  | MIT              | Video processing (optional)             |
-| [ndarray](https://crates.io/crates/ndarray)                  | 0.17.2  | MIT              | N-dimensional array (optional)          |
-| [quantette](https://crates.io/crates/quantette)              | 0.3.0   | MIT              | Sixel image quantization (optional)     |
-| [nohash-hasher](https://crates.io/crates/nohash-hasher)      | 0.2.0   | MIT              | Sixel Fast Hash (Optional)              |
-| [pyo3](https://crates.io/crates/pyo3)                        | 0.27.1  | MIT / Apache-2.0 | Python bindings (optional)              |
+| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)             | 8.0.0   | WTFPL            | Audio processing (optional)             |
+| [video-rs](https://crates.io/crates/video-rs)                   | 0.11.0  | MIT              | Video processing (optional)             |
+| [ndarray](https://crates.io/crates/ndarray)                     | 0.17.2  | MIT              | N-dimensional array (optional)          |
+| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel image quantization (optional)     |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel Fast Hash (Optional)              |
+| [pyo3](https://crates.io/crates/pyo3)                           | 0.27.1  | MIT / Apache-2.0 | Python bindings (optional)              |
 
 ## License
 

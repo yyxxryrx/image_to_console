@@ -23,6 +23,7 @@
 - 🎥 **视频播放支持**: 支持在终端中播放视频文件（需要启用 `video` 特性及 FFmpeg）。
 - 🔊 **音频支持**: 支持为 GIF 动画添加音频轨道（需要启用 `audio_support` 特性）。
 - 🗜️ **压缩支持**: 在普通协议模式下支持输出压缩。
+- 📄 **TOML 配置支持**: 支持通过 TOML 配置文件运行复杂任务（需要启用 `dot_file` 特性）。
 
 ## 支持的协议
 
@@ -33,14 +34,15 @@
 
 ## 特性说明
 
-| 特性            | 依赖                                                 | 描述              | 是否默认启用                              |
-|---------------|----------------------------------------------------|-----------------|-------------------------------------|
-| reqwest       | reqwest                                            | HTTP 请求库        | <span style="color: green">✓</span> |
-| audio_support | rodio                                              | 播放音频支持          | <span style="color: red">✗</span>   |
-| use_crossterm | crossterm                                          | 终端库             | <span style="color: green">✓</span> |
-| gif_player    | gif, crossbeam-channel                             | 在终端播放 GIF 动画    | <span style="color: green">✓</span> |
-| video_player  | ez-ffmpeg, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频         | <span style="color: red">✗</span>   |
-| sixel_support | quantette, nohash-hasher                           | 使用 Sixel 协议显示图像 | <span style="color: green">✓</span> |
+| 特性            | 依赖                                                   | 描述              | 是否默认启用                              |
+|---------------|------------------------------------------------------|-----------------|-------------------------------------|
+| reqwest       | reqwest                                              | HTTP 请求库        | <span style="color: green">✓</span> |
+| audio_support | rodio                                                | 播放音频支持          | <span style="color: red">✗</span>   |
+| use_crossterm | crossterm                                            | 终端库             | <span style="color: green">✓</span> |
+| gif_player    | gif, crossbeam-channel                               | 在终端播放 GIF 动画    | <span style="color: green">✓</span> |
+| video_player  | ffmpeg-next, video-rs, crossbeam-channel, **FFmpeg** | 在终端播放视频         | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                             | 使用 Sixel 协议显示图像 | <span style="color: green">✓</span> |
+| dot_file      | toml, serde                                          | TOML 配置文件支持     | <span style="color: red">✗</span>   |
 
 ## 安装
 
@@ -96,8 +98,11 @@ image_to_console base64 <base64-encoded-image-data>
 # 从标准输入加载图片字节
 cat image.jpg | image_to_console bytes
 
-# 从文件加载视频（需要启用 video 特性）
+# 从文件加载视频（需要启用 video_player 特性）
 image_to_console video path/to/video.mp4
+
+# 从 TOML 配置文件加载并运行（需要启用 dot_file 特性）
+image_to_console dot-file config.toml
 ```
 
 ### 命令行选项
@@ -218,6 +223,64 @@ image_to_console video path/to/video.mp4
 image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 ```
 
+### Dot File 子命令选项
+
+> **注意**：此功能需要启用 `dot_file` 特性。
+
+```bash
+# 从 TOML 配置文件运行
+image_to_console dot-file config.toml
+```
+
+TOML 配置文件示例：
+
+```toml
+# type 为各个子命令的名称，例如：file | url | bytes 等
+type = "file"
+# path 为各个子命令的输入，如果为 type = "bytes" 就留空
+path = "path/to/image.jpg"
+
+# 以下选项是可选项
+center = false
+clear = false
+pause = false
+show-time = false
+half-resolution = false
+disable-print = false
+disable-info = false
+no-color = false
+black-background = false
+no-resize = false
+protocol = "auto"
+resize-mode = "auto"
+enable-compression = false
+
+# Sixel 协议特定选项
+max-colors = 256
+disable-dither = false
+color-space = "srgb"
+
+# File 特定选项（可选）
+[file]
+hide_filename = false
+
+# Directory 特定选项（可选）
+[directory]
+read_all = false
+
+
+# GIF 特定选项（可选）
+[gif]
+fps = 24
+loop-play = true
+audio = "path/to/audio.mp3"
+
+# 视频特定选项（可选）
+[video]
+flush-interval = "1s"
+audio = "path/to/audio.mp3"
+```
+
 ## 显示模式说明
 
 ### 彩色模式
@@ -255,26 +318,26 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 ## 依赖库
 
-| Crate                                                        | Version | License          | Purpose                    |
-| ------------------------------------------------------------ | ------- | ---------------- | -------------------------- |
-| [clap](https://crates.io/crates/clap)                        | 4.5.20  | MIT / Apache-2.0 | 命令行参数解析             |
-| [rayon](https://crates.io/crates/rayon)                      | 1.11.0  | MIT / Apache-2.0 | 数据并行计算               |
-| [num_cpus](https://crates.io/crates/num_cpus)                | 1.17.0  | MIT              | 获取逻辑 CPU 核心数        |
-| [image](https://crates.io/crates/image)                      | 0.25.4  | MIT              | 图像编解码与处理           |
-| [base64](https://crates.io/crates/base64)                    | 0.22.1  | MIT / Apache-2.0 | Base64 编解码              |
-| [indicatif](https://crates.io/crates/indicatif)              | 0.17.8  | MIT              | 终端进度条                 |
-| [terminal_size](https://crates.io/crates/terminal_size)      | 0.4.0   | MIT              | 检测终端尺寸               |
-| [crossterm](https://crates.io/crates/crossterm)              | 0.29.0  | MIT              | 终端控制（可选）           |
-| [reqwest](https://crates.io/crates/reqwest)                  | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
-| [gif](https://crates.io/crates/gif)                          | 0.13.3  | MIT              | GIF 动画解码（可选）       |
-| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）         |
-| [rodio](https://crates.io/crates/rodio)                      | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）           |
-| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)          | 8.0.0   | WTFPL            | 音频处理（可选）           |
-| [video-rs](https://crates.io/crates/video-rs)                | 0.11.0  | MIT              | 视频处理（可选）           |
-| [ndarray](https://crates.io/crates/ndarray)                  | 0.17.2  | MIT              | N维数组（可选）            |
-| [quantette](https://crates.io/crates/quantette)              | 0.3.0   | MIT              | Sixel 图像量化（可选）     |
-| [nohash-hasher](https://crates.io/crates/nohash-hasher)      | 0.2.0   | MIT              | Sixel 快速哈希（可选）     |
-| [pyo3](https://crates.io/crates/pyo3)                        | 0.27.1  | MIT / Apache-2.0 | Python 绑定（可选）        |
+| Crate                                                           | Version | License          | Purpose          |
+|-----------------------------------------------------------------|---------|------------------|------------------|
+| [clap](https://crates.io/crates/clap)                           | 4.5.20  | MIT / Apache-2.0 | 命令行参数解析          |
+| [rayon](https://crates.io/crates/rayon)                         | 1.11.0  | MIT / Apache-2.0 | 数据并行计算           |
+| [num_cpus](https://crates.io/crates/num_cpus)                   | 1.17.0  | MIT              | 获取逻辑 CPU 核心数     |
+| [image](https://crates.io/crates/image)                         | 0.25.4  | MIT              | 图像编解码与处理         |
+| [base64](https://crates.io/crates/base64)                       | 0.22.1  | MIT / Apache-2.0 | Base64 编解码       |
+| [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | 终端进度条            |
+| [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | 检测终端尺寸           |
+| [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | 终端控制（可选）         |
+| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
+| [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
+| [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
+| [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）         |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)             | 8.0.0   | WTFPL            | 音频处理（可选）         |
+| [video-rs](https://crates.io/crates/video-rs)                   | 0.11.0  | MIT              | 视频处理（可选）         |
+| [ndarray](https://crates.io/crates/ndarray)                     | 0.17.2  | MIT              | N维数组（可选）         |
+| [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel 图像量化（可选）   |
+| [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel 快速哈希（可选）   |
+| [pyo3](https://crates.io/crates/pyo3)                           | 0.27.1  | MIT / Apache-2.0 | Python 绑定（可选）    |
 
 ## License
 
