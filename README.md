@@ -25,12 +25,14 @@ English | [简体中文](README_zh-CN.md)
 - 📄 **TOML Configuration Support**: Run complex tasks via TOML configuration files (requires `dot_file` feature)
 
 ## Supported Protocols
+
 - [x] WezTerm
 - [x] Kitty
 - [x] iTerm2
 - [x] Sixel
 
-## Features 
+## Features
+
 | Feature       | Dependencies                                         | Description                                                      | Is Default                          |
 |---------------|------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
 | reqwest       | reqwest                                              | HTTP client library                                              | <span style="color: green">✓</span> |
@@ -67,6 +69,7 @@ cargo build --release --features video_player
 The compiled binary will be located at `target/release/image_to_console`.
 
 If you want to build with video support, you need to install FFmpeg libraries first:
+
 - Ubuntu/Debian: `sudo apt-get install libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev`
 - macOS: `brew install ffmpeg`
 - Windows: Install FFmpeg and ensure DLL files are in your PATH
@@ -187,8 +190,9 @@ image_to_console --read-all directory path/to/directory
 ```
 
 ### GIF Subcommand Options
+
 > **requires `gif_player` feature**
-> 
+>
 > **audio support requires `audio_support` feature**
 
 ```bash
@@ -208,7 +212,8 @@ image_to_console gif --fps 30 --loop animation.gif
 image_to_console gif --audio audio.mp3 animation.gif
 ```
 
-### Video Subcommand Options 
+### Video Subcommand Options
+
 > **requires `video_player` feature**
 
 ```bash
@@ -223,9 +228,31 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 > **Note**: This feature requires `dot_file` feature.
 
+#### Usage
+
+> Tips: `schema` command is not implementation
+
 ```bash
-# Run from TOML configuration file
-image_to_console dot-file config.toml
+Usage: image_to_console.exe dot-file <COMMAND>
+
+Commands:
+  schema  taplo schema about
+  run     run dot-file
+  check   check dot-file
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+```
+
+#### Examples
+
+```bash
+# Check dot-file
+image_to_console dot-file check path/to/config.toml
+
+# Run with dot-file
+image_to_console dot-file run path/to/config.toml
 ```
 
 Example TOML configuration file:
@@ -279,8 +306,10 @@ audio = "path/to/audio.mp3"
 ## Display Mode Description
 
 ### Color Modes
+
 - **Full-resolution color mode** (default): Display using upper/lower half-blocks, each character represents two pixels
-- **Half-resolution color mode** (--half-resolution): Display using background color blocks, each character represents one pixel
+- **Half-resolution color mode** (--half-resolution): Display using background color blocks, each character represents
+  one pixel
 - **WezTerm mode** (--protocol wezterm): Use WezTerm's inline image protocol to display original image directly
 - **Kitty mode** (--protocol kitty): Use Kitty's inline image protocol to display original image directly
 - **iTerm2 mode** (--protocol iterm2): Use iTerm2's inline image protocol to display original image directly
@@ -288,17 +317,20 @@ audio = "path/to/audio.mp3"
 - **Auto-detect mode** (--protocol auto): Automatically detect and use the best available terminal protocol (default)
 
 ### Grayscale Modes
+
 - **Grayscale mode** (--no-color): Convert image to grayscale character art display
 - Use different Unicode characters (such as █, ▀, ▄, ., , etc.) to represent different grayscale levels
 - **Black background** (-b): Use black background to display image in grayscale mode
 - **WezTerm grayscale mode** (--protocol wezterm --no-color): Display grayscale image in WezTerm
 - **Kitty grayscale mode** (--protocol kitty --no-color): Display grayscale image in Kitty
 - **iTerm2 grayscale mode** (--protocol iterm2 --no-color): Display grayscale image in iTerm2
-- **Auto-detect grayscale mode** (--protocol auto --no-color): Automatically detect and use the best available terminal protocol in grayscale mode
+- **Auto-detect grayscale mode** (--protocol auto --no-color): Automatically detect and use the best available terminal
+  protocol in grayscale mode
 
 ## Supported Image Formats
 
 Supports most common image formats, including but not limited to:
+
 - JPEG
 - PNG
 - GIF
