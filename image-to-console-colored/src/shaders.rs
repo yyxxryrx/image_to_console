@@ -1,4 +1,6 @@
 use crate::colors::TerminalColor;
+use std::fmt::{Display, Formatter};
+use crate::styles::Styles;
 
 pub struct TextHeader {
     foreground_color: Option<String>,
@@ -22,19 +24,20 @@ impl TextHeader {
     pub fn new_empty() -> Self {
         Self::new(None, None, None)
     }
+}
 
-    pub fn to_string(&self) -> String {
-        let mut result = String::new();
-        if let Some(fgc) = self.foreground_color.clone() {
-            result.push_str(&fgc);
+impl Display for TextHeader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(ref fgc) = self.foreground_color {
+            write!(f, "{fgc}")?;
         }
-        if let Some(bgc) = self.background_color.clone() {
-            result.push_str(&bgc);
+        if let Some(ref bgc) = self.background_color {
+            write!(f, "{bgc}")?;
         }
-        if let Some(style) = self.style.clone() {
-            result.push_str(&style);
+        if let Some(ref sty) = self.style {
+            write!(f, "{sty}")?;
         }
-        result
+        Ok(())
     }
 }
 
@@ -79,14 +82,15 @@ impl Text {
         self.head.background_color = Some(format!("\x1b[48;2;{};{};{}m", r, g, b));
         self
     }
-
-    pub fn to_string(&self) -> String {
-        format!("{}{}\x1b[0m", self.head.to_string(), self.content)
+    
+    pub fn set_style(&mut self, style: Styles) -> &mut Self {
+        self.head.style = Some(style.to_string());
+        self
     }
 }
 
-impl std::fmt::Display for Text {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+impl Display for Text {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}\x1b[0m", self.head.to_string(), self.content)
     }
 }
