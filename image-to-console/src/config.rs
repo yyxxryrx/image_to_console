@@ -468,7 +468,10 @@ pub fn parse2(cli: Cli) -> RunMode {
                     }
                     let content = match toml::from_str::<dot_file::DotFileContent>(&file_content) {
                         Ok(c) => c,
-                        Err(e) => return Error(e.to_string()),
+                        Err(e) => {
+                            crate::util::show_error(e, &file_content, file_path);
+                            std::process::exit(2);
+                        }
                     };
                     if !is_run {
                         std::process::exit(0);

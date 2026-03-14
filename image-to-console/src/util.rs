@@ -1,5 +1,5 @@
 use crate::{
-    config::{cli::Cli, Config},
+    config::{Config, cli::Cli},
     types::{
         ClapResizeMode,
         ImageType::{Image, Path},
@@ -133,4 +133,137 @@ pub fn pick_audio(
 
     output_ctx.write_trailer()?;
     Ok(())
+}
+
+#[derive(Debug)]
+struct StringSpan<'a> {
+    content: &'a mut std::str::Chars<'a>,
+    offset: usize,
+    row: usize,
+    col: usize,
+    eof: bool,
+    line: String,
+    lines: Vec<String>,
+    end_points: Vec<(usize, usize)>,
+}
+
+impl<'a> StringSpan<'a> {
+    fn new(content: &'a mut std::str::Chars<'a>) -> Self {
+        Self {
+            col: 1,
+            row: 1,
+            content,
+            offset: 0,
+            eof: false,
+            lines: vec![],
+            end_points: vec![],
+            line: String::new(),
+        }
+    }
+
+    fn peek_to(&mut self, offset: usize) {
+        if self.eof {
+            return;
+        }
+        while self.offset < offset && self.next().is_some() {}
+    }
+
+    fn next(&mut self) -> Option<char> {
+        if self.eof {
+            return None;
+        }
+        let Some(char) = self.content.next() else {
+            self.eof = true;
+            self.lines.push(self.line.clone());
+            self.end_points.push((self.row, self.col));
+            return None;
+        };
+        if char == '\n' {
+            self.lines.push(self.line.clone());
+            self.end_points.push((self.row, self.col));
+
+            self.col = 1;
+            self.row += 1;
+            self.offset += 1;
+            self.line = String::new();
+            return Some(char);
+        }
+        self.col += 1;
+        self.offset += 1;
+        self.line.push(char);
+        Some(char)
+    }
+
+    fn read_line(&mut self) -> String {
+        let row = self.row;
+        while row == self.row && self.next().is_some() {}
+        self.lines.last().unwrap().clone()
+    }
+}
+
+#[cfg(feature = "dot_file")]
+pub fn show_error<T>(error: toml::de::Error, source: T, path: &std::path::Path)
+where
+    T: AsRef<str>,
+{
+    use image_to_console_colored::{colors::TerminalColor, prelude::ToColoredText, styles::Styles};
+
+    let source = source.as_ref();
+
+    println!(
+        "{}{}",
+        "error"
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::LightRed),
+        format!(": {}", error.message())
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::LightWhite)
+    );
+
+    let Some(span) = error.span() else {
+        return;
+    };
+
+    let mut chars = source.chars();
+    let mut s_span = StringSpan::new(&mut chars);
+
+    s_span.peek_to(span.start);
+
+    let start_col = s_span.col;
+
+    let line = s_span.read_line();
+
+    let (line_row, _) = *s_span.end_points.last().unwrap();
+
+    let air = " ".repeat((line_row.ilog10() + 1) as usize);
+
+    let mut split = error.message().split(',');
+    let mut msg = split.next().unwrap();
+    if split.next().is_none() {
+        msg = "";
+    }
+
+    let head = |s: String| {
+        s.to_colored_text()
+            .set_style(Styles::Bold)
+            .set_foreground_color(TerminalColor::LightCyan)
+            .to_string()
+    };
+
+    println!(
+        "{} {}:{line_row}:{start_col}",
+        head(format!("{air}-->")),
+        path.display()
+    );
+    println!("{}", head(format!("{air} |")));
+    println!("{} {line}", head(format!("{line_row} |")));
+    println!(
+        "{}{}{}",
+        head(format!("{air} |")),
+        " ".repeat(start_col),
+        format!("{} {}", "^".repeat(span.end - span.start), msg)
+            .to_colored_text()
+            .set_foreground_color(TerminalColor::LightRed)
+    );
+    println!();
 }
