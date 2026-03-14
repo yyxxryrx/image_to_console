@@ -446,7 +446,7 @@ pub fn parse2(cli: Cli) -> RunMode {
             let is_run = matches!(&args.command, Run(..));
             match &args.command {
                 Schema(..) => {
-                    std::process::exit(1);
+                    todo!("暂时没实现")
                 }
                 Run(args) | Check(args) => {
                     let file_path = Path::new(&args.path);
