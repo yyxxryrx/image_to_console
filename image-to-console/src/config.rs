@@ -3,7 +3,6 @@ pub(crate) mod cli;
 #[cfg(feature = "dot_file")]
 mod dot_file;
 
-use cli::*;
 use crate::{
     config::RunMode::*,
     const_value::IMAGE_EXTS,
@@ -11,6 +10,8 @@ use crate::{
 };
 use base64::Engine;
 use build_options::Options;
+use clap::Parser;
+use cli::*;
 #[allow(unused)]
 #[cfg(any(feature = "gif_player", feature = "video_player"))]
 use crossbeam_channel::{bounded, unbounded};
@@ -19,7 +20,6 @@ use image_to_console_core::{DisplayMode, ResizeMode};
 use image_to_console_renderer::audio_path::AudioPath;
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use std::{io::Read, path::Path};
-use clap::Parser;
 
 #[allow(unused)]
 #[derive(Debug, Clone, Options, Default)]
@@ -92,6 +92,7 @@ pub enum RunMode {
     Multiple(Vec<Result<Config, String>>),
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
     Video(Result<Config, String>),
+    Error(String),
 }
 
 #[allow(dead_code)]
@@ -102,12 +103,14 @@ impl RunMode {
             _ => panic!("Cannot get the config in other mode"),
         }
     }
+
     pub fn multiple(&self) -> Vec<Result<Config, String>> {
         match self {
             Multiple(configs) => configs.clone(),
             _ => panic!("Cannot get the config in other mode"),
         }
     }
+
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
     pub fn video(&self) -> Result<Config, String> {
         match self {
@@ -348,7 +351,12 @@ pub fn parse2(cli: Cli) -> RunMode {
                         .map(|path| AudioPath::Temp(path))
                         .unwrap_or_default()
                 } else {
-                    if args.audio.as_ref().map(|s| s.to_lowercase() == "none").unwrap_or_default() {
+                    if args
+                        .audio
+                        .as_ref()
+                        .map(|s| s.to_lowercase() == "none")
+                        .unwrap_or_default()
+                    {
                         AudioPath::None
                     } else {
                         AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
@@ -394,7 +402,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                            .map(|img| DynamicImage::from(img));
+                                        .map(|img| DynamicImage::from(img));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()
@@ -422,18 +430,52 @@ pub fn parse2(cli: Cli) -> RunMode {
                     }
                     vtx.send(Err(FrameError::EOF)).unwrap();
                 })
-                    .join()
-                    .unwrap();
+                .join()
+                .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(Config::from(&cli2)
                 .image(ImageType::Video(erx))
                 .flush_interval(args.flush_interval)
                 .get_options()))
-        },
+        }
         #[cfg(feature = "dot_file")]
-        Commands::DotFile(..) => {
-            todo!()
+        Commands::DotFile(args) => {
+            use cli::DotFileSubcommands::*;
+
+            let is_run = matches!(&args.command, Run(..));
+            match &args.command {
+                Schema(..) => {
+                    std::process::exit(1);
+                }
+                Run(args) | Check(args) => {
+                    let file_path = Path::new(&args.path);
+
+                    if !file_path.is_file() {
+                        return Error(format!("file \"{}\" not exists", file_path.display()));
+                    }
+
+                    let mut file = match std::fs::File::open(file_path) {
+                        Ok(file) => file,
+                        Err(..) => {
+                            return Error(format!("cannot open file \"{}\"", file_path.display()));
+                        }
+                    };
+
+                    let mut file_content = String::new();
+                    if let Err(e) = file.read_to_string(&mut file_content) {
+                        return Error(format!("file \"{}\" not exists ({e})", file_path.display()));
+                    }
+                    let content = match toml::from_str::<dot_file::DotFileContent>(&file_content) {
+                        Ok(c) => c,
+                        Err(e) => return Error(e.to_string()),
+                    };
+                    if !is_run {
+                        std::process::exit(0);
+                    }
+                    parse2((&content).into())
+                }
+            }
         }
     }
 }

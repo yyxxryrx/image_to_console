@@ -21,5 +21,6 @@ fn main() {
         Multiple(configs) => run_multiple(configs),
         #[cfg(any(feature = "video_player", feature = "gif_player"))]
         Video(config) => run_video(config),
+        Error(e) => err(e),
     }
 }
