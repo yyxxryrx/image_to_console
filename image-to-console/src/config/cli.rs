@@ -123,8 +123,8 @@ pub enum Commands {
     #[clap(about = "Load a video from a file")]
     Video(VideoArgs),
     #[cfg(feature = "dot_file")]
-    #[clap(about = "Run with a dot file")]
-    DotFile(DotFileArgs)
+    #[clap(about = "dot-file command")]
+    DotFile(DotFileArgs),
 }
 
 #[derive(Clone, Parser)]
@@ -186,10 +186,48 @@ pub struct VideoArgs {
 }
 
 #[cfg(feature = "dot_file")]
+#[derive(Clone, Subcommand)]
+pub enum DotFileSubcommands {
+    #[clap(about = "taplo schema about")]
+    Schema(DotFileSchemaArgs),
+    #[clap(about = "run dot-file")]
+    Run(DotFileRunOrCheckArgs),
+    #[clap(about = "check dot-file")]
+    Check(DotFileRunOrCheckArgs),
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Parser)]
+pub struct DotFileSchemaArgs {
+    #[clap(subcommand)]
+    pub command: Option<DotFileSchemaSubcommands>,
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Subcommand)]
+pub enum DotFileSchemaSubcommands {
+    #[clap(about = "summon the schema file if not exists")]
+    Init,
+    #[clap(about = "get the schema path if exists")]
+    Path,
+    #[clap(about = "remove the schema file if exists")]
+    Remove,
+    #[clap(about = "resummon the schema file")]
+    ReInit,
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Parser)]
+pub struct DotFileRunOrCheckArgs {
+    #[arg(help = "Dot file path")]
+    pub path: String,
+}
+
+#[cfg(feature = "dot_file")]
 #[derive(Clone, Parser)]
 pub struct DotFileArgs {
-    #[arg(help = "Dot file path")]
-    pub path: String
+    #[clap(subcommand)]
+    pub command: DotFileSubcommands,
 }
 
 impl Commands {

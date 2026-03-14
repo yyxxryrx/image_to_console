@@ -432,13 +432,8 @@ pub fn parse2(cli: Cli) -> RunMode {
                 .get_options()))
         },
         #[cfg(feature = "dot_file")]
-        Commands::DotFile(args) => {
-            let mut file = std::fs::File::open(args.path).expect("cannot open dot file");
-            let mut content = String::new();
-            file.read_to_string(&mut content).expect("cannot read file");
-            let content = toml::from_str::<dot_file::DotFileContent>(&content).expect("cannot parse dot file");
-            let cli = Cli::from(&content);
-            parse2(cli)
+        Commands::DotFile(..) => {
+            todo!()
         }
     }
 }

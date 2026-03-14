@@ -13,8 +13,6 @@ pub enum RunType {
     Gif,
     #[cfg(feature = "video_player")]
     Video,
-    #[cfg(feature = "dot_file")]
-    DotFile,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -96,12 +94,14 @@ impl Default for ColorSpace {
 }
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct FileArgs {
     #[serde(default)]
     pub hide_filename: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct DirectoryArgs {
     #[serde(default)]
     pub read_all: bool,
@@ -109,6 +109,7 @@ pub struct DirectoryArgs {
 
 #[cfg(feature = "gif_player")]
 #[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct GifArgs {
     #[serde(default)]
     pub fps: Option<u64>,
@@ -118,6 +119,7 @@ pub struct GifArgs {
     pub audio: Option<String>,
 }
 
+#[cfg(feature = "video_player")]
 fn from_str<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -130,6 +132,7 @@ where
 
 #[cfg(feature = "video_player")]
 #[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct VideoArgs {
     #[serde(default, deserialize_with = "from_str")]
     pub flush_interval: crate::types::FlushInterval,
@@ -287,6 +290,7 @@ impl From<&DotFileContent> for super::cli::Cli {
                 make_cli!(value: Gif.GifArgs {
                     path: value.path.clone(),
                     fps: config.fps,
+                    #[cfg(feature = "audio_support")]
                     audio: config.audio,
                     loop_play: config.loop_play,
                 })
@@ -300,9 +304,6 @@ impl From<&DotFileContent> for super::cli::Cli {
                     flush_interval: config.flush_interval,
                 })
             },
-            RunType::DotFile => make_cli!(value: DotFile.DotFileArgs {
-                path: value.path.clone(),
-            }),
         }
     }
 }
