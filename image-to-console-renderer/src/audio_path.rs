@@ -17,7 +17,7 @@ impl Default for AudioPath {
 impl Drop for AudioPath {
     fn drop(&mut self) {
         if let AudioPath::Temp(path) = self {
-            if std::fs::exists(&path) {
+            if std::fs::exists(&path).unwrap_or_default() {
                 let _ = std::fs::remove_file(path);
             }
         }
