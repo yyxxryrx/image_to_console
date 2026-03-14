@@ -28,6 +28,7 @@ rayon = "1.11.0"
 image = "0.25.4"
 base64 = "0.22.1"
 indicatif = "0.17.8"
+unicode-width = "0.2.2"
 
 [dependencies.gif]
 optional = true

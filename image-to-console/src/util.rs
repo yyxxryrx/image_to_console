@@ -261,7 +261,7 @@ where
         "{}{}{}",
         head(format!("{air} |")),
         " ".repeat(start_col),
-        format!("{} {}", "^".repeat(span.end - span.start), msg)
+        format!("{} {}", "^".repeat(unicode_width::UnicodeWidthStr::width(&source[span])), msg)
             .to_colored_text()
             .set_foreground_color(TerminalColor::LightRed)
     );
