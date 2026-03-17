@@ -284,15 +284,13 @@ pub fn parse2(cli: Cli) -> RunMode {
                 Err(e) => Once(Err(e.to_string())),
             }
         }
-        #[cfg(feature = "reqwest")]
+        #[cfg(feature = "url")]
         Commands::Url(ref args) => {
             use indicatif::{ProgressBar, ProgressStyle};
-            use reqwest::blocking::Client;
             use std::io::Write;
             println!("Downloading the image from: {}", args.url);
-            let client = Client::new();
-            match client.get(&args.url).send() {
-                Ok(resp) => {
+            match ureq::get(&args.url).call() {
+                Ok(mut resp) => {
                     if resp.status().is_success() {
                         let type_ = resp
                             .headers()
@@ -306,16 +304,19 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 type_
                             )));
                         }
-                        let total_size = resp.content_length().expect("Cannot get the file length");
+                        let total_size = resp.body().content_length().expect("Cannot get the file length");
                         let pd = ProgressBar::new(total_size);
                         pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta} remaining)").unwrap());
                         let mut buffer = Vec::new();
                         let mut cursor = std::io::Cursor::new(&mut buffer);
-                        let content = resp.bytes().unwrap();
+                        let mut buf = [0; 8192];
+                        let mut reader = resp.body_mut().as_reader();
                         pd.enable_steady_tick(std::time::Duration::from_millis(100));
-                        for i in content.chunks(1024) {
-                            cursor.write(i).unwrap();
-                            pd.inc(i.len() as u64);
+                        loop {
+                            let length = reader.read(&mut buf).expect("Read error");
+                            if length == 0 { break; }
+                            cursor.write_all(&buf[0..length]).unwrap();
+                            pd.inc(length as u64);
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {

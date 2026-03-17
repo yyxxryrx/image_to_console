@@ -7,7 +7,7 @@ pub enum RunType {
     Bytes,
     Base64,
     Directory,
-    #[cfg(feature = "reqwest")]
+    #[cfg(feature = "url")]
     Url,
     #[cfg(feature = "gif_player")]
     Gif,
@@ -280,7 +280,7 @@ impl From<&DotFileContent> for super::cli::Cli {
                 read_all: value.directory.unwrap_or_default().read_all,
                 path: value.path.clone(),
             }),
-            #[cfg(feature = "reqwest")]
+            #[cfg(feature = "url")]
             RunType::Url => make_cli!(value: Url.UrlArgs {
                 url: value.path.clone(),
             }),

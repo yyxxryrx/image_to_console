@@ -113,7 +113,7 @@ pub enum Commands {
     Base64(Base64Args),
     #[clap(about = "Load all the images from a directory")]
     Directory(DirectoryArgs),
-    #[cfg(feature = "reqwest")]
+    #[cfg(feature = "url")]
     #[clap(about = "Load an image from a url")]
     Url(UrlArgs),
     #[cfg(feature = "gif_player")]
@@ -167,7 +167,7 @@ pub struct Base64Args {
     pub base64: String,
 }
 
-#[cfg(feature = "reqwest")]
+#[cfg(feature = "url")]
 #[derive(Clone, Parser)]
 pub struct UrlArgs {
     #[clap(help = "Url to the image")]
