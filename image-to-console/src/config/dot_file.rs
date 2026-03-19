@@ -1,6 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "video_player")]
+use serde_json::{Map, Value};
+use summon_schema::Schema;
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub enum RunType {
     File,
@@ -15,7 +18,7 @@ pub enum RunType {
     Video,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "lowercase")]
 pub enum Protocol {
     Auto,
@@ -45,7 +48,7 @@ impl Default for Protocol {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "lowercase")]
 pub enum ClapResizeMode {
     Auto,
@@ -69,7 +72,7 @@ impl From<ClapResizeMode> for crate::types::ClapResizeMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "lowercase")]
 pub enum ColorSpace {
     Srgb,
@@ -93,14 +96,14 @@ impl Default for ColorSpace {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub struct FileArgs {
     #[serde(default)]
     pub hide_filename: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DirectoryArgs {
     #[serde(default)]
@@ -108,7 +111,7 @@ pub struct DirectoryArgs {
 }
 
 #[cfg(feature = "gif_player")]
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub struct GifArgs {
     #[serde(default)]
@@ -131,10 +134,31 @@ where
 }
 
 #[cfg(feature = "video_player")]
-#[derive(Debug, Clone, Default, Deserialize)]
+impl summon_schema::ToSchema for crate::types::FlushInterval {
+    fn schema_type() -> Value {
+        serde_json::json!("string")
+    }
+
+    fn schema() -> Map<String, Value> {
+        summon_schema::map! {
+            "default": "1s"
+        }
+    }
+}
+
+#[cfg(feature = "video_player")]
+fn to_str<S>(flush_interval: &crate::types::FlushInterval, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&flush_interval.to_string())
+}
+
+#[cfg(feature = "video_player")]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub struct VideoArgs {
-    #[serde(default, deserialize_with = "from_str")]
+    #[serde(default, deserialize_with = "from_str", serialize_with = "to_str")]
     pub flush_interval: crate::types::FlushInterval,
     #[serde(default)]
     pub audio: Option<String>,
@@ -153,13 +177,14 @@ where
         Ok(value)
     } else {
         // 返回自定义错误信息
-        Err(serde::de::Error::custom(
-            format!("max-colors must be between 1 and 256, got {}", value)
-        ))
+        Err(serde::de::Error::custom(format!(
+            "max-colors must be between 1 and 256, got {}",
+            value
+        )))
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Schema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DotFileContent {
     pub r#type: RunType,
@@ -199,7 +224,10 @@ pub struct DotFileContent {
     #[serde(default)]
     pub without_resize_height: bool,
     #[cfg(feature = "sixel_support")]
-    #[serde(default = "default_max_colors", deserialize_with = "deserialize_max_colors")]
+    #[serde(
+        default = "default_max_colors",
+        deserialize_with = "deserialize_max_colors"
+    )]
     pub max_colors: u16,
     #[serde(default)]
     pub enable_compression: bool,
@@ -271,7 +299,7 @@ impl From<&DotFileContent> for super::cli::Cli {
                     hide_filename: value.file.unwrap_or_default().hide_filename,
                     path: value.path.clone(),
                 })
-            },
+            }
             RunType::Base64 => make_cli!(value: Base64.Base64Args {
                 base64: value.path.clone(),
             }),
@@ -294,7 +322,7 @@ impl From<&DotFileContent> for super::cli::Cli {
                     audio: config.audio,
                     loop_play: config.loop_play,
                 })
-            },
+            }
             #[cfg(feature = "video_player")]
             RunType::Video => {
                 let config = value.clone().video.unwrap_or_default();
@@ -303,7 +331,7 @@ impl From<&DotFileContent> for super::cli::Cli {
                     audio: config.audio,
                     flush_interval: config.flush_interval,
                 })
-            },
+            }
         }
     }
 }

@@ -304,7 +304,10 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 type_
                             )));
                         }
-                        let total_size = resp.body().content_length().expect("Cannot get the file length");
+                        let total_size = resp
+                            .body()
+                            .content_length()
+                            .expect("Cannot get the file length");
                         let pd = ProgressBar::new(total_size);
                         pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta} remaining)").unwrap());
                         let mut buffer = Vec::new();
@@ -314,7 +317,9 @@ pub fn parse2(cli: Cli) -> RunMode {
                         pd.enable_steady_tick(std::time::Duration::from_millis(100));
                         loop {
                             let length = reader.read(&mut buf).expect("Read error");
-                            if length == 0 { break; }
+                            if length == 0 {
+                                break;
+                            }
                             cursor.write_all(&buf[0..length]).unwrap();
                             pd.inc(length as u64);
                         }
@@ -446,9 +451,14 @@ pub fn parse2(cli: Cli) -> RunMode {
 
             let is_run = matches!(&args.command, Run(..));
             match &args.command {
-                Schema(..) => {
-                    todo!("暂时没实现")
-                }
+                Schema(args) => match args.command {
+                    Some(DotFileSchemaSubcommands::Init) => {
+                        let a = summon_schema::gen_schema::<dot_file::DotFileContent>();
+                        println!("{}", serde_json::to_string_pretty(&a).unwrap_or_default());
+                        std::process::exit(0);
+                    }
+                    _ => todo!(),
+                },
                 Run(args) | Check(args) => {
                     let file_path = Path::new(&args.path);
 

@@ -22,7 +22,7 @@ gif_player = ["gif", "image_to_console_core/gif", "crossbeam-channel", "image_to
 sixel_support = ["image_to_console_core/sixel", "image_to_console_renderer/sixel_support"]
 audio_support = ["image_to_console_renderer/rodio"]
 use_crossterm = ["crossterm", "image_to_console_core/crossterm"]
-dot_file = ["toml", "serde"]
+dot_file = ["toml", "serde", "summon-schema", "serde_json"]
 
 [dependencies]
 rayon = "1.11.0"
@@ -41,16 +41,20 @@ features = ["derive", "string"]
 
 [dependencies.toml]
 optional = true
-version = "1.0.6"
+version = "1.0"
 
 [dependencies.serde]
+optional = true
+version = "1.0"
+features = ["derive"]
+
+[dependencies.serde_json]
 optional = true
 version = "1.0"
 
 [dependencies.ureq]
 optional = true
 version = "3.2.0"
-
 
 [dependencies.crossterm]
 optional = true
@@ -75,6 +79,10 @@ version = "0.5.15"
 
 [dependencies.build-options]
 path = "../build-options"
+
+[dependencies.summon-schema]
+optional = true
+path = "../summon-schema"
 
 [dependencies.image_to_console_core]
 path = "../image-to-console-core"
