@@ -310,3 +310,15 @@ pub fn schema(input: TokenStream) -> TokenStream {
         _ => panic!(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_name_converter() {
+        assert_eq!(Style::Lowercase.convert("Hello_World".to_string()), "hello_world");
+        assert_eq!(Style::Uppercase.convert("Hello_World".to_string()), "HELLO_WORLD");
+        assert_eq!(Style::KebabCase.convert("Hello_World".to_string()), "hello-world");
+    }
+}
