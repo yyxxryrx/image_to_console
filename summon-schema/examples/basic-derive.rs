@@ -21,10 +21,15 @@ struct UserInfo {
     user_type: UserType
 }
 
+fn default_ip() -> String {
+    "0.0.0.0".to_string()
+}
+
 /// Config File
 #[derive(Schema)]
 struct Config {
     /// IP
+    #[serde(default)]
     ip: Option<String>,
     /// Port
     port: u16,

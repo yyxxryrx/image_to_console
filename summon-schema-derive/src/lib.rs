@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-
 fn get_docs(attrs: &Vec<syn::Attribute>) -> String {
     attrs
         .iter()
@@ -94,14 +93,87 @@ fn get_style(attrs: &Vec<syn::Attribute>) -> Style {
     style
 }
 
+enum DefaultType {
+    DefaultValue,
+    Call(syn::Path),
+    None,
+}
+
+fn get_default(attrs: &Vec<syn::Attribute>) -> DefaultType {
+    let mut ty = DefaultType::None;
+    for attr in attrs.iter() {
+        if attr.meta.path().is_ident("serde") {
+            if let syn::Meta::List(list) = &attr.meta {
+                _ = list.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("default") {
+                        match meta.value() {
+                            Ok(val) => {
+                                ty = DefaultType::Call(syn::parse_str::<syn::Path>(
+                                    &val.parse::<syn::LitStr>()?.value(),
+                                )?)
+                            }
+                            Err(..) => ty = DefaultType::DefaultValue,
+                        }
+                    }
+                    Ok(())
+                });
+            }
+        }
+    }
+    ty
+}
+
+#[derive(Default)]
+struct Args {
+    no_default: bool,
+    required: bool,
+    minimum: Option<syn::Lit>,
+    maximum: Option<syn::Lit>,
+}
+
+fn parse_args(attrs: &Vec<syn::Attribute>) -> Args {
+    let mut args = Args::default();
+    for attr in attrs.iter() {
+        if attr.meta.path().is_ident("schema") {
+            if let syn::Meta::List(list) = &attr.meta {
+                list.parse_nested_meta(|meta| {
+                    match &meta.path {
+                        path if path.is_ident("required") => args.required = true,
+                        path if path.is_ident("no_default") => args.no_default = true,
+                        path if path.is_ident("minimum") => {
+                            args.minimum = Some(meta.value()?.parse::<syn::Lit>()?);
+                        }
+                        path if path.is_ident("maximum") => {
+                            args.maximum = Some(meta.value()?.parse::<syn::Lit>()?);
+                        }
+                        _ => {
+                            return Err(meta.error(&format!(
+                                "Unknown args: `{}`",
+                                meta.path
+                                    .get_ident()
+                                    .map(|ident| ident.to_string())
+                                    .unwrap_or_default()
+                            )));
+                        }
+                    }
+                    Ok(())
+                })
+                .unwrap();
+            }
+        }
+    }
+    args
+}
+
 fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style) -> TokenStream {
     let name = &input.ident;
     let doc = get_docs(&input.attrs);
-    let (names, keys, tys, docs) = data.fields.iter().fold(
-        (vec![], vec![], vec![], vec![]),
-        |(mut names, mut keys, mut tys, mut docs), f| {
+    let (names, keys, tys, docs, defaults, others, required) = data.fields.iter().fold(
+        (vec![], vec![], vec![], vec![], vec![], vec![], vec![]),
+        |(mut names, mut keys, mut tys, mut docs, mut defaults, mut others, mut required), f| {
             if let Some(ident) = &f.ident {
                 let ty = f.ty.clone();
+                let args = parse_args(&f.attrs);
                 let ty = if let syn::Type::Path(mut path) = ty {
                     if let Some(s) = path.path.segments.last_mut() {
                         if let syn::PathArguments::AngleBracketed(args) = &mut s.arguments {
@@ -120,14 +192,57 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
                     &style.convert(ident.to_string()),
                     proc_macro2::Span::call_site(),
                 );
+                let default = if args.no_default {
+                    quote::quote! {}
+                } else {
+                    match get_default(&f.attrs) {
+                        DefaultType::DefaultValue => quote::quote! {
+                            "default": #ty::default(),
+                        },
+                        DefaultType::Call(path) => quote::quote! {
+                            "default": #path(),
+                        },
+                        DefaultType::None => quote::quote! {},
+                    }
+                };
+                if args.required {
+                    required.push(key.clone());
+                }
+                let min = if let Some(min) =  args.minimum {
+                    quote::quote! {
+                        "minimum": #min,
+                    }
+                } else {
+                    Default::default()
+                };
+                let max = if let Some(max) =  args.maximum {
+                    quote::quote! {
+                        "maximum": #max,
+                    }
+                } else {
+                    Default::default()
+                };
                 tys.push(ty);
                 docs.push(doc);
                 keys.push(key);
                 names.push(ident);
+                defaults.push(default);
+                others.push(quote::quote! {
+                    #min
+                    #max
+                });
             }
-            (names, keys, tys, docs)
+            (names, keys, tys, docs, defaults, others, required)
         },
     );
+
+    let required = if required.is_empty() {
+        quote::quote! {}
+    } else {
+        quote::quote! {
+            "required": [ #(#required),* ]
+        }
+    };
 
     quote::quote! {
         impl ::summon_schema::ToSchema for #name {
@@ -137,6 +252,8 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
                     #names.extend(::summon_schema::map! {
                         "type": #tys::schema_type(),
                         "description": #docs,
+                        #defaults
+                        #others
                     });
                 )*
                 ::summon_schema::map! {
@@ -146,6 +263,7 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
                             #keys: #names,
                         )*
                     },
+                    #required
                 }
             }
 
