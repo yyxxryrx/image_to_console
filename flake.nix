@@ -14,7 +14,7 @@
     }:
     let
       supportedSystem = [
-        "x84_64-linux"
+        "x86_64-linux"
         "aarch64-linux"
         "x86_64-darwin"
         "aarch64-darwin"
@@ -64,15 +64,11 @@
             inherit system;
             overlays = [ rust-overlay.overlays.default ];
           };
-          rustPlatform = pkgs.makeRustPlatform {
-            rustc = pkgs.rust-bin.stable.latest.default;
-            cargo = pkgs.rust-bin.stable.latest.default;
-          };
         in
         {
           default = pkgs.mkShell {
             inputsFrom = [ self.packages.${system}.default ];
-            buildInputs = with pkgs.rust-bin.stable; [
+            packages = with pkgs; [
               rust-analyzer
               clippy
             ];
