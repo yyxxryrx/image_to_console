@@ -261,9 +261,27 @@ where
         "{}{}{}",
         head(format!("{air} |")),
         " ".repeat(start_col),
-        format!("{} {}", "^".repeat(unicode_width::UnicodeWidthStr::width(&source[span])), msg)
-            .to_colored_text()
-            .set_foreground_color(TerminalColor::LightRed)
+        format!(
+            "{} {}",
+            "^".repeat(unicode_width::UnicodeWidthStr::width(&source[span])),
+            msg
+        )
+        .to_colored_text()
+        .set_foreground_color(TerminalColor::LightRed)
     );
     println!();
+}
+
+#[cfg(feature = "dot_file")]
+pub fn get_schema_dir() -> Result<std::path::PathBuf, String> {
+    match dirs_next::data_local_dir() {
+        Some(path) => {
+            let path = path.join("itc");
+            if path.is_dir() {
+                std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+            }
+            Ok(path)
+        }
+        None => Err("Cannot get the local data dir".to_string()),
+    }
 }

@@ -450,14 +450,56 @@ pub fn parse2(cli: Cli) -> RunMode {
             use cli::DotFileSubcommands::*;
 
             let is_run = matches!(&args.command, Run(..));
+            let summon = |check: bool| {
+                let schema = summon_schema::gen_schema::<dot_file::DotFileContent>();
+                let path = crate::util::get_schema_dir()?;
+                let file_path = path.join("schema.json");
+                if check && file_path.is_file() {
+                    return Err(format!("{} is exists!", file_path.display()));
+                }
+                let file = std::fs::File::create(&file_path).map_err(|e| e.to_string())?;
+                serde_json::to_writer(file, &schema).map_err(|e| e.to_string())?;
+                Ok(())
+            };
             match &args.command {
-                Schema(args) => match args.command {
-                    Some(DotFileSchemaSubcommands::Init) => {
-                        let a = summon_schema::gen_schema::<dot_file::DotFileContent>();
-                        println!("{}", serde_json::to_string_pretty(&a).unwrap_or_default());
+                Schema(args) => match &args.command {
+                    Some(DotFileSchemaSubcommands::Init) => match summon(true) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
+                    Some(DotFileSchemaSubcommands::Path) => {
+                        match crate::util::get_schema_dir() {
+                            Ok(path) => println!("Schema dir: {}", path.display()),
+                            Err(e) => return Error(e),
+                        }
                         std::process::exit(0);
                     }
-                    _ => todo!(),
+                    Some(DotFileSchemaSubcommands::ReInit) => match summon(false) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
+                    Some(DotFileSchemaSubcommands::Remove) => {
+                        if let Ok(path) = crate::util::get_schema_dir() {
+                            if path.is_file() {
+                                if let Err(e) = std::fs::remove_file(&path) {
+                                    return Error(e.to_string());
+                                }
+                            }
+                        }
+                        std::process::exit(0);
+                    }
+                    Some(DotFileSchemaSubcommands::Out) => {
+                        let schema = summon_schema::gen_schema::<dot_file::DotFileContent>();
+                        match serde_json::to_string_pretty(&schema) {
+                            Ok(schema) => println!("{schema}"),
+                            Err(e) => return Error(e.to_string()),
+                        }
+                        std::process::exit(0);
+                    }
+                    None => match summon(false) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
                 },
                 Run(args) | Check(args) => {
                     let file_path = Path::new(&args.path);

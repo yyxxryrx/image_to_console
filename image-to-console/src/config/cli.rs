@@ -214,6 +214,15 @@ pub enum DotFileSchemaSubcommands {
     Remove,
     #[clap(about = "resummon the schema file")]
     ReInit,
+    #[clap(about = "print the schema to stdout")]
+    Out,
+}
+
+#[cfg(feature = "dot_file")]
+impl Default for DotFileSchemaSubcommands {
+    fn default() -> Self {
+        Self::ReInit
+    }
 }
 
 #[cfg(feature = "dot_file")]
