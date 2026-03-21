@@ -13,35 +13,68 @@
       rust-overlay,
     }:
     let
-      system = "x86_64-linux"; # 或 "aarch64-linux"
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ rust-overlay.overlays.default ];
-      };
-      rustPlatform = pkgs.makeRustPlatform {
-        rustc = pkgs.rust-bin.stable.latest.default;
-        cargo = pkgs.rust-bin.stable.latest.default;
-      };
+      supportedSystem = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystem = nixpkgs.lib.genAttrs supportedSystem;
     in
     {
-      packages.${system}.default = rustPlatform.buildRustPackage {
-        pname = "your-project";
-        version = "0.1.0";
-        src = ./.;
-        cargoLock.lockFile = ./Cargo.lock;
 
-        nativeBuildInputs = with pkgs; [
-          rustPlatform.bindgenHook # ← 核心配置
-          pkg-config
-        ];
-      };
+      packages = forAllSystem (
+        system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
+          };
+          rustPlatform = pkgs.makeRustPlatform {
+            rustc = pkgs.rust-bin.stable.latest.default;
+            cargo = pkgs.rust-bin.stable.latest.default;
+          };
+        in
+        {
+          default = rustPlatform.buildRustPackage {
+            pname = "image_to_console";
+            version = "0.1.18";
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
 
-      devShells.${system}.default = pkgs.mkShell {
-        inputsFrom = [ self.packages.${system}.default ];
-        buildInputs = with pkgs; [
-          rust-bin.stable.latest.rust-analyzer
-          rust-bin.stable.latest.clippy
-        ];
-      };
+            buildInputs = with pkgs; [
+              ffmpeg
+              openssl
+              alsa-lib
+            ];
+
+            nativeBuildInputs = with pkgs; [
+              rustPlatform.bindgenHook # ← 核心配置
+              pkg-config
+            ];
+
+            cargoBuildFlags = "-p image_to_console --bin image_to_console --all-features";
+          };
+        }
+      );
+
+      devShells = forAllSystem (
+        system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
+          };
+        in
+        {
+          default = pkgs.mkShell {
+            inputsFrom = [ self.packages.${system}.default ];
+            packages = with pkgs; [
+              rust-analyzer
+              clippy
+            ];
+          };
+        }
+      );
     };
 }
