@@ -1,5 +1,7 @@
 /target
 /.idea
 /.vscode
+/.zed
+.nvim.lua
 /image-to-console-core/.codeql-db
 *.sarif
