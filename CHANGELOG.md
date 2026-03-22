@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TOML Configuration System**: Introduced the `dot-file` subcommand supporting `schema`, `run`, and `check` operations. Implemented bidirectional conversion between TOML config and CLI arguments [#a8a13e7, #0037fb7].
 - **Terminal Styling Module**: Added a new `styles` module implementing `Display` traits for `TextHeader` and `Text`, enabling unified formatting and custom style settings [#2e1a4fc].
 - **Unicode Width Support**: Added `unicode-width` dependency to ensure correct alignment of multi-byte characters in console output [#69d2032].
+- **New `summon-schema` crate**: Added a library for converting Rust types to JSON Schema with the `ToSchema` trait (#5ee1402, #4982c22)
 
 ### Changed
 
@@ -55,6 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Unicode character width calculation in source code highlighting to prevent console misalignment [#69d2032].
 - Fixed temporary audio file cleanup logic by adding `unwrap_or_default()` to prevent errors when files are missing [#ce480d6, #0037fb7].
 - Fixed `AudioPath::drop` implementation to better handle filesystem permissions and concurrent access issues [#0037fb7].
+
+### Refactor
+
+- Use `eq_ignore_ascii_case` instead of `to_lowercase` for case-insensitive comparisons
 
 ### Removed
 
