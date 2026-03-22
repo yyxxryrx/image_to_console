@@ -277,7 +277,7 @@ pub fn get_schema_dir() -> Result<std::path::PathBuf, String> {
     match dirs_next::data_local_dir() {
         Some(path) => {
             let path = path.join("itc");
-            if path.is_dir() {
+            if !path.is_dir() {
                 std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
             }
             Ok(path)
