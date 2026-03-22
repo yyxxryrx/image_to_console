@@ -1,4 +1,51 @@
+//! Derive macros for summon-schema
+//!
+//! This crate provides procedural macros for automatically generating JSON Schema
+//! implementations for custom structs and enums.
+//!
+//! # Features
+//!
+//! - Automatic schema generation for structs with named fields
+//! - Support for enum variants as string enums
+//! - Field-level documentation extraction
+//! - Serde attribute compatibility (rename_all, default)
+//! - Custom constraints via `#[schema]` attribute
+//!
+//! # Usage
+//!
+//! Add this to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! summon-schema = "version"
+//! serde_json = "1.0"
+//! ```
+//!
+//! Then use the derive macro:
+//!
+//! ```ignore
+//! use summon_schema::Schema;
+//!
+//! #[derive(Schema)]
+//! struct Person {
+//!     name: String,
+//!     age: u32,
+//! }
+//! ```
+
 use proc_macro::TokenStream;
+/// Extract documentation from attributes
+///
+/// Collects all `#[doc = "..."]` attributes and joins them into a single string.
+/// Used to preserve field and struct documentation in the generated schema.
+///
+/// # Arguments
+///
+/// * `attrs` - Vector of syn::Attribute to extract documentation from
+///
+/// # Returns
+///
+/// A string containing all documentation comments joined by newlines
 fn get_docs(attrs: &Vec<syn::Attribute>) -> String {
     attrs
         .iter()
@@ -18,6 +65,21 @@ fn get_docs(attrs: &Vec<syn::Attribute>) -> String {
         .join("\n")
 }
 
+/// Convert a string to kebab-case
+///
+/// Transforms identifiers like `hello_world` or `HelloWorld` into `hello-world`.
+/// Handles both snake_case and camelCase inputs.
+///
+/// # Arguments
+///
+/// * `name` - The identifier name to convert
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(to_kebab_case("hello_world"), "hello-world");
+/// assert_eq!(to_kebab_case("HelloWorld"), "hello-world");
+/// ```
 fn to_kebab_case(name: &str) -> String {
     let mut segments = vec![];
     let mut s = String::new();
@@ -45,6 +107,10 @@ fn to_kebab_case(name: &str) -> String {
     segments.join("-")
 }
 
+/// Naming convention styles for field renaming
+///
+/// Controls how Rust field names are transformed when generating schema keys.
+/// Supports common naming conventions used in serialization formats.
 enum Style {
     Lowercase,
     Uppercase,
@@ -53,6 +119,17 @@ enum Style {
 }
 
 impl Style {
+    /// Convert a name according to the style
+    ///
+    /// Strips raw identifier prefixes (`r#`) before applying transformation.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name to convert
+    ///
+    /// # Returns
+    ///
+    /// The converted name as a String
     fn convert(&self, name: String) -> String {
         let name = name.strip_prefix("r#").unwrap_or(&name);
         match self {
@@ -65,6 +142,12 @@ impl Style {
 }
 
 impl From<String> for Style {
+    /// Create a Style from a string
+    ///
+    /// # Panics
+    ///
+    /// Panics if the string doesn't match any supported style.
+    /// Supported values: "lowercase", "uppercase", "kebab-case"
     fn from(value: String) -> Self {
         match value.as_str() {
             "lowercase" => Self::Lowercase,
@@ -75,6 +158,18 @@ impl From<String> for Style {
     }
 }
 
+/// Extract the naming style from serde attributes
+///
+/// Parses `#[serde(rename_all = "...")]` attributes to determine the naming convention.
+/// Defaults to `Style::None` if no rename attribute is present.
+///
+/// # Arguments
+///
+/// * `attrs` - Vector of attributes to search through
+///
+/// # Returns
+///
+/// The determined Style variant
 fn get_style(attrs: &Vec<syn::Attribute>) -> Style {
     let mut style = Style::None;
     for attr in attrs.iter() {
@@ -93,12 +188,27 @@ fn get_style(attrs: &Vec<syn::Attribute>) -> Style {
     style
 }
 
+/// Represents the type of default value handling
+///
+/// Distinguishes between using the type's Default implementation,
+/// calling a custom function, or having no default value.
 enum DefaultType {
     DefaultValue,
     Call(syn::Path),
     None,
 }
 
+/// Extract default value configuration from serde attributes
+///
+/// Parses `#[serde(default)]` and `#[serde(default = "path")]` attributes.
+///
+/// # Arguments
+///
+/// * `attrs` - Vector of attributes to search through
+///
+/// # Returns
+///
+/// A DefaultType indicating how defaults should be handled
 fn get_default(attrs: &Vec<syn::Attribute>) -> DefaultType {
     let mut ty = DefaultType::None;
     for attr in attrs.iter() {
@@ -123,6 +233,9 @@ fn get_default(attrs: &Vec<syn::Attribute>) -> DefaultType {
     ty
 }
 
+/// Configuration arguments for schema generation
+///
+/// Controls various aspects of schema generation for individual fields.
 #[derive(Default)]
 struct Args {
     no_default: bool,
@@ -131,6 +244,21 @@ struct Args {
     maximum: Option<syn::Lit>,
 }
 
+/// Parse schema-related attributes from field metadata
+///
+/// Extracts `#[schema(...)]` attributes to configure schema generation:
+/// - `required`: Mark field as required
+/// - `no_default`: Don't include default value in schema
+/// - `minimum`: Set minimum value constraint
+/// - `maximum`: Set maximum value constraint
+///
+/// # Arguments
+///
+/// * `attrs` - Vector of attributes to parse
+///
+/// # Returns
+///
+/// An Args struct containing the parsed configuration
 fn parse_args(attrs: &Vec<syn::Attribute>) -> Args {
     let mut args = Args::default();
     for attr in attrs.iter() {
@@ -148,7 +276,7 @@ fn parse_args(attrs: &Vec<syn::Attribute>) -> Args {
                         }
                         _ => {
                             return Err(meta.error(&format!(
-                                "Unknown args: `{}`",
+                                "Unknown attribute: `{}`",
                                 meta.path
                                     .get_ident()
                                     .map(|ident| ident.to_string())
@@ -165,6 +293,23 @@ fn parse_args(attrs: &Vec<syn::Attribute>) -> Args {
     args
 }
 
+/// Generate ToSchema implementation for a struct
+///
+/// Creates a schema representation where each field becomes a property with:
+/// - Type information from the field's type
+/// - Documentation from doc comments
+/// - Optional default values
+/// - Optional constraints (min/max)
+///
+/// # Arguments
+///
+/// * `input` - The struct definition
+/// * `data` - The struct's field data
+/// * `style` - The naming convention to apply
+///
+/// # Returns
+///
+/// TokenStream containing the generated ToSchema implementation
 fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style) -> TokenStream {
     let name = &input.ident;
     let doc = get_docs(&input.attrs);
@@ -275,6 +420,20 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
     .into()
 }
 
+/// Generate ToSchema implementation for an enum
+///
+/// Creates a string enum schema where each variant becomes a possible value.
+/// All variants are treated as string options in the generated schema.
+///
+/// # Arguments
+///
+/// * `input` - The enum definition
+/// * `data` - The enum's variant data
+/// * `style` - The naming convention to apply to variant names
+///
+/// # Returns
+///
+/// TokenStream containing the generated ToSchema implementation
 fn schema_enum(input: &syn::DeriveInput, data: &syn::DataEnum, style: Style) -> TokenStream {
     let name = &input.ident;
     let doc = get_docs(&input.attrs);
@@ -300,7 +459,52 @@ fn schema_enum(input: &syn::DeriveInput, data: &syn::DataEnum, style: Style) -> 
     .into()
 }
 
+/// Derive macro for generating JSON Schema implementations
+///
+/// Automatically implements the `ToSchema` trait for structs and enums.
+///
+/// # Attributes
+///
+/// ## Struct/Enum level
+///
+/// - `#[serde(rename_all = "...")]` - Apply naming convention to all fields/variants
+///
+/// ## Field level (structs only)
+///
+/// - `#[schema(required)]` - Mark field as required
+/// - `#[schema(no_default)]` - Exclude default value from schema
+/// - `#[schema(minimum = value)]` - Set minimum constraint
+/// - `#[schema(maximum = value)]` - Set maximum constraint
+/// - `#[serde(default)]` - Use type's Default implementation
+/// - `#[serde(default = "path")]` - Use custom function for default
+///
+/// # Examples
+///
+/// Basic struct:
+/// ```ignore
+/// #[derive(Schema)]
+/// struct Point {
+///     x: i32,
+///     y: i32,
+/// }
+/// ```
+///
+/// With attributes:
+/// ```ignore
+/// #[derive(Schema)]
+/// #[serde(rename_all = "kebab-case")]
+/// struct Config {
+///     #[schema(required, minimum = 0, maximum = 100)]
+///     volume: u8,
+///     
+///     #[serde(default)]
+///     muted: bool,
+/// }
+/// ```
 #[proc_macro_derive(Schema, attributes(schema, serde))]
+/// Main entry point for the Schema derive macro
+///
+/// Dispatches to appropriate handler based on whether input is a struct or enum.
 pub fn schema(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     let style = get_style(&input.attrs);
