@@ -260,8 +260,8 @@ Example TOML configuration file:
 ```toml
 # type is the name of each subcommand, e.g., file | url | bytes, etc
 type = "file"
-# path is the input for each subcommand, leaving blank if type = "bytes"
-path = "path/to/image.jpg"
+# input for each subcommand, leaving blank if type = "bytes"
+input = "path/to/image.jpg"
 
 # The following are optional
 center = false

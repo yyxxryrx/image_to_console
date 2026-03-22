@@ -205,7 +205,7 @@ pub struct DotFileContent {
     pub r#type: RunType,
     /// Input
     #[schema(required)]
-    pub path: String,
+    pub input: String,
     /// Center the image
     #[serde(default)]
     pub center: bool,
@@ -336,16 +336,16 @@ impl From<&DotFileContent> for super::cli::Cli {
             RunType::File => {
                 make_cli!(value: File.FileArgs {
                     hide_filename: value.file.unwrap_or_default().hide_filename,
-                    path: value.path.clone(),
+                    path: value.input.clone(),
                 })
             }
             RunType::Base64 => make_cli!(value: Base64.Base64Args {
-                base64: value.path.clone(),
+                base64: value.input.clone(),
             }),
             RunType::Bytes => make_cli!(value: Bytes),
             RunType::Directory => make_cli!(value: Directory.DirectoryArgs {
                 read_all: value.directory.unwrap_or_default().read_all,
-                path: value.path.clone(),
+                path: value.input.clone(),
             }),
             #[cfg(feature = "url")]
             RunType::Url => make_cli!(value: Url.UrlArgs {
@@ -355,7 +355,7 @@ impl From<&DotFileContent> for super::cli::Cli {
             RunType::Gif => {
                 let config = value.clone().gif.unwrap_or_default();
                 make_cli!(value: Gif.GifArgs {
-                    path: value.path.clone(),
+                    path: value.input.clone(),
                     fps: config.fps,
                     #[cfg(feature = "audio_support")]
                     audio: config.audio,
@@ -366,7 +366,7 @@ impl From<&DotFileContent> for super::cli::Cli {
             RunType::Video => {
                 let config = value.clone().video.unwrap_or_default();
                 make_cli!(value: Video.VideoArgs {
-                    path: value.path.clone(),
+                    path: value.input.clone(),
                     audio: config.audio,
                     flush_interval: config.flush_interval,
                 })

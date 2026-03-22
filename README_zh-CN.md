@@ -259,8 +259,8 @@ TOML 配置文件示例：
 ```toml
 # type 为各个子命令的名称，例如：file | url | bytes 等
 type = "file"
-# path 为各个子命令的输入，如果为 type = "bytes" 就留空
-path = "path/to/image.jpg"
+# 各个子命令的输入，如果为 type = "bytes" 就留空
+input = "path/to/image.jpg"
 
 # 以下选项是可选项
 center = false
