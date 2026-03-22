@@ -20,6 +20,7 @@ use image_to_console_core::{DisplayMode, ResizeMode};
 use image_to_console_renderer::audio_path::AudioPath;
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use std::{io::Read, path::Path};
+use image_to_console_colored::prelude::ToColoredText;
 
 #[allow(unused)]
 #[derive(Debug, Clone, Options, Default)]
@@ -451,6 +452,7 @@ pub fn parse2(cli: Cli) -> RunMode {
 
             let is_run = matches!(&args.command, Run(..));
             let summon = |check: bool| {
+                use image_to_console_colored::prelude::ToColoredText;
                 let schema = summon_schema::gen_schema::<dot_file::DotFileContent>();
                 let path = crate::util::get_schema_dir()?;
                 let file_path = path.join("schema.json");
@@ -459,6 +461,14 @@ pub fn parse2(cli: Cli) -> RunMode {
                 }
                 let file = std::fs::File::create(&file_path).map_err(|e| e.to_string())?;
                 serde_json::to_writer(file, &schema).map_err(|e| e.to_string())?;
+                println!(
+                    "{}",
+                    format!("success summon schema file in {}", file_path.display())
+                        .to_colored_text()
+                        .set_foreground_color(
+                            image_to_console_colored::colors::TerminalColor::LightGreen
+                        )
+                );
                 Ok(())
             };
             match &args.command {
@@ -485,6 +495,14 @@ pub fn parse2(cli: Cli) -> RunMode {
                                     return Error(e.to_string());
                                 }
                             }
+                            println!(
+                                "{}",
+                                format!("success remove schema file {}", path.display())
+                                    .to_colored_text()
+                                    .set_foreground_color(
+                                        image_to_console_colored::colors::TerminalColor::LightGreen
+                                    )
+                            );
                         }
                         std::process::exit(0);
                     }
