@@ -351,7 +351,7 @@ audio = "path/to/audio.mp3"
 | [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | 终端进度条            |
 | [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | 检测终端尺寸           |
 | [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | 终端控制（可选）         |
-| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
+| [ureq](https://crates.io/crates/ureq)                           | 3.2.0   | MIT / Apache-2.0 | 阻塞式 HTTP 客户端（可选） |
 | [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
 | [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）         |

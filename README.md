@@ -353,7 +353,7 @@ Supports most common image formats, including but not limited to:
 | [indicatif](https://crates.io/crates/indicatif)                 | 0.17.8  | MIT              | Terminal progress bars                  |
 | [terminal_size](https://crates.io/crates/terminal_size)         | 0.4.0   | MIT              | Detect terminal size                    |
 | [crossterm](https://crates.io/crates/crossterm)                 | 0.29.0  | MIT              | Terminal control and input (optional)   |
-| [reqwest](https://crates.io/crates/reqwest)                     | 0.12.9  | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
+| [ureq](https://crates.io/crates/ureq)                           | 3.2.0   | MIT / Apache-2.0 | Blocking HTTP client   (optional)       |
 | [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF animation decoding (optional)       |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | Cross-thread communication   (optional) |
 | [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | Audio playback (optional)               |
