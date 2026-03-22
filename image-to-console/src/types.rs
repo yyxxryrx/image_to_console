@@ -1,6 +1,7 @@
 use clap::{ValueEnum, builder::PossibleValue};
 use image::DynamicImage;
-use std::fmt::Debug;
+use std::fmt::{Debug};
+
 
 #[derive(Debug, Clone)]
 pub enum ImageType {
@@ -122,11 +123,10 @@ impl std::str::FromStr for FlushInterval {
     /// assert!(matches!(interval, FlushInterval::Always));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.to_lowercase();
-        if s == "always" {
+        if s.eq_ignore_ascii_case("always") {
             return Ok(Self::Always);
         }
-        if s == "never" {
+        if s.eq_ignore_ascii_case("never") {
             return Ok(Self::Never);
         }
         // negative numbers are not allowed
@@ -162,6 +162,18 @@ impl std::str::FromStr for FlushInterval {
             };
         }
         Err("Invalid flush interval".to_string())
+    }
+}
+
+#[cfg(feature = "video_player")]
+impl std::fmt::Display for FlushInterval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Never => write!(f, "never"),
+            Self::Always => write!(f, "always"),
+            Self::Seconds(s) => write!(f, "{s}s"),
+            Self::Frames(frame) => write!(f, "{frame}f"),
+        }
     }
 }
 
@@ -203,6 +215,7 @@ impl Default for ColorSpace {
     }
 }
 
+#[cfg(feature = "sixel_support")]
 impl From<&ColorSpace> for image_to_console_core::quantette::ColorSpace {
     fn from(color_space: &ColorSpace) -> Self {
         match color_space {
@@ -215,11 +228,7 @@ impl From<&ColorSpace> for image_to_console_core::quantette::ColorSpace {
 
 impl ValueEnum for ColorSpace {
     fn value_variants<'a>() -> &'a [Self] {
-        &[
-            Self::Srgb,
-            Self::Oklab,
-            Self::Lab,
-        ]
+        &[Self::Srgb, Self::Oklab, Self::Lab]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {

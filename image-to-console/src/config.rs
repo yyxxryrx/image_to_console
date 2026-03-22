@@ -3,7 +3,6 @@ pub(crate) mod cli;
 #[cfg(feature = "dot_file")]
 mod dot_file;
 
-use cli::*;
 use crate::{
     config::RunMode::*,
     const_value::IMAGE_EXTS,
@@ -11,6 +10,8 @@ use crate::{
 };
 use base64::Engine;
 use build_options::Options;
+use clap::Parser;
+use cli::*;
 #[allow(unused)]
 #[cfg(any(feature = "gif_player", feature = "video_player"))]
 use crossbeam_channel::{bounded, unbounded};
@@ -19,7 +20,7 @@ use image_to_console_core::{DisplayMode, ResizeMode};
 use image_to_console_renderer::audio_path::AudioPath;
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use std::{io::Read, path::Path};
-use clap::Parser;
+use image_to_console_colored::prelude::ToColoredText;
 
 #[allow(unused)]
 #[derive(Debug, Clone, Options, Default)]
@@ -92,6 +93,7 @@ pub enum RunMode {
     Multiple(Vec<Result<Config, String>>),
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
     Video(Result<Config, String>),
+    Error(String),
 }
 
 #[allow(dead_code)]
@@ -102,12 +104,14 @@ impl RunMode {
             _ => panic!("Cannot get the config in other mode"),
         }
     }
+
     pub fn multiple(&self) -> Vec<Result<Config, String>> {
         match self {
             Multiple(configs) => configs.clone(),
             _ => panic!("Cannot get the config in other mode"),
         }
     }
+
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
     pub fn video(&self) -> Result<Config, String> {
         match self {
@@ -281,15 +285,13 @@ pub fn parse2(cli: Cli) -> RunMode {
                 Err(e) => Once(Err(e.to_string())),
             }
         }
-        #[cfg(feature = "reqwest")]
+        #[cfg(feature = "url")]
         Commands::Url(ref args) => {
             use indicatif::{ProgressBar, ProgressStyle};
-            use reqwest::blocking::Client;
             use std::io::Write;
             println!("Downloading the image from: {}", args.url);
-            let client = Client::new();
-            match client.get(&args.url).send() {
-                Ok(resp) => {
+            match ureq::get(&args.url).call() {
+                Ok(mut resp) => {
                     if resp.status().is_success() {
                         let type_ = resp
                             .headers()
@@ -303,16 +305,24 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 type_
                             )));
                         }
-                        let total_size = resp.content_length().expect("Cannot get the file length");
+                        let total_size = resp
+                            .body()
+                            .content_length()
+                            .expect("Cannot get the file length");
                         let pd = ProgressBar::new(total_size);
                         pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta} remaining)").unwrap());
                         let mut buffer = Vec::new();
                         let mut cursor = std::io::Cursor::new(&mut buffer);
-                        let content = resp.bytes().unwrap();
+                        let mut buf = [0; 8192];
+                        let mut reader = resp.body_mut().as_reader();
                         pd.enable_steady_tick(std::time::Duration::from_millis(100));
-                        for i in content.chunks(1024) {
-                            cursor.write(i).unwrap();
-                            pd.inc(i.len() as u64);
+                        loop {
+                            let length = reader.read(&mut buf).expect("Read error");
+                            if length == 0 {
+                                break;
+                            }
+                            cursor.write_all(&buf[0..length]).unwrap();
+                            pd.inc(length as u64);
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
@@ -348,7 +358,12 @@ pub fn parse2(cli: Cli) -> RunMode {
                         .map(|path| AudioPath::Temp(path))
                         .unwrap_or_default()
                 } else {
-                    if args.audio.as_ref().map(|s| s.to_lowercase() == "none").unwrap_or_default() {
+                    if args
+                        .audio
+                        .as_ref()
+                        .map(|s| s.to_lowercase() == "none")
+                        .unwrap_or_default()
+                    {
                         AudioPath::None
                     } else {
                         AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
@@ -394,7 +409,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                                         let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
                                             width, height, data,
                                         )
-                                            .map(|img| DynamicImage::from(img));
+                                        .map(|img| DynamicImage::from(img));
                                         match img {
                                             Some(img) => {
                                                 vtx.send(Ok((img, frame_counter))).unwrap()
@@ -422,23 +437,119 @@ pub fn parse2(cli: Cli) -> RunMode {
                     }
                     vtx.send(Err(FrameError::EOF)).unwrap();
                 })
-                    .join()
-                    .unwrap();
+                .join()
+                .unwrap();
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(Config::from(&cli2)
                 .image(ImageType::Video(erx))
                 .flush_interval(args.flush_interval)
                 .get_options()))
-        },
+        }
         #[cfg(feature = "dot_file")]
         Commands::DotFile(args) => {
-            let mut file = std::fs::File::open(args.path).expect("cannot open dot file");
-            let mut content = String::new();
-            file.read_to_string(&mut content).expect("cannot read file");
-            let content = toml::from_str::<dot_file::DotFileContent>(&content).expect("cannot parse dot file");
-            let cli = Cli::from(&content);
-            parse2(cli)
+            use cli::DotFileSubcommands::*;
+
+            let is_run = matches!(&args.command, Run(..));
+            let summon = |check: bool| {
+                use image_to_console_colored::prelude::ToColoredText;
+                let schema = summon_schema::gen_schema::<dot_file::DotFileContent>();
+                let path = crate::util::get_schema_dir()?;
+                let file_path = path.join("schema.json");
+                if check && file_path.is_file() {
+                    return Err(format!("{} is exists!", file_path.display()));
+                }
+                let file = std::fs::File::create(&file_path).map_err(|e| e.to_string())?;
+                serde_json::to_writer(file, &schema).map_err(|e| e.to_string())?;
+                println!(
+                    "{}",
+                    format!("success summon schema file in {}", file_path.display())
+                        .to_colored_text()
+                        .set_foreground_color(
+                            image_to_console_colored::colors::TerminalColor::LightGreen
+                        )
+                );
+                Ok(())
+            };
+            match &args.command {
+                Schema(args) => match &args.command {
+                    Some(DotFileSchemaSubcommands::Init) => match summon(true) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
+                    Some(DotFileSchemaSubcommands::Path) => {
+                        match crate::util::get_schema_dir() {
+                            Ok(path) => println!("Schema dir: {}", path.display()),
+                            Err(e) => return Error(e),
+                        }
+                        std::process::exit(0);
+                    }
+                    Some(DotFileSchemaSubcommands::ReInit) => match summon(false) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
+                    Some(DotFileSchemaSubcommands::Remove) => {
+                        if let Ok(path) = crate::util::get_schema_dir() {
+                            if path.is_file() {
+                                if let Err(e) = std::fs::remove_file(&path) {
+                                    return Error(e.to_string());
+                                }
+                            }
+                            println!(
+                                "{}",
+                                format!("success remove schema file {}", path.display())
+                                    .to_colored_text()
+                                    .set_foreground_color(
+                                        image_to_console_colored::colors::TerminalColor::LightGreen
+                                    )
+                            );
+                        }
+                        std::process::exit(0);
+                    }
+                    Some(DotFileSchemaSubcommands::Out) => {
+                        let schema = summon_schema::gen_schema::<dot_file::DotFileContent>();
+                        match serde_json::to_string_pretty(&schema) {
+                            Ok(schema) => println!("{schema}"),
+                            Err(e) => return Error(e.to_string()),
+                        }
+                        std::process::exit(0);
+                    }
+                    None => match summon(false) {
+                        Ok(..) => std::process::exit(0),
+                        Err(e) => Error(e),
+                    },
+                },
+                Run(args) | Check(args) => {
+                    let file_path = Path::new(&args.path);
+
+                    if !file_path.is_file() {
+                        return Error(format!("file \"{}\" not exists", file_path.display()));
+                    }
+
+                    let mut file = match std::fs::File::open(file_path) {
+                        Ok(file) => file,
+                        Err(..) => {
+                            return Error(format!("cannot open file \"{}\"", file_path.display()));
+                        }
+                    };
+
+                    let mut file_content = String::new();
+                    if let Err(e) = file.read_to_string(&mut file_content) {
+                        return Error(format!("file \"{}\" not exists ({e})", file_path.display()));
+                    }
+                    let content = match toml::from_str::<dot_file::DotFileContent>(&file_content) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            crate::util::show_error(e, &file_content, file_path);
+                            std::process::exit(2);
+                        }
+                    };
+                    if !is_run {
+                        std::process::exit(0);
+                    }
+                    parse2((&content).into())
+                }
+            }
         }
     }
 }

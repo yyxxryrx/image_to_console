@@ -19,7 +19,7 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 
 #[derive(Clone, Parser)]
 #[clap(name = "image_to_console")]
-#[command(version = "0.1.18", color = clap::ColorChoice::Auto, styles = CLAP_STYLING)]
+#[command(color = clap::ColorChoice::Auto, styles = CLAP_STYLING)]
 pub struct Cli {
     #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
     pub center: bool,
@@ -113,7 +113,7 @@ pub enum Commands {
     Base64(Base64Args),
     #[clap(about = "Load all the images from a directory")]
     Directory(DirectoryArgs),
-    #[cfg(feature = "reqwest")]
+    #[cfg(feature = "url")]
     #[clap(about = "Load an image from a url")]
     Url(UrlArgs),
     #[cfg(feature = "gif_player")]
@@ -123,8 +123,8 @@ pub enum Commands {
     #[clap(about = "Load a video from a file")]
     Video(VideoArgs),
     #[cfg(feature = "dot_file")]
-    #[clap(about = "Run with a dot file")]
-    DotFile(DotFileArgs)
+    #[clap(about = "dot-file command")]
+    DotFile(DotFileArgs),
 }
 
 #[derive(Clone, Parser)]
@@ -167,7 +167,7 @@ pub struct Base64Args {
     pub base64: String,
 }
 
-#[cfg(feature = "reqwest")]
+#[cfg(feature = "url")]
 #[derive(Clone, Parser)]
 pub struct UrlArgs {
     #[clap(help = "Url to the image")]
@@ -186,10 +186,57 @@ pub struct VideoArgs {
 }
 
 #[cfg(feature = "dot_file")]
+#[derive(Clone, Subcommand)]
+pub enum DotFileSubcommands {
+    #[clap(about = "taplo schema about")]
+    Schema(DotFileSchemaArgs),
+    #[clap(about = "run dot-file")]
+    Run(DotFileRunOrCheckArgs),
+    #[clap(about = "check dot-file")]
+    Check(DotFileRunOrCheckArgs),
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Parser)]
+pub struct DotFileSchemaArgs {
+    #[clap(subcommand)]
+    pub command: Option<DotFileSchemaSubcommands>,
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Subcommand)]
+pub enum DotFileSchemaSubcommands {
+    #[clap(about = "summon the schema file if not exists")]
+    Init,
+    #[clap(about = "get the schema path if exists")]
+    Path,
+    #[clap(about = "remove the schema file if exists")]
+    Remove,
+    #[clap(about = "resummon the schema file")]
+    ReInit,
+    #[clap(about = "print the schema to stdout")]
+    Out,
+}
+
+#[cfg(feature = "dot_file")]
+impl Default for DotFileSchemaSubcommands {
+    fn default() -> Self {
+        Self::ReInit
+    }
+}
+
+#[cfg(feature = "dot_file")]
+#[derive(Clone, Parser)]
+pub struct DotFileRunOrCheckArgs {
+    #[arg(help = "Dot file path")]
+    pub path: String,
+}
+
+#[cfg(feature = "dot_file")]
 #[derive(Clone, Parser)]
 pub struct DotFileArgs {
-    #[arg(help = "Dot file path")]
-    pub path: String
+    #[clap(subcommand)]
+    pub command: DotFileSubcommands,
 }
 
 impl Commands {

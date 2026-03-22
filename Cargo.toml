@@ -4,7 +4,7 @@ members = [
     "image-to-console-core",
     "image-to-console-colored",
     "image-to-console-renderer",
-    "image-to-console-core-python", "build-options",
+    "image-to-console-core-python", "build-options", "summon-schema", "summon-schema-derive",
 ]
 resolver = "2"
 

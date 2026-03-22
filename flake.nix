@@ -22,7 +22,6 @@
       forAllSystem = nixpkgs.lib.genAttrs supportedSystem;
     in
     {
-
       packages = forAllSystem (
         system:
         let
@@ -53,7 +52,7 @@
               pkg-config
             ];
 
-            cargoBuildFlags = "-p image_to_console --bin image_to_console --all-features";
+            cargoBuildFlags = "--bin image_to_console --all-features";
           };
         }
       );

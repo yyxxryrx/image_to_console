@@ -227,9 +227,31 @@ image_to_console video --audio path/to/audio.mp3 path/to/video.mp4
 
 > **注意**：此功能需要启用 `dot_file` 特性。
 
+#### 用法
+
+> 提示: `schema` 命令暂未实现
+
 ```bash
+Usage: image_to_console.exe dot-file <COMMAND>
+
+Commands:
+  schema  taplo schema about
+  run     run dot-file
+  check   check dot-file
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+```
+
+#### 示例
+
+```bash
+# 检查配置文件
+image_to_console dot-file check path/to/config.toml
+
 # 从 TOML 配置文件运行
-image_to_console dot-file config.toml
+image_to_console dot-file run path/to/config.toml
 ```
 
 TOML 配置文件示例：
@@ -237,8 +259,8 @@ TOML 配置文件示例：
 ```toml
 # type 为各个子命令的名称，例如：file | url | bytes 等
 type = "file"
-# path 为各个子命令的输入，如果为 type = "bytes" 就留空
-path = "path/to/image.jpg"
+# 各个子命令的输入，如果为 type = "bytes" 就留空
+input = "path/to/image.jpg"
 
 # 以下选项是可选项
 center = false
