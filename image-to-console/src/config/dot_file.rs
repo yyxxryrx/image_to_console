@@ -349,7 +349,7 @@ impl From<&DotFileContent> for super::cli::Cli {
             }),
             #[cfg(feature = "url")]
             RunType::Url => make_cli!(value: Url.UrlArgs {
-                url: value.path.clone(),
+                url: value.input.clone(),
             }),
             #[cfg(feature = "gif_player")]
             RunType::Gif => {
