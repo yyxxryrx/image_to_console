@@ -37,10 +37,9 @@
         {
           default = rustPlatform.buildRustPackage {
             pname = "image_to_console";
-            version = "0.1.18";
+            version = "0.2.0";
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
-
             buildInputs = with pkgs; [
               ffmpeg
               openssl
@@ -51,6 +50,7 @@
               rustPlatform.bindgenHook # ← 核心配置
               pkg-config
             ];
+            buildAndTestSubdir = "image-to-console";
 
             cargoBuildFlags = "--bin image_to_console --all-features";
           };
