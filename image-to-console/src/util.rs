@@ -5,10 +5,11 @@ use crate::{
         ImageType::{Image, Path},
     },
 };
+#[cfg(feature = "sixel_support")]
+use image_to_console_core::quantette::ColorSpace;
 use image_to_console_core::{
     AutoResizeOption, CustomResizeOption, ResizeMode,
     processor::{ImageProcessor, ImageProcessorOptions},
-    quantette::ColorSpace,
 };
 
 pub trait CreateIPFromConfig {
@@ -282,6 +283,6 @@ pub fn get_schema_dir() -> Result<std::path::PathBuf, String> {
             }
             Ok(path)
         }
-        None => Err("Cannot get the local data dir".to_string()),
+        _ => Err("Cannot get the local data dir".to_string()),
     }
 }

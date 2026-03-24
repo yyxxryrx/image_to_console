@@ -30,7 +30,7 @@ pub struct ImageProcessorOptions {
     #[cfg(feature = "sixel")]
     pub max_colors: u16,
     #[cfg(feature = "sixel")]
-    pub color_space: quantette::ColorSpace
+    pub color_space: quantette::ColorSpace,
 }
 
 impl Default for ImageProcessorOptions {
@@ -217,7 +217,7 @@ impl ImageProcessorOptions {
         self.dither = enabled;
         self
     }
-    
+
     #[cfg(feature = "sixel")]
     pub fn option_color_space(&mut self, color_space: quantette::ColorSpace) -> &mut Self {
         self.color_space = color_space;

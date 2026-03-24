@@ -76,6 +76,22 @@ cargo build --release --features video_player
 - macOS: `brew install ffmpeg`
 - Windows: 安装 FFmpeg 并确保 DLL 文件在您的 PATH 中
 
+#### 使用 Nix
+
+```bash
+git clone https://github.com/yyxxryrx/image_to_console.git
+cd image_to_console
+
+# 编译基础版本
+nix build
+
+# 编译全功能版本
+nix build .#full
+
+# 编译精简版本
+nix build .#lite
+```
+
 ## 使用方法
 
 ### 基本用法

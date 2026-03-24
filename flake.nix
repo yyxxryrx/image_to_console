@@ -20,6 +20,7 @@
         "aarch64-darwin"
       ];
       forAllSystem = nixpkgs.lib.genAttrs supportedSystem;
+      version = "0.2.0";
     in
     {
       packages = forAllSystem (
@@ -37,22 +38,39 @@
         {
           default = rustPlatform.buildRustPackage {
             pname = "image_to_console";
-            version = "0.2.0";
+            version = version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+
+            buildAndTestSubdir = "image-to-console";
+          };
+
+          full = rustPlatform.buildRustPackage {
+            pname = "image_to_console";
+            version = version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             buildInputs = with pkgs; [
               ffmpeg
-              openssl
               alsa-lib
             ];
 
             nativeBuildInputs = with pkgs; [
-              rustPlatform.bindgenHook # ← 核心配置
+              rustPlatform.bindgenHook
               pkg-config
             ];
             buildAndTestSubdir = "image-to-console";
+            cargoBuildFlags = "--all-features";
+          };
 
-            cargoBuildFlags = "--bin image_to_console --all-features";
+          lite = rustPlatform.buildRustPackage {
+            pname = "image_to_console";
+            version = version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+
+            buildAndTestSubdir = "image-to-console";
+            cargoBuildFlags = "--no-default-features";
           };
         }
       );

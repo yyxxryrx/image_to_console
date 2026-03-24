@@ -76,6 +76,23 @@ If you want to build with video support, you need to install FFmpeg libraries fi
 - macOS: `brew install ffmpeg`
 - Windows: Install FFmpeg and ensure DLL files are in your PATH
 
+#### With Nix
+
+```bash
+git clone https://github.com/yyxxryrx/image_to_console.git
+cd image_to_console
+
+# Build basic version
+nix build
+
+# Build full version
+nix build .#full
+
+# Build lite version
+nix build .#lite
+```
+The compiled binary will be located at `result/bin/image_to_console`
+
 ## Usage
 
 ### Basic Usage
