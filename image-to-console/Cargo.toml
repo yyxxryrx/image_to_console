@@ -107,8 +107,9 @@ optional = true
 path = "../summon-schema"
 
 [dependencies.image_to_console_core]
+default-features = false
 path = "../image-to-console-core"
-features = ["auto_select", "clap_support"]
+features = ["auto_select", "clap_support", "processor"]
 
 [dependencies.image_to_console_colored]
 path = "../image-to-console-colored"

@@ -136,6 +136,7 @@ pub fn pick_audio(
     Ok(())
 }
 
+#[cfg(feature = "dot_file")]
 #[derive(Debug)]
 struct StringSpan<'a> {
     content: &'a mut std::str::Chars<'a>,
@@ -148,6 +149,7 @@ struct StringSpan<'a> {
     end_points: Vec<(usize, usize)>,
 }
 
+#[cfg(feature = "dot_file")]
 impl<'a> StringSpan<'a> {
     fn new(content: &'a mut std::str::Chars<'a>) -> Self {
         Self {

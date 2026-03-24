@@ -20,7 +20,6 @@ use image_to_console_core::{DisplayMode, ResizeMode};
 use image_to_console_renderer::audio_path::AudioPath;
 use rayon::{iter::ParallelIterator, prelude::ParallelBridge};
 use std::{io::Read, path::Path};
-use image_to_console_colored::prelude::ToColoredText;
 
 #[allow(unused)]
 #[derive(Debug, Clone, Options, Default)]

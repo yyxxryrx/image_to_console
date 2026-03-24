@@ -13,7 +13,7 @@ video_player = ["crossbeam-channel"]
 sixel_support = ["image_to_console_core/sixel"]
 
 [dependencies]
-image_to_console_core = { path = "../image-to-console-core" }
+image_to_console_core = { default-features = false, features = ["processor"], path = "../image-to-console-core" }
 image_to_console_colored = { path = "../image-to-console-colored" }
 
 [dependencies.rodio]
