@@ -1,16 +1,11 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum AudioPath {
     #[cfg(feature = "rodio")]
     Temp(std::path::PathBuf),
     #[cfg(feature = "rodio")]
     Custom(std::path::PathBuf),
+    #[default]
     None,
-}
-
-impl Default for AudioPath {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 #[cfg(feature = "rodio")]

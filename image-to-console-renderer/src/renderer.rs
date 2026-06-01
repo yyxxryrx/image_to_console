@@ -158,9 +158,6 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         let time = std::time::Instant::now();
         if back_top {
             print!("\x1b[1;1H");
-        } else {
-            // Save current cursor position
-            print!("\r\x1b[s");
         }
         println!("{}", frame);
         println!("Current frame: {index}");
@@ -171,6 +168,9 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     }
     if config.clear {
         print!("\x1bc");
+    }
+    if !config.clear {
+        print!("\x1b[s");
     }
     #[cfg(feature = "sixel_support")]
     play_frame(
