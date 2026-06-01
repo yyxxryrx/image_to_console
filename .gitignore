@@ -6,3 +6,4 @@
 .nvim.lua
 /image-to-console-core/.codeql-db
 *.sarif
+flake.lock.bak

@@ -91,6 +91,15 @@
               clippy
             ];
           };
+
+          full = pkgs.mkShell {
+            inputsFrom = [ self.packages.${system}.full ];
+            packages = with pkgs; [
+              rust-analyzer
+              clippy
+              pkg-config
+            ];
+          };
         }
       );
     };
