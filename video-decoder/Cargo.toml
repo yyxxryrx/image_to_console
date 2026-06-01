@@ -1,0 +1,11 @@
+[package]
+name = "video-decoder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ffmpeg-next = "8.1.0"
+
+[dependencies.image]
+version = "0.25.4"
+default-features = false
