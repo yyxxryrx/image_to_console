@@ -37,25 +37,26 @@ fn process_frame(frame: &ffmpeg_next::util::frame::Video) -> Option<image::RgbIm
     image::RgbImage::from_raw(width as u32, height as u32, pixels)
 }
 
-struct VideoDecoder {
-    input: ffmpeg_next::format::context::Input,
+struct VideoDecoder<'a> {
     decoder: ffmpeg_next::codec::decoder::Video,
     video_stream: usize,
-    pockets: ffmpeg_next::format::context::input::PacketIter<'_>,
+    pockets: ffmpeg_next::format::context::input::PacketIter<'a>,
     scaler: ffmpeg_next::software::scaling::Context,
     video_frame: ffmpeg_next::frame::Video,
     rgb_frame: ffmpeg_next::frame::Video,
 }
 
-impl VideoDecoder {
+impl<'a> VideoDecoder<'a> {
     pub fn new(
-        mut input: ffmpeg_next::format::context::Input,
+        input: &'a mut ffmpeg_next::format::context::Input,
         video_stream: usize,
     ) -> VideoResult<Self> {
         let Some(stream) = input.stream(video_stream) else {
             return Err(Error::InvalidStream);
         };
-        let codec = stream.codec().decoder().video()?;
+        let codec = ffmpeg_next::codec::Context::from_parameters(stream.parameters())?
+            .decoder()
+            .video()?;
         let scaler = ffmpeg_next::software::scaling::Context::get(
             codec.format(),
             codec.width(),
@@ -70,7 +71,6 @@ impl VideoDecoder {
             pockets: input.packets(),
             scaler,
             decoder: codec,
-            input,
             rgb_frame: ffmpeg_next::frame::Video::empty(),
             video_frame: ffmpeg_next::frame::Video::empty(),
         })
