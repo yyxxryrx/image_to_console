@@ -105,7 +105,7 @@ pub fn get_terminal_protocol() -> Protocol {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 /// Terminal protocol for displaying images
 ///
 /// This enum represents different terminal protocols that can be used to display images.
@@ -122,22 +122,17 @@ pub fn get_terminal_protocol() -> Protocol {
 pub enum Protocol {
     #[cfg(feature = "auto_select")]
     Auto,
+    /// Returns the default protocol, which is `Normal`
+    ///
+    /// The default protocol uses standard terminal capabilities with ASCII or Unicode
+    /// block characters to display images.
+    #[default]
     Normal,
     WezTerm,
     Kitty,
     ITerm2,
     #[cfg(feature = "sixel")]
     Sixel,
-}
-
-impl Default for Protocol {
-    /// Returns the default protocol, which is `Normal`
-    ///
-    /// The default protocol uses standard terminal capabilities with ASCII or Unicode
-    /// block characters to display images.
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 #[derive(Clone)]
@@ -316,7 +311,7 @@ impl Protocol {
     ///
     /// A new DisplayModeBuilder instance with this protocol
     pub fn builder(&self) -> DisplayModeBuilder {
-        DisplayModeBuilder::new(self.clone())
+        DisplayModeBuilder::new(*self)
     }
 }
 

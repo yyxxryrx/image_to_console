@@ -166,7 +166,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a new `ImageConverterOption` instance
-
     pub fn new(center: bool, width: u32, height: u32) -> Self {
         Self {
             center,
@@ -185,7 +184,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     #[cfg(feature = "sixel")]
     pub fn dither(&mut self, dither: bool) -> &mut Self {
         self.dither = dither;
@@ -201,7 +199,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn line_init(&mut self, line_init: String) -> &mut Self {
         self.line_init = line_init;
         self
@@ -216,7 +213,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn mode(&mut self, mode: DisplayMode) -> &mut Self {
         self.mode = mode;
         self
@@ -231,7 +227,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn black_background(&mut self, black_background: bool) -> &mut Self {
         self.black_background = black_background;
         self
@@ -246,7 +241,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn enable_compression(&mut self, enable_compression: bool) -> &mut Self {
         self.enable_compression = enable_compression;
         self
@@ -261,7 +255,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     #[cfg(feature = "sixel")]
     pub fn max_colors(&mut self, max_colors: u16) -> &mut Self {
         self.max_colors = max_colors;
@@ -277,7 +270,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn width(&mut self, width: u32) -> &mut Self {
         self.width = width;
         self
@@ -292,7 +284,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn height(&mut self, height: u32) -> &mut Self {
         self.height = height;
         self
@@ -307,7 +298,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     pub fn center(&mut self, center: bool) -> &mut Self {
         self.center = center;
         self
@@ -322,7 +312,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a mutable reference to self for chaining
-
     #[cfg(feature = "sixel")]
     pub fn quantize_method(&mut self, quantize_method: quantette::QuantizeMethod) -> &mut Self {
         self.quantize_method = quantize_method;
@@ -349,7 +338,6 @@ impl ImageConverterOption {
     /// # Returns
     ///
     /// Returns a cloned `ImageConverterOption` instance with the same settings
-
     pub fn get_options(&self) -> Self {
         self.clone()
     }
@@ -526,14 +514,11 @@ impl ImageConverter {
             } else if p2 > p1 {
                 format!("{}{}", pixel1_color.bg(), pixel2_color.fg())
             } else {
-                format!(
-                    "{}",
-                    if self.option.enable_compression {
-                        pixel1_color.bg()
-                    } else {
-                        pixel1_color.fg()
-                    }
-                )
+                if self.option.enable_compression {
+                    pixel1_color.bg()
+                } else {
+                    pixel1_color.fg()
+                }
             };
             if only_color {
                 return cur_color;
@@ -547,8 +532,6 @@ impl ImageConverter {
                 " "
             } else if pixel1_color.a < 128 {
                 "▄"
-            } else if pixel2_color.a < 128 {
-                "▀"
             } else if p1 > p2 {
                 "▀"
             } else if p2 > p1 {
@@ -558,11 +541,10 @@ impl ImageConverter {
             } else {
                 "█"
             };
-            if cur_color == last_color {
-                cur_char.to_string()
-            } else if cur_char == " "
-                && last_color.contains(&cur_color)
-                && self.option.enable_compression
+            if cur_color == last_color
+                || (cur_char == " "
+                    && last_color.contains(&cur_color)
+                    && self.option.enable_compression)
             {
                 cur_char.to_string()
             } else {
@@ -764,13 +746,7 @@ impl ImageConverter {
             image_data.len()
         );
 
-        line.push_str(
-            &STANDARD.encode(
-                chunks
-                    .nth(0)
-                    .map_or(Err(ConvertError::EmptyData), |chunk| Ok(chunk))?,
-            ),
-        );
+        line.push_str(&STANDARD.encode(chunks.nth(0).ok_or(ConvertError::EmptyData)?));
         line.push_str("\x1b\\");
         if chunks.len() > 0 {
             for chunk in chunks.clone().take(chunks.len() - 1) {
@@ -825,17 +801,12 @@ impl ImageConverter {
         use std::collections::HashMap;
 
         // tool enum
-        #[derive(Copy, Clone)]
+        #[derive(Copy, Clone, Default)]
         pub enum ColorIndexState {
             First(u8),
             Same(u8),
+            #[default]
             None,
-        }
-
-        impl Default for ColorIndexState {
-            fn default() -> Self {
-                Self::None
-            }
         }
 
         impl From<ColorIndexState> for Option<u8> {
@@ -871,8 +842,8 @@ impl ImageConverter {
         // Some tool functions
         fn get_sixel(style: &[u8; 6]) -> String {
             let mut v = 0u8;
-            for i in 0..6 {
-                v |= style[i] << i;
+            for (i, item) in style.iter().enumerate() {
+                v |= item << i;
             }
             ((v + 63) as char).to_string()
         }
@@ -891,7 +862,7 @@ impl ImageConverter {
             mut times: usize,
             char: &str,
             is_full: bool,
-            counter: &mut Vec<usize>,
+            counter: &mut [usize],
         ) -> (Option<u8>, String) {
             if !is_full {
                 times *= 2;
@@ -954,7 +925,7 @@ impl ImageConverter {
                 let mut col_indexs: Vec<[i16; 6]> = vec![[-1; 6]; width as usize];
                 let mut col_index_counter = vec![0usize; palette_count];
                 let mut same_index = ColorIndexState::default();
-                while col.len() > 0 {
+                while !col.is_empty() {
                     line.push((None, "$".to_string()));
                     let mut skip_count = 0;
                     let mut same_count = 0;
@@ -963,7 +934,7 @@ impl ImageConverter {
                         if !col.contains_key(&x) {
                             if same_count > 0 {
                                 line.push(render_same(
-                                    Option::from(same_index),
+                                    same_index.into(),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
@@ -1025,7 +996,7 @@ impl ImageConverter {
                             // And update this color and style to the same style and color
                             if same_count > 0 {
                                 line.push(render_same(
-                                    Option::from(same_index),
+                                    same_index.into(),
                                     same_count,
                                     &get_sixel(&same_style),
                                     is_full,
@@ -1044,7 +1015,7 @@ impl ImageConverter {
                     // write into this line if the counter is not zero
                     if same_count > 0 {
                         line.push(render_same(
-                            Option::from(same_index),
+                            same_index.into(),
                             same_count,
                             &get_sixel(&same_style),
                             is_full,
@@ -1088,7 +1059,7 @@ impl ImageConverter {
             .enumerate()
             .map(|(index, &count)| (index, count))
             .collect::<Vec<(usize, usize)>>();
-        index_counter.sort_by(|a, b| b.1.cmp(&a.1));
+        index_counter.sort_by_key(|item| std::cmp::Reverse(item.1));
         let index_mapping: HashMap<usize, usize, BuildNoHashHasher<usize>> = index_counter
             .iter()
             .enumerate()

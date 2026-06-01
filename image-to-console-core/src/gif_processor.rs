@@ -3,7 +3,7 @@ use gif::DisposalMethod;
 use image::{DynamicImage, ImageBuffer, Rgba};
 
 /// Processes GIF frames to create a coherent animation
-/// 
+///
 /// This handles GIF frame disposal methods and maintains the correct frame state
 /// throughout the animation sequence.
 pub struct GifFrameProcessor {
@@ -21,15 +21,15 @@ pub struct GifFrameProcessor {
 
 impl GifFrameProcessor {
     /// Create a new GIF frame processor
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `width` - Width of the GIF canvas
     /// * `height` - Height of the GIF canvas
     /// * `global_palette` - Global color palette for the GIF
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns a new GIF frame processor instance
     pub fn new(width: u32, height: u32, global_palette: Option<Vec<u8>>) -> Self {
         Self {
@@ -64,13 +64,13 @@ impl GifFrameProcessor {
     }
 
     /// Process a GIF frame and return the resulting image
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `frame` - The GIF frame to process
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns the processed frame as a DynamicImage
     pub fn process_frame(&mut self, frame: &gif::Frame) -> DynamicImage {
         self.clean_canvas();
@@ -79,10 +79,11 @@ impl GifFrameProcessor {
         }
 
         let palette = frame
-            .palette.as_ref()
+            .palette
+            .as_ref()
             .or(self.global_palette.as_ref())
             .unwrap();
-        let transparent_index = frame.transparent.map(|i| i);
+        let transparent_index = frame.transparent;
         for y in 0..frame.height {
             for x in 0..frame.width {
                 let index_in_frame = (y as usize) * (frame.width as usize) + (x as usize);

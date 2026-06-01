@@ -49,8 +49,9 @@ use image::{DynamicImage, GrayImage, RgbaImage};
 use processor::ImageProcessorOptionsCreate;
 
 /// The protocol of display
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DisplayMode {
+    #[default]
     HalfColor,
     FullColor,
     FullNoColor,
@@ -65,12 +66,6 @@ pub enum DisplayMode {
     SixelHalf,
     #[cfg(feature = "sixel")]
     SixelFull,
-}
-
-impl Default for DisplayMode {
-    fn default() -> Self {
-        Self::HalfColor
-    }
 }
 
 impl DisplayMode {

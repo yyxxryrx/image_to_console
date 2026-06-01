@@ -71,13 +71,13 @@ pub trait ImageProcessorOptionsCreate<T> {
 
 impl ImageProcessorOptionsCreate<image::DynamicImage> for ImageProcessorOptions {
     fn create_processor(&self, image: image::DynamicImage) -> ImageProcessor {
-        ImageProcessor::new(image, self.clone())
+        ImageProcessor::new(image, *self)
     }
 }
 
 impl ImageProcessorOptionsCreate<&image::DynamicImage> for ImageProcessorOptions {
     fn create_processor(&self, image: &image::DynamicImage) -> ImageProcessor {
-        ImageProcessor::new(image.clone(), self.clone())
+        ImageProcessor::new(image.clone(), *self)
     }
 }
 
@@ -225,7 +225,7 @@ impl ImageProcessorOptions {
     }
 
     pub fn get_options(&self) -> ImageProcessorOptions {
-        self.clone()
+        *self
     }
 }
 
@@ -343,8 +343,8 @@ impl ImageProcessor {
         let time = std::time::Instant::now();
         let mut air_line: usize = 0;
         let (mut w, mut h) = self.image.dimensions();
-        let (width, height) = terminal_size::terminal_size()
-            .map_or(Err(ConvertError::GetTerminalSizeError), |size| Ok(size))?;
+        let (width, height) =
+            terminal_size::terminal_size().ok_or(ConvertError::GetTerminalSizeError)?;
         match self.option.resize_mode {
             Auto(option) => {
                 if self.option.mode.is_normal() {
