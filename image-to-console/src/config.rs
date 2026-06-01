@@ -180,10 +180,10 @@ pub fn parse2(cli: Cli) -> RunMode {
                                             if let Err(e) = std::fs::create_dir_all(p) {
                                                 return Some(Err(e.to_string()));
                                             }
-                                            p.join(&path.file_stem().unwrap())
+                                            p.join(path.file_stem().unwrap())
                                         }
                                         None => {
-                                            path.parent().unwrap().join(&path.file_stem().unwrap())
+                                            path.parent().unwrap().join(path.file_stem().unwrap())
                                         }
                                     };
                                     let img = if args.read_all {
@@ -488,6 +488,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                         Err(e) => Error(e),
                     },
                     Some(DotFileSchemaSubcommands::Remove) => {
+                        use image_to_console_colored::prelude::ToColoredText;
                         if let Ok(path) = crate::util::get_schema_dir() {
                             if path.is_file() {
                                 if let Err(e) = std::fs::remove_file(&path) {

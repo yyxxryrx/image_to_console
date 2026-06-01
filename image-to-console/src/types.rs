@@ -1,7 +1,6 @@
 use clap::{ValueEnum, builder::PossibleValue};
 use image::DynamicImage;
-use std::fmt::{Debug};
-
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub enum ImageType {
@@ -20,18 +19,14 @@ impl Default for ImageType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum ClapResizeMode {
+    #[default]
     Auto,
     Custom,
     None,
 }
 
-impl Default for ClapResizeMode {
-    fn default() -> Self {
-        Self::Auto
-    }
-}
 impl ValueEnum for ClapResizeMode {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Auto, Self::Custom, Self::None]
@@ -202,17 +197,12 @@ impl FlushInterval {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub enum ColorSpace {
+    #[default]
     Srgb,
     Oklab,
     Lab,
-}
-
-impl Default for ColorSpace {
-    fn default() -> Self {
-        ColorSpace::Srgb
-    }
 }
 
 #[cfg(feature = "sixel_support")]

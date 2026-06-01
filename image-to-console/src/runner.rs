@@ -34,11 +34,10 @@ pub fn run(config: Result<Config, String>) {
                     image_to_console_renderer::config::Config::from(&config),
                 ) {
                     eprintln!(
-                        "{}: {}",
+                        "{}: {e}",
                         "error"
                             .to_colored_text()
-                            .set_foreground_color(TerminalColor::Red),
-                        e.to_string()
+                            .set_foreground_color(TerminalColor::Red)
                     );
                     std::process::exit(e.raw_os_error().unwrap_or(1))
                 }
@@ -184,12 +183,25 @@ pub fn run_video(config: Result<Config, String>) {
                                             not(feature = "sixel_support"),
                                             feature = "audio_support"
                                         ))]
-                                        render_video(rt, audio_path, fps, false, config.clear, flush_interval);
+                                        render_video(
+                                            rt,
+                                            audio_path,
+                                            fps,
+                                            false,
+                                            config.clear,
+                                            flush_interval,
+                                        );
                                         #[cfg(all(
                                             feature = "sixel_support",
                                             not(feature = "audio_support")
                                         ))]
-                                        render_video(rt, fps, config.mode.is_sixel(), config.clear, flush_interval);
+                                        render_video(
+                                            rt,
+                                            fps,
+                                            config.mode.is_sixel(),
+                                            config.clear,
+                                            flush_interval,
+                                        );
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
                                             not(feature = "audio_support")
