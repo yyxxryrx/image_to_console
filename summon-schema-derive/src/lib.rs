@@ -46,19 +46,20 @@ use proc_macro::TokenStream;
 /// # Returns
 ///
 /// A string containing all documentation comments joined by newlines
-fn get_docs(attrs: &Vec<syn::Attribute>) -> String {
+fn get_docs(attrs: &[syn::Attribute]) -> String {
     attrs
         .iter()
         .filter_map(|attr| {
-            if attr.path().is_ident("doc") {
-                if let syn::Meta::NameValue(meta) = &attr.meta {
-                    if let syn::Expr::Lit(expr_lit) = &meta.value {
-                        if let syn::Lit::Str(lit_str) = &expr_lit.lit {
-                            return Some(lit_str.value().trim().to_string());
-                        }
+            if attr.path().is_ident("doc")
+                && let syn::Meta::NameValue(meta) = &attr.meta
+            {
+                if let syn::Expr::Lit(expr_lit) = &meta.value {
+                    if let syn::Lit::Str(lit_str) = &expr_lit.lit {
+                        return Some(lit_str.value().trim().to_string());
                     }
                 }
             }
+
             None
         })
         .collect::<Vec<String>>()
@@ -84,12 +85,10 @@ fn to_kebab_case(name: &str) -> String {
     let mut segments = vec![];
     let mut s = String::new();
     for c in name.chars() {
-        if c == '_' {
-            if !s.is_empty() {
-                segments.push(s.clone());
-                s.clear();
-                continue;
-            }
+        if c == '_' && !s.is_empty() {
+            segments.push(s.clone());
+            s.clear();
+            continue;
         }
         if c.is_uppercase() {
             if !s.is_empty() {
@@ -170,19 +169,19 @@ impl From<String> for Style {
 /// # Returns
 ///
 /// The determined Style variant
-fn get_style(attrs: &Vec<syn::Attribute>) -> Style {
+fn get_style(attrs: &[syn::Attribute]) -> Style {
     let mut style = Style::None;
     for attr in attrs.iter() {
-        if attr.meta.path().is_ident("serde") {
-            if let syn::Meta::List(list) = &attr.meta {
-                list.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("rename_all") {
-                        style = meta.value()?.parse::<syn::LitStr>()?.value().into();
-                    }
-                    Ok(())
-                })
-                .unwrap()
-            }
+        if attr.meta.path().is_ident("serde")
+            && let syn::Meta::List(list) = &attr.meta
+        {
+            list.parse_nested_meta(|meta| {
+                if meta.path.is_ident("rename_all") {
+                    style = meta.value()?.parse::<syn::LitStr>()?.value().into();
+                }
+                Ok(())
+            })
+            .unwrap()
         }
     }
     style
@@ -209,25 +208,25 @@ enum DefaultType {
 /// # Returns
 ///
 /// A DefaultType indicating how defaults should be handled
-fn get_default(attrs: &Vec<syn::Attribute>) -> DefaultType {
+fn get_default(attrs: &[syn::Attribute]) -> DefaultType {
     let mut ty = DefaultType::None;
     for attr in attrs.iter() {
-        if attr.meta.path().is_ident("serde") {
-            if let syn::Meta::List(list) = &attr.meta {
-                _ = list.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("default") {
-                        match meta.value() {
-                            Ok(val) => {
-                                ty = DefaultType::Call(syn::parse_str::<syn::Path>(
-                                    &val.parse::<syn::LitStr>()?.value(),
-                                )?)
-                            }
-                            Err(..) => ty = DefaultType::DefaultValue,
+        if attr.meta.path().is_ident("serde")
+            && let syn::Meta::List(list) = &attr.meta
+        {
+            _ = list.parse_nested_meta(|meta| {
+                if meta.path.is_ident("default") {
+                    match meta.value() {
+                        Ok(val) => {
+                            ty = DefaultType::Call(syn::parse_str::<syn::Path>(
+                                &val.parse::<syn::LitStr>()?.value(),
+                            )?)
                         }
+                        Err(..) => ty = DefaultType::DefaultValue,
                     }
-                    Ok(())
-                });
-            }
+                }
+                Ok(())
+            });
         }
     }
     ty
@@ -259,35 +258,35 @@ struct Args {
 /// # Returns
 ///
 /// An Args struct containing the parsed configuration
-fn parse_args(attrs: &Vec<syn::Attribute>) -> Args {
+fn parse_args(attrs: &[syn::Attribute]) -> Args {
     let mut args = Args::default();
     for attr in attrs.iter() {
-        if attr.meta.path().is_ident("schema") {
-            if let syn::Meta::List(list) = &attr.meta {
-                list.parse_nested_meta(|meta| {
-                    match &meta.path {
-                        path if path.is_ident("required") => args.required = true,
-                        path if path.is_ident("no_default") => args.no_default = true,
-                        path if path.is_ident("minimum") => {
-                            args.minimum = Some(meta.value()?.parse::<syn::Lit>()?);
-                        }
-                        path if path.is_ident("maximum") => {
-                            args.maximum = Some(meta.value()?.parse::<syn::Lit>()?);
-                        }
-                        _ => {
-                            return Err(meta.error(&format!(
-                                "Unknown attribute: `{}`",
-                                meta.path
-                                    .get_ident()
-                                    .map(|ident| ident.to_string())
-                                    .unwrap_or_default()
-                            )));
-                        }
+        if attr.meta.path().is_ident("schema")
+            && let syn::Meta::List(list) = &attr.meta
+        {
+            list.parse_nested_meta(|meta| {
+                match &meta.path {
+                    path if path.is_ident("required") => args.required = true,
+                    path if path.is_ident("no_default") => args.no_default = true,
+                    path if path.is_ident("minimum") => {
+                        args.minimum = Some(meta.value()?.parse::<syn::Lit>()?);
                     }
-                    Ok(())
-                })
-                .unwrap();
-            }
+                    path if path.is_ident("maximum") => {
+                        args.maximum = Some(meta.value()?.parse::<syn::Lit>()?);
+                    }
+                    _ => {
+                        return Err(meta.error(format!(
+                            "Unknown attribute: `{}`",
+                            meta.path
+                                .get_ident()
+                                .map(|ident| ident.to_string())
+                                .unwrap_or_default()
+                        )));
+                    }
+                }
+                Ok(())
+            })
+            .unwrap();
         }
     }
     args
@@ -320,12 +319,12 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
                 let ty = f.ty.clone();
                 let args = parse_args(&f.attrs);
                 let ty = if let syn::Type::Path(mut path) = ty {
-                    if let Some(s) = path.path.segments.last_mut() {
-                        if let syn::PathArguments::AngleBracketed(args) = &mut s.arguments {
-                            if let None = args.colon2_token {
-                                args.colon2_token =
-                                    Some(syn::Token![::](proc_macro2::Span::call_site()));
-                            }
+                    if let Some(s) = path.path.segments.last_mut()
+                        && let syn::PathArguments::AngleBracketed(args) = &mut s.arguments
+                    {
+                        if args.colon2_token.is_none() {
+                            args.colon2_token =
+                                Some(syn::Token![::](proc_macro2::Span::call_site()));
                         }
                     }
                     syn::Type::Path(path)
@@ -353,14 +352,14 @@ fn schema_struct(input: &syn::DeriveInput, data: &syn::DataStruct, style: Style)
                 if args.required {
                     required.push(key.clone());
                 }
-                let min = if let Some(min) =  args.minimum {
+                let min = if let Some(min) = args.minimum {
                     quote::quote! {
                         "minimum": #min,
                     }
                 } else {
                     Default::default()
                 };
-                let max = if let Some(max) =  args.maximum {
+                let max = if let Some(max) = args.maximum {
                     quote::quote! {
                         "maximum": #max,
                     }
@@ -521,8 +520,18 @@ mod tests {
 
     #[test]
     fn test_name_converter() {
-        assert_eq!(Style::Lowercase.convert("Hello_World".to_string()), "hello_world");
-        assert_eq!(Style::Uppercase.convert("Hello_World".to_string()), "HELLO_WORLD");
-        assert_eq!(Style::KebabCase.convert("Hello_World".to_string()), "hello-world");
+        assert_eq!(
+            Style::Lowercase.convert("Hello_World".to_string()),
+            "hello_world"
+        );
+        assert_eq!(
+            Style::Uppercase.convert("Hello_World".to_string()),
+            "HELLO_WORLD"
+        );
+        assert_eq!(
+            Style::KebabCase.convert("Hello_World".to_string()),
+            "hello-world"
+        );
     }
 }
+
