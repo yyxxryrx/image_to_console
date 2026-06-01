@@ -1,6 +1,6 @@
 use crate::colors::TerminalColor;
-use std::fmt::{Display, Formatter};
 use crate::styles::Styles;
+use std::fmt::{Display, Formatter};
 
 pub struct TextHeader {
     foreground_color: Option<String>,
@@ -82,7 +82,7 @@ impl Text {
         self.head.background_color = Some(format!("\x1b[48;2;{};{};{}m", r, g, b));
         self
     }
-    
+
     pub fn set_style(&mut self, style: Styles) -> &mut Self {
         self.head.style = Some(style.to_string());
         self
@@ -91,6 +91,6 @@ impl Text {
 
 impl Display for Text {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}\x1b[0m", self.head.to_string(), self.content)
+        write!(f, "{}{}\x1b[0m", self.head, self.content)
     }
 }
