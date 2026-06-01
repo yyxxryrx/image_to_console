@@ -3,8 +3,6 @@ mod error;
 
 pub use error::*;
 
-pub type FFmpegResult<T> = Result<T, ffmpeg_next::Error>;
-
 pub struct VideoFrame {
     pub pts: Option<i64>,
     pub frame: image::RgbImage,
@@ -16,7 +14,7 @@ impl VideoFrame {
     }
 }
 
-fn process_frame(frame: &ffmpeg_next::util::frame::Video) -> Option<image::RgbImage> {
+fn process_frame(frame: &ffmpeg_next::util::frame::Video) -> VideoResult<image::RgbImage> {
     let width = frame.width() as usize;
     let height = frame.height() as usize;
     let stride = frame.stride(0);
@@ -34,7 +32,7 @@ fn process_frame(frame: &ffmpeg_next::util::frame::Video) -> Option<image::RgbIm
             pixels.extend_from_slice(&data[start..end]);
         }
     }
-    image::RgbImage::from_raw(width as u32, height as u32, pixels)
+    image::RgbImage::from_raw(width as u32, height as u32, pixels).ok_or(Error::ToImageFailed)
 }
 
 struct VideoDecoder<'a> {
@@ -76,22 +74,30 @@ impl<'a> VideoDecoder<'a> {
         })
     }
 
-    pub fn read_frame(&mut self) -> FFmpegResult<Option<VideoFrame>> {
+    fn read_frame(&mut self) -> VideoResult<Option<VideoFrame>> {
         if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
             self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
-            return Ok(process_frame(&self.rgb_frame)
-                .map(|img| VideoFrame::new(img, self.rgb_frame.pts())));
+            let img = process_frame(&self.rgb_frame)?;
+            return Ok(Some(VideoFrame::new(img, self.rgb_frame.pts())));
         }
         while let Some((stream, packet)) = self.pockets.next() {
             if stream.index() == self.video_stream {
                 self.decoder.send_packet(&packet)?;
                 if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
                     self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
-                    return Ok(process_frame(&self.rgb_frame)
-                        .map(|img| VideoFrame::new(img, packet.pts())));
+                    return process_frame(&self.rgb_frame)
+                        .map(|img| Some(VideoFrame::new(img, packet.pts())));
                 }
             }
         }
         Ok(None)
+    }
+}
+
+impl<'a> std::iter::Iterator for VideoDecoder<'a> {
+    type Item = VideoResult<VideoFrame>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.read_frame().transpose()
     }
 }
