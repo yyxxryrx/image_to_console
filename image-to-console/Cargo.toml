@@ -22,6 +22,7 @@ categories = [
 default = ["url", "gif_player", "sixel_support", "use_crossterm"]
 url = ["ureq"]
 video_player = [
+    "video-decoder",
     "ndarray",
     "video-rs",
     "ffmpeg-next",
@@ -105,6 +106,10 @@ path = "../build-options"
 [dependencies.summon-schema]
 optional = true
 path = "../summon-schema"
+
+[dependencies.video-decoder]
+optional = true
+path = "../video-decoder"
 
 [dependencies.image_to_console_core]
 default-features = false
