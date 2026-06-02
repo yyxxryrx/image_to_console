@@ -372,72 +372,59 @@ pub fn parse2(cli: Cli) -> RunMode {
                 // We will to use ffmpeg-next lib to do this
                 use crate::{errors::FrameError, types::VideoEvent::*};
 
-                use image::{DynamicImage, Rgb};
-
                 // create frame channel
 
                 // Open the video file
-                let mut video = match video_rs::Decoder::new(Path::new(&args.path)) {
-                    Ok(video) => video,
+                let mut video = match video_decoder::open(&args.path) {
+                    Ok(v) => v,
                     Err(err) => {
                         etx.send(Err(err.to_string())).unwrap();
                         return;
                     }
                 };
-                let (width, height) = video.size();
-                let (vtx, vrx) = bounded(video.frame_rate().ceil() as usize);
+                let decoder = match video.video_decoder() {
+                    Ok(d) => d,
+                    Err(err) => {
+                        etx.send(Err(err.to_string())).unwrap();
+                        return;
+                    }
+                };
+                let (vtx, vrx) = bounded(decoder.frame_rate().ceil() as usize);
 
                 // tell the channel
                 #[cfg(not(feature = "audio_support"))]
                 etx.send(Ok(Initialized((vrx, video.frame_rate()))))
                     .unwrap();
                 #[cfg(feature = "audio_support")]
-                etx.send(Ok(Initialized((vrx, audio_path, video.frame_rate()))))
+                etx.send(Ok(Initialized((vrx, audio_path, decoder.frame_rate()))))
                     .unwrap();
-                std::thread::spawn(move || {
-                    let mut frame_counter = 0usize;
-                    for frame in video.decode_iter() {
-                        match frame {
-                            Ok((_, frame)) => {
-                                let data = frame
-                                    .slice(ndarray::s![.., .., ..])
-                                    .to_slice()
-                                    .map(|data| data.to_vec());
-                                match data {
-                                    Some(data) => {
-                                        let img = image::ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(
-                                            width, height, data,
-                                        )
-                                        .map(|img| DynamicImage::from(img));
-                                        match img {
-                                            Some(img) => {
-                                                vtx.send(Ok((img, frame_counter))).unwrap()
-                                            }
-                                            None => vtx
-                                                .send(Err(FrameError::Other(
-                                                    "Failed to create the image".to_string(),
-                                                )))
-                                                .unwrap(),
-                                        }
-                                        frame_counter += 1;
-                                    }
-                                    // None => {},
-                                    None => vtx.send(Err(FrameError::DecodeError)).unwrap(),
+                std::thread::scope(|s| {
+                    s.spawn(|| {
+                        let mut frame_counter = 0usize;
+                        let frames = match decoder.frames() {
+                            Ok(f) => f,
+                            Err(e) => {
+                                vtx.send(Err(FrameError::Other(e.to_string()))).unwrap();
+                                return;
+                            }
+                        };
+                        for frame in frames {
+                            match frame {
+                                Ok(frame) => {
+                                    vtx.send(Ok((frame.frame.into(), frame_counter))).unwrap();
+                                    frame_counter += 1;
+                                }
+                                // Other errors
+                                Err(err) => {
+                                    vtx.send(Err(FrameError::Other(err.to_string()))).unwrap()
                                 }
                             }
-                            // EOF
-                            Err(
-                                video_rs::error::Error::ReadExhausted
-                                | video_rs::error::Error::DecodeExhausted,
-                            ) => break,
-                            // Other errors
-                            Err(err) => vtx.send(Err(FrameError::Other(err.to_string()))).unwrap(),
                         }
-                    }
-                    vtx.send(Err(FrameError::EOF)).unwrap();
-                })
-                .join()
-                .unwrap();
+                        vtx.send(Err(FrameError::EOF)).unwrap();
+                    })
+                    .join()
+                    .unwrap();
+                });
                 etx.send(Ok(Finished)).unwrap();
             });
             Video(Ok(Config::from(&cli2)
