@@ -1,4 +1,5 @@
 mod sixel;
+mod unicode;
 
 use crate::{
     DisplayMode::{self, *},
@@ -39,66 +40,6 @@ impl PixelColor {
         format!("\x1b[38;2;{};{};{}m", self.r, self.g, self.b)
     }
 }
-
-/// Represents a no-color pixel with different display options
-struct NoColorPixel {
-    /// Top half character
-    top: &'static str,
-    /// Full character
-    full: &'static str,
-    /// Bottom half character
-    bottom: &'static str,
-    /// Whether to separate top and bottom
-    sep: bool,
-    /// Lower bound of intensity range
-    from: usize,
-    /// Upper bound of intensity range
-    to: usize,
-}
-
-// experimental
-const NO_COLOR_PIXELS: [NoColorPixel; 5] = [
-    NoColorPixel {
-        top: "▘",
-        full: "▮",
-        bottom: "▖",
-        sep: true,
-        from: 153,
-        to: 204,
-    },
-    NoColorPixel {
-        top: "",
-        full: "▪",
-        bottom: "",
-        sep: false,
-        from: 122,
-        to: 204,
-    },
-    NoColorPixel {
-        top: "",
-        bottom: "",
-        full: "▫",
-        sep: false,
-        from: 100,
-        to: 204,
-    },
-    NoColorPixel {
-        top: "",
-        bottom: "",
-        full: ",",
-        sep: false,
-        from: 75,
-        to: 204,
-    },
-    NoColorPixel {
-        top: "",
-        bottom: "",
-        full: ".",
-        sep: false,
-        from: 51,
-        to: 204,
-    },
-];
 
 /// Options for the image converter
 #[derive(Debug, Clone)]
@@ -596,35 +537,7 @@ impl ImageConverter {
     /// Returns a string representing the converted pixel
     fn no_color_convert(&self, x: u32, y: u32) -> String {
         if let ProcessedImage::NoColor(luma_img) = &self.img {
-            let pixel1 = luma_img.get_pixel(x, y * 2);
-            let pixel2 = luma_img.get_pixel(x, y * 2 + 1);
-            let p1 = pixel1.0[0] as usize;
-            let p2 = pixel2.0[0] as usize;
-            // Choose a pixel one by one to see if it matches the current pixel
-            for pixel in NO_COLOR_PIXELS.iter() {
-                if pixel.sep {
-                    if pixel.from < p1 && p1 < pixel.to && pixel.from < p2 && p2 < pixel.to {
-                        return pixel.full.to_string();
-                    } else if pixel.from < p1 && p1 < pixel.to {
-                        return pixel.top.to_string();
-                    } else if pixel.from < p2 && p2 < pixel.to {
-                        return pixel.bottom.to_string();
-                    }
-                } else {
-                    if (pixel.from < p1 || pixel.from < p2) && (p1 < pixel.to && p2 < pixel.to) {
-                        return pixel.full.to_string();
-                    }
-                }
-            }
-            if p1 > 128 && p2 > 128 {
-                "█".to_string()
-            } else if p1 > 128 {
-                "▀".to_string()
-            } else if p2 > 128 {
-                "▄".to_string()
-            } else {
-                " ".to_string()
-            }
+            unicode::luma_convert(luma_img, x, y)
         } else {
             panic!("Invalid image type")
         }
@@ -827,16 +740,5 @@ mod tests {
         let color = PixelColor::from_channels([255, 128, 64, 255]);
         let fg = color.fg();
         assert_eq!(fg, "\x1b[38;2;255;128;64m");
-    }
-
-    #[test]
-    fn test_no_color_pixel_struct() {
-        let pixel = &NO_COLOR_PIXELS[0];
-        assert_eq!(pixel.top, "▘");
-        assert_eq!(pixel.full, "▮");
-        assert_eq!(pixel.bottom, "▖");
-        assert!(pixel.sep);
-        assert_eq!(pixel.from, 153);
-        assert_eq!(pixel.to, 204);
     }
 }
