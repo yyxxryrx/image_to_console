@@ -4,6 +4,7 @@ pub type VideoResult<T> = Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
+    CannotFindVideoStream,
     InvalidStream,
     ToImageFailed,
     FFmpegError(ffmpeg_next::Error),
@@ -12,6 +13,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::CannotFindVideoStream => write!(f, "Cannot find video stream"),
             Self::InvalidStream => write!(f, "Invalid video stream"),
             Self::ToImageFailed => write!(f, "To image failed"),
             Self::FFmpegError(err) => write!(f, "FFmpeg Error: {err}"),
