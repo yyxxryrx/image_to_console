@@ -35,7 +35,7 @@ fn process_frame(frame: &ffmpeg_next::util::frame::Video) -> VideoResult<image::
     image::RgbImage::from_raw(width as u32, height as u32, pixels).ok_or(Error::ToImageFailed)
 }
 
-struct VideoDecoder<'a> {
+pub struct VideoDecoder<'a> {
     decoder: ffmpeg_next::codec::decoder::Video,
     video_stream: usize,
     pockets: ffmpeg_next::format::context::input::PacketIter<'a>,
@@ -82,19 +82,30 @@ impl<'a> VideoDecoder<'a> {
         }
         while let Some((stream, packet)) = self.pockets.next() {
             if stream.index() == self.video_stream {
-                self.decoder.send_packet(&packet)?;
+                match self.decoder.send_packet(&packet) {
+                    Err(ffmpeg_next::Error::Other { errno })
+                        if errno == ffmpeg_next::error::EAGAIN => {}
+                    Err(e) => return Err(e.into()),
+                    _ => {}
+                }
                 if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
                     self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
                     return process_frame(&self.rgb_frame)
-                        .map(|img| Some(VideoFrame::new(img, packet.pts())));
+                        .map(|img| Some(VideoFrame::new(img, self.video_frame.pts())));
                 }
             }
+        }
+
+        if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
+            self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
+            let img = process_frame(&self.rgb_frame)?;
+            return Ok(Some(VideoFrame::new(img, self.rgb_frame.pts())));
         }
         Ok(None)
     }
 }
 
-impl<'a> std::iter::Iterator for VideoDecoder<'a> {
+impl<'a> Iterator for VideoDecoder<'a> {
     type Item = VideoResult<VideoFrame>;
 
     fn next(&mut self) -> Option<Self::Item> {
