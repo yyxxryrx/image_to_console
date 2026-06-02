@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Video Decoder Module**: Introduced the `video-decoder` crate with frame extraction, error handling, and lifetime-aware decoding capabilities [#c895c4b, #469e647, #204ecf5, #73255d3]
+- Integrated `video-decoder` as an optional dependency in the CLI crate with `video_player` feature [#04dd33d]
+- **Processor Feature Support**: Added `processor` feature across workspace crates with updated dependency configuration [#ce25843]
+- **Full Development Shell**: Added complete development shell configuration with updated toolchain dependencies [#37c59bd]
+- Added `ToImageFailed` error variant for improved video decoding error handling [#469e647]
+- Updated Nix Flake configuration with additional build packages and subdirectory build support [#db088f6, #a852950]
+
+### Fixed
+
+- Fixed URL parameter passing error in `dot_file` command [#0ed8dc4]
+- Fixed video decoder error handling and frame extraction logic [#7edad71]
+
+### Refactor
+
+- Extracted Sixel conversion logic into dedicated module `converter/sixel` [#d2763ed]
+- Extracted Unicode conversion logic into dedicated module `converter/unicode` [#52c8af8]
+- Restructured `VideoDecoder` with lifetime parameters and improved implementation [#204ecf5, #73255d3]
+- Replaced manual `Drop` implementation with `Default` derive for `AudioPath` [#be58916]
+- Updated function signatures and improved code style in `summon-schema-derive` [#4b9cf89]
+- Removed unnecessary dereference in file path joining [#be0c836]
+- Reordered imports and simplified display implementation in `image-to-console-colored` [#6a5c945]
+- Removed redundant blank lines and optimized code structure [#39283ae]
+
+### Dependencies
+
+- Updated project dependencies to latest compatible versions [#b5ee3c0]
+
 ## [v0.2.0] - 2026-03-22
 
 ### Added

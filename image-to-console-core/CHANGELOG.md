@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename `dither_method` to `quantize_method` in `ImageConverterOption`
 
+### Refactor
+
+- Extract Sixel conversion logic into dedicated `converter/sixel` module
+- Extract Unicode conversion logic into dedicated `converter/unicode` module
+- Remove redundant blank lines and optimize code structure
+
 ## [v0.2.2] - 2025-11-06
 
 ### Added
