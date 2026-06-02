@@ -36,11 +36,10 @@ pub struct VideoDecoder<'a> {
     decoder: ffmpeg_next::codec::decoder::Video,
     video_stream: usize,
     pockets: ffmpeg_next::format::context::input::PacketIter<'a>,
-    scaler: ffmpeg_next::software::scaling::Context,
     video_frame: ffmpeg_next::frame::Video,
-    rgb_frame: ffmpeg_next::frame::Video,
     width: u32,
     height: u32,
+    rate: f32,
 }
 
 impl<'a> VideoDecoder<'a> {
@@ -54,6 +53,28 @@ impl<'a> VideoDecoder<'a> {
         let codec = ffmpeg_next::codec::Context::from_parameters(stream.parameters())?
             .decoder()
             .video()?;
+        let rate = codec.frame_rate().ok_or(Error::GetVideoInfoFailed)?;
+        Ok(Self {
+            video_stream,
+            pockets: input.packets(),
+            width: codec.width(),
+            height: codec.height(),
+            rate: rate.0 as f32 / rate.1 as f32,
+            decoder: codec,
+            video_frame: ffmpeg_next::frame::Video::empty(),
+        })
+    }
+
+    pub fn size(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
+
+    pub fn frame_rate(&self) -> f32 {
+        self.rate
+    }
+
+    pub fn frames(self) -> VideoResult<VideoFrames<'a>> {
+        let codec = &self.decoder;
         let scaler = ffmpeg_next::software::scaling::Context::get(
             codec.format(),
             codec.width(),
@@ -63,27 +84,12 @@ impl<'a> VideoDecoder<'a> {
             codec.height(),
             ffmpeg_next::software::scaling::Flags::BILINEAR,
         )?;
-        Ok(Self {
-            video_stream,
-            pockets: input.packets(),
-            scaler,
-            width: codec.width(),
-            height: codec.height(),
-            decoder: codec,
-            rgb_frame: ffmpeg_next::frame::Video::empty(),
-            video_frame: ffmpeg_next::frame::Video::empty(),
-        })
+        Ok(VideoFrames::new(self, scaler))
     }
 
-    pub fn size(&self) -> (u32, u32) {
-        (self.width, self.height)
-    }
-
-    fn read_frame(&mut self) -> VideoResult<Option<VideoFrame>> {
+    fn read_frame(&mut self) -> VideoResult<Option<ffmpeg_next::util::frame::Video>> {
         if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
-            self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
-            let img = process_frame(&self.rgb_frame)?;
-            return Ok(Some(VideoFrame::new(img, self.rgb_frame.pts())));
+            return Ok(Some(self.video_frame.clone()));
         }
         while let Some((stream, packet)) = self.pockets.next() {
             if stream.index() == self.video_stream {
@@ -94,26 +100,55 @@ impl<'a> VideoDecoder<'a> {
                     _ => {}
                 }
                 if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
-                    self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
-                    return process_frame(&self.rgb_frame)
-                        .map(|img| Some(VideoFrame::new(img, self.video_frame.pts())));
+                    return Ok(Some(self.video_frame.clone()));
                 }
             }
         }
 
         if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
-            self.scaler.run(&self.video_frame, &mut self.rgb_frame)?;
-            let img = process_frame(&self.rgb_frame)?;
-            return Ok(Some(VideoFrame::new(img, self.rgb_frame.pts())));
+            return Ok(Some(self.video_frame.clone()));
         }
         Ok(None)
     }
 }
 
 impl<'a> Iterator for VideoDecoder<'a> {
-    type Item = VideoResult<VideoFrame>;
+    type Item = VideoResult<ffmpeg_next::util::frame::Video>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.read_frame().transpose()
+    }
+}
+
+pub struct VideoFrames<'a> {
+    decoder: VideoDecoder<'a>,
+    scaler: ffmpeg_next::software::scaling::Context,
+    rgb_frame: ffmpeg_next::frame::Video,
+}
+
+impl<'a> VideoFrames<'a> {
+    pub fn new(decoder: VideoDecoder<'a>, scaler: ffmpeg_next::software::scaling::Context) -> Self {
+        Self {
+            decoder,
+            scaler,
+            rgb_frame: ffmpeg_next::util::frame::Video::empty(),
+        }
+    }
+
+    fn forward(&mut self) -> VideoResult<Option<VideoFrame>> {
+        let Some(frame) = self.decoder.read_frame()? else {
+            return Ok(None);
+        };
+        self.scaler.run(&frame, &mut self.rgb_frame)?;
+        let img = process_frame(&self.rgb_frame)?;
+        Ok(Some(VideoFrame::new(img, frame.pts())))
+    }
+}
+
+impl<'a> Iterator for VideoFrames<'a> {
+    type Item = VideoResult<VideoFrame>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.forward().transpose()
     }
 }
