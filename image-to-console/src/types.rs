@@ -51,7 +51,7 @@ pub enum VideoEvent {
     #[cfg(not(feature = "audio_support"))]
     Initialized(
         (
-            crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>,
+            crossbeam_channel::Receiver<Result<(DynamicImage, usize, Option<std::time::Duration>), crate::errors::FrameError>>,
             f32,
         ),
     ),

@@ -393,7 +393,7 @@ pub fn parse2(cli: Cli) -> RunMode {
 
                 // tell the channel
                 #[cfg(not(feature = "audio_support"))]
-                etx.send(Ok(Initialized((vrx, video.frame_rate()))))
+                etx.send(Ok(Initialized((vrx, decoder.frame_rate()))))
                     .unwrap();
                 #[cfg(feature = "audio_support")]
                 etx.send(Ok(Initialized((vrx, audio_path, decoder.frame_rate()))))
@@ -411,7 +411,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                         for frame in frames {
                             match frame {
                                 Ok(frame) => {
-                                    vtx.send(Ok((frame.frame.into(), frame_counter))).unwrap();
+                                    vtx.send(Ok((frame.frame.into(), frame_counter, frame.pts))).unwrap();
                                     frame_counter += 1;
                                 }
                                 // Other errors

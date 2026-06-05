@@ -11,13 +11,12 @@ use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 use std::time::Duration;
 
-pub fn err(err_msg: String) {
+pub fn err(err_msg: String) -> ! {
     eprintln!(
-        "{}: {}",
+        "{}: {err_msg}",
         "error"
             .to_colored_text()
             .set_foreground_color(TerminalColor::Red),
-        err_msg
     );
     std::process::exit(1)
 }
@@ -64,7 +63,7 @@ pub fn run_video(config: Result<Config, String>) {
                     use image_to_console_renderer::frame::Frame;
                     use image_to_console_renderer::renderer::render_gif;
                     let (st, rt) = bounded::<Frame>(config_clone.fps.unwrap_or(30) as _);
-                    // Process the evey frame image
+                    // Process the every frame image
                     let task = std::thread::spawn(move || {
                         for frame in gif {
                             match frame {
@@ -129,7 +128,7 @@ pub fn run_video(config: Result<Config, String>) {
                                                     break;
                                                 }
                                                 Ok(frame) => match frame {
-                                                    Ok((frame, index)) => {
+                                                    Ok((frame, index, _)) => {
                                                         let mut frame_config = config_clone.clone();
                                                         frame_config.image =
                                                             ImageType::Image(frame);
