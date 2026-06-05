@@ -1,12 +1,12 @@
 use crate::{Error, VideoResult};
 
 pub struct VideoFrame {
-    pub pts: Option<i64>,
+    pub pts: Option<std::time::Duration>,
     pub frame: image::RgbImage,
 }
 
 impl VideoFrame {
-    pub fn new(frame: image::RgbImage, pts: Option<i64>) -> Self {
+    pub fn new(frame: image::RgbImage, pts: Option<std::time::Duration>) -> Self {
         Self { frame, pts }
     }
 }
@@ -40,6 +40,7 @@ pub struct VideoDecoder<'a> {
     width: u32,
     height: u32,
     rate: f32,
+    time_base: f64,
 }
 
 impl<'a> VideoDecoder<'a> {
@@ -59,6 +60,10 @@ impl<'a> VideoDecoder<'a> {
             pockets: input.packets(),
             width: codec.width(),
             height: codec.height(),
+            time_base: {
+                let time_base = codec.time_base();
+                time_base.0 as f64 / time_base.1 as f64
+            },
             rate: rate.0 as f32 / rate.1 as f32,
             decoder: codec,
             video_frame: ffmpeg_next::frame::Video::empty(),
@@ -141,7 +146,12 @@ impl<'a> VideoFrames<'a> {
         };
         self.scaler.run(&frame, &mut self.rgb_frame)?;
         let img = process_frame(&self.rgb_frame)?;
-        Ok(Some(VideoFrame::new(img, frame.pts())))
+        Ok(Some(VideoFrame::new(
+            img,
+            frame
+                .pts()
+                .map(|pts| std::time::Duration::from_secs_f64(pts as f64 / self.decoder.time_base)),
+        )))
     }
 }
 
