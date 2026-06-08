@@ -391,17 +391,18 @@ pub fn parse2(cli: Cli) -> RunMode {
                 };
                 let (vtx, vrx) = bounded(decoder.frame_rate().ceil() as usize);
 
+                let pos = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
                 // tell the channel
                 #[cfg(not(feature = "audio_support"))]
                 etx.send(Ok(Initialized((vrx, decoder.frame_rate()))))
                     .unwrap();
                 #[cfg(feature = "audio_support")]
-                etx.send(Ok(Initialized((vrx, audio_path, decoder.frame_rate()))))
+                etx.send(Ok(Initialized((vrx, audio_path, decoder.frame_rate(), pos.clone()))))
                     .unwrap();
                 std::thread::scope(|s| {
                     s.spawn(|| {
                         let mut frame_counter = 0usize;
-                        let frames = match decoder.frames() {
+                        let frames = match decoder.frames_with_pos(pos.clone()) {
                             Ok(f) => f,
                             Err(e) => {
                                 vtx.send(Err(FrameError::Other(e.to_string()))).unwrap();

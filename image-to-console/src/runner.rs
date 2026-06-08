@@ -114,12 +114,18 @@ pub fn run_video(config: Result<Config, String>) {
                                 }
                                 Initialized(args) => {
                                     #[cfg(not(feature = "audio_support"))]
-                                    let (vrx, fps) = args;
+                                    let (vrx, fps, sync_pos) = args;
                                     #[cfg(feature = "audio_support")]
-                                    let (vrx, audio_path, fps) = args;
+                                    let (vrx, audio_path, fps, sync_pos) = args;
                                     let (st, rt) = bounded(10);
                                     let flush_interval = config_clone.flush_interval.to_frames(fps);
                                     let config_clone = config_clone.clone();
+
+                                    let per_frame = Duration::from_secs_f32(1f32 / fps);
+
+                                    let mut spare = true;
+
+                                    let pos = sync_pos.clone();
                                     let task = std::thread::spawn(move || {
                                         loop {
                                             match vrx.recv() {
@@ -128,10 +134,26 @@ pub fn run_video(config: Result<Config, String>) {
                                                     break;
                                                 }
                                                 Ok(frame) => match frame {
-                                                    Ok((frame, index, _)) => {
+                                                    Ok((frame, index, pts)) => {
+                                                        if let Some(pts) = pts {
+                                                            let p = Duration::from_millis(pos.load(
+                                                                std::sync::atomic::Ordering::SeqCst,
+                                                            ))
+                                                                .saturating_sub(pts)
+                                                                .as_millis();
+
+                                                            if p > 100 && spare {
+                                                                continue;
+                                                            }
+
+                                                            if p > 300 {
+                                                                continue;
+                                                            }
+                                                        }
                                                         let mut frame_config = config_clone.clone();
                                                         frame_config.image =
                                                             ImageType::Image(frame);
+                                                        let timer = std::time::Instant::now();
                                                         match ImageProcessor::from_config(
                                                             &frame_config,
                                                         ) {
@@ -141,6 +163,7 @@ pub fn run_video(config: Result<Config, String>) {
                                                                         .send((
                                                                             result.lines.join("\n"),
                                                                             index,
+                                                                            pts,
                                                                         ))
                                                                         .map_err(|e| {
                                                                             err(e.to_string())
@@ -153,6 +176,7 @@ pub fn run_video(config: Result<Config, String>) {
                                                                 err(e);
                                                             }
                                                         }
+                                                        spare = timer.elapsed() <= per_frame;
                                                     }
                                                     Err(EOF) => break,
                                                     Err(DecodeError) => {
@@ -177,6 +201,7 @@ pub fn run_video(config: Result<Config, String>) {
                                             config.mode.is_sixel(),
                                             config.clear,
                                             flush_interval,
+                                            sync_pos,
                                         );
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
@@ -189,6 +214,7 @@ pub fn run_video(config: Result<Config, String>) {
                                             false,
                                             config.clear,
                                             flush_interval,
+                                            sync_pos,
                                         );
                                         #[cfg(all(
                                             feature = "sixel_support",
@@ -200,12 +226,20 @@ pub fn run_video(config: Result<Config, String>) {
                                             config.mode.is_sixel(),
                                             config.clear,
                                             flush_interval,
+                                            sync_pos,
                                         );
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
                                             not(feature = "audio_support")
                                         ))]
-                                        render_video(rt, fps, false, config.clear, flush_interval);
+                                        render_video(
+                                            rt,
+                                            fps,
+                                            false,
+                                            config.clear,
+                                            flush_interval,
+                                            sync_pos,
+                                        );
                                     });
                                     task.join().unwrap();
                                     render_task.join().unwrap();

@@ -51,16 +51,28 @@ pub enum VideoEvent {
     #[cfg(not(feature = "audio_support"))]
     Initialized(
         (
-            crossbeam_channel::Receiver<Result<(DynamicImage, usize, Option<std::time::Duration>), crate::errors::FrameError>>,
+            crossbeam_channel::Receiver<
+                Result<
+                    (DynamicImage, usize, Option<std::time::Duration>),
+                    crate::errors::FrameError,
+                >,
+            >,
             f32,
+            std::sync::Arc<std::sync::atomic::AtomicU64>,
         ),
     ),
     #[cfg(feature = "audio_support")]
     Initialized(
         (
-            crossbeam_channel::Receiver<Result<(DynamicImage, usize), crate::errors::FrameError>>,
+            crossbeam_channel::Receiver<
+                Result<
+                    (DynamicImage, usize, Option<std::time::Duration>),
+                    crate::errors::FrameError,
+                >,
+            >,
             image_to_console_renderer::audio_path::AudioPath,
             f32,
+            std::sync::Arc<std::sync::atomic::AtomicU64>,
         ),
     ),
     Finished,

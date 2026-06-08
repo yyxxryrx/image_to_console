@@ -214,15 +214,18 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     }
 }
 
+pub type Vrx = crossbeam_channel::Receiver<(String, usize, Option<std::time::Duration>)>;
+
 #[allow(unused)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
-    vrx: crossbeam_channel::Receiver<(String, usize)>,
+    vrx: Vrx,
     #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
     is_sixel: bool,
     clear: bool,
     flush_interval: usize,
+    sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
@@ -233,14 +236,15 @@ pub fn render_video(
         .get_path()
         .map(|path| std::io::BufReader::new(File::open(path).unwrap()));
     #[cfg(feature = "rodio")]
-    let sink = file.map(|file| rodio::play(&stream_handle.mixer(), file).unwrap());
+    let sink =
+        std::sync::Arc::new(file.map(|file| rodio::play(&stream_handle.mixer(), file).unwrap()));
 
     // calculate the delay
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     fn play_frame(
-        frames: crossbeam_channel::Receiver<(String, usize)>,
+        frames: Vrx,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
         is_sixel: bool,
@@ -248,19 +252,21 @@ pub fn render_video(
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         flush_interval: usize,
+        sink: std::sync::Arc<Option<rodio::Sink>>,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
             return;
         }
         let frame = frame.unwrap();
-        let (frame, index) = frame;
+        let (frame, index, pts) = frame;
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
             .saturating_sub(offset);
         let st2 = st.clone();
         // create a new timer
         let timer = std::time::Instant::now();
         let max_frame_clone = max_frame.clone();
+        let other_sink = sink.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
             // calculate the time
@@ -274,6 +280,7 @@ pub fn render_video(
                 time - d,
                 max_frame_clone,
                 flush_interval,
+                other_sink,
             );
         });
         st.send(task).unwrap();
@@ -302,7 +309,10 @@ pub fn render_video(
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
-        println!("current frame: {index}");
+        println!("\ncurrent frame: {index}");
+        if let Some((pos, pts)) = sink.as_ref().as_ref().map(|s| s.get_pos()).zip(pts) {
+            std::println!("current delay: {:?}", pos.saturating_sub(pts));
+        }
 
         if !back_top {
             // Back to the saved position
@@ -323,11 +333,29 @@ pub fn render_video(
         std::time::Duration::default(),
         max_frame.clone(),
         flush_interval,
+        sink.clone(),
     );
+
+    let is_finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let is_finished_2 = is_finished.clone();
+
+    let sync_thread = std::thread::spawn(move || {
+        if sink.is_some() {
+            while !is_finished_2.load(std::sync::atomic::Ordering::SeqCst) {
+                sync_pos.store(
+                    sink.as_ref().as_ref().unwrap().get_pos().as_millis() as u64,
+                    std::sync::atomic::Ordering::SeqCst,
+                );
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        }
+    });
 
     for task in rt.iter() {
         task.join().unwrap();
     }
+
+    is_finished.store(true, std::sync::atomic::Ordering::SeqCst);
 
     println!(
         "{} {}",

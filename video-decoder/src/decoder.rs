@@ -55,15 +55,17 @@ impl<'a> VideoDecoder<'a> {
             .decoder()
             .video()?;
         let rate = codec.frame_rate().ok_or(Error::GetVideoInfoFailed)?;
+        let time_base = {
+            let time_base = stream.time_base();
+            time_base.0 as f64 / time_base.1 as f64
+        };
+        // dbg!(codec.time_base());
         Ok(Self {
             video_stream,
             pockets: input.packets(),
             width: codec.width(),
             height: codec.height(),
-            time_base: {
-                let time_base = codec.time_base();
-                time_base.0 as f64 / time_base.1 as f64
-            },
+            time_base,
             rate: rate.0 as f32 / rate.1 as f32,
             decoder: codec,
             video_frame: ffmpeg_next::frame::Video::empty(),
@@ -78,7 +80,10 @@ impl<'a> VideoDecoder<'a> {
         self.rate
     }
 
-    pub fn frames(self) -> VideoResult<VideoFrames<'a>> {
+    fn to_frames(
+        self,
+        pos: Option<std::sync::Arc<std::sync::atomic::AtomicU64>>,
+    ) -> VideoResult<VideoFrames<'a>> {
         let codec = &self.decoder;
         let scaler = ffmpeg_next::software::scaling::Context::get(
             codec.format(),
@@ -89,7 +94,20 @@ impl<'a> VideoDecoder<'a> {
             codec.height(),
             ffmpeg_next::software::scaling::Flags::BILINEAR,
         )?;
-        Ok(VideoFrames::new(self, scaler))
+        Ok(VideoFrames::new(self, scaler, pos))
+    }
+
+    #[inline]
+    pub fn frames(self) -> VideoResult<VideoFrames<'a>> {
+        self.to_frames(None)
+    }
+
+    #[inline]
+    pub fn frames_with_pos(
+        self,
+        pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    ) -> VideoResult<VideoFrames<'a>> {
+        self.to_frames(Some(pos))
     }
 
     fn read_frame(&mut self) -> VideoResult<Option<ffmpeg_next::util::frame::Video>> {
@@ -129,11 +147,17 @@ pub struct VideoFrames<'a> {
     decoder: VideoDecoder<'a>,
     scaler: ffmpeg_next::software::scaling::Context,
     rgb_frame: ffmpeg_next::frame::Video,
+    pos: Option<std::sync::Arc<std::sync::atomic::AtomicU64>>,
 }
 
 impl<'a> VideoFrames<'a> {
-    pub fn new(decoder: VideoDecoder<'a>, scaler: ffmpeg_next::software::scaling::Context) -> Self {
+    pub fn new(
+        decoder: VideoDecoder<'a>,
+        scaler: ffmpeg_next::software::scaling::Context,
+        pos: Option<std::sync::Arc<std::sync::atomic::AtomicU64>>,
+    ) -> Self {
         Self {
+            pos,
             decoder,
             scaler,
             rgb_frame: ffmpeg_next::util::frame::Video::empty(),
@@ -144,14 +168,22 @@ impl<'a> VideoFrames<'a> {
         let Some(frame) = self.decoder.read_frame()? else {
             return Ok(None);
         };
+        let pts = frame
+            .pts()
+            .map(|pts| std::time::Duration::from_secs_f64(pts as f64 * self.decoder.time_base));
+
+        if let Some((pts, pos)) = pts.as_ref().zip(self.pos.as_ref()) {
+            let pos =
+                std::time::Duration::from_millis(pos.load(std::sync::atomic::Ordering::SeqCst));
+            if pos.saturating_sub(*pts).as_millis() > 300 {
+                return self.forward();
+            }
+        }
+
         self.scaler.run(&frame, &mut self.rgb_frame)?;
         let img = process_frame(&self.rgb_frame)?;
-        Ok(Some(VideoFrame::new(
-            img,
-            frame
-                .pts()
-                .map(|pts| std::time::Duration::from_secs_f64(pts as f64 / self.decoder.time_base)),
-        )))
+        // dbg!(self.decoder.time_base);
+        Ok(Some(VideoFrame::new(img, pts)))
     }
 }
 
