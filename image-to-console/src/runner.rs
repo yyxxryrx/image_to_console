@@ -123,6 +123,8 @@ pub fn run_video(config: Result<Config, String>) {
 
                                     let per_frame = Duration::from_secs_f32(1f32 / fps);
 
+                                    let two_frame = per_frame * 2;
+
                                     let mut spare = true;
 
                                     let pos = sync_pos.clone();
@@ -139,14 +141,13 @@ pub fn run_video(config: Result<Config, String>) {
                                                             let p = Duration::from_millis(pos.load(
                                                                 std::sync::atomic::Ordering::SeqCst,
                                                             ))
-                                                                .saturating_sub(pts)
-                                                                .as_millis();
+                                                                .saturating_sub(pts);
 
-                                                            if p > 100 && spare {
+                                                            if p > two_frame && spare {
                                                                 continue;
                                                             }
 
-                                                            if p > 300 {
+                                                            if p.as_millis() > 300 {
                                                                 continue;
                                                             }
                                                         }
