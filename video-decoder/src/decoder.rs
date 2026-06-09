@@ -114,7 +114,7 @@ impl<'a> VideoDecoder<'a> {
         if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
             return Ok(Some(self.video_frame.clone()));
         }
-        while let Some((stream, packet)) = self.pockets.next() {
+        for (stream, packet) in self.pockets.by_ref() {
             if stream.index() == self.video_stream {
                 match self.decoder.send_packet(&packet) {
                     Err(ffmpeg_next::Error::Other { errno })
