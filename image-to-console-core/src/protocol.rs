@@ -29,7 +29,10 @@ pub fn get_terminal_protocol() -> Protocol {
     let term = std::env::var("TERM").unwrap_or_default().to_lowercase();
     if term_program.contains("wezterm") || term.contains("wezterm") {
         Protocol::WezTerm
-    } else if term_program.contains("kitty") || term.contains("kitty") {
+    } else if term_program.contains("kitty")
+        || term.contains("kitty")
+        || std::env::var("KITTY_WINDOW_ID").is_ok()
+    {
         Protocol::Kitty
     } else if term_program.contains("iterm")
         || term.contains("iterm")
