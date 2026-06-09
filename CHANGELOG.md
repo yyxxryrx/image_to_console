@@ -17,11 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Full Development Shell**: Added complete development shell configuration with updated toolchain dependencies [#37c59bd]
 - Added `ToImageFailed` error variant for improved video decoding error handling [#469e647]
 - Updated Nix Flake configuration with additional build packages and subdirectory build support [#db088f6, #a852950]
+- **Video Playback Sync**: Implemented video playback synchronization functionality [#5c7b98e]
 
 ### Fixed
 
 - Fixed URL parameter passing error in `dot_file` command [#0ed8dc4]
 - Fixed video decoder error handling and frame extraction logic [#7edad71]
+- Fixed frame rate fetching and frame data passing issues in video playback [#c25aac5]
+
+### Performance
+
+- Optimized frame synchronization logic in runner to improve playback performance [#206bf43]
 
 ### Refactor
 
@@ -33,6 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unnecessary dereference in file path joining [#be0c836]
 - Reordered imports and simplified display implementation in `image-to-console-colored` [#6a5c945]
 - Removed redundant blank lines and optimized code structure [#39283ae]
+- Restructured `video-decoder` to improve frame processing pipeline [#6b29cee]
+- Changed video frame timestamp type from `i64` to `Duration` for better type safety [#6732a04]
+- Removed unused dependencies and updated video decoding in CLI crate [#2c52845]
+- Moved macro definitions to independent module in core library [#94cc6f3]
+- Refactored video playback logic to support audio functionality [#e93677c]
+
+### Documentation
+
+- Updated CLI parameters and configuration structs documentation comments [#3d7be6a]
 
 ### Dependencies
 

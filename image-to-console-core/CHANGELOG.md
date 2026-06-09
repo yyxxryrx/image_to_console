@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extract Sixel conversion logic into dedicated `converter/sixel` module
 - Extract Unicode conversion logic into dedicated `converter/unicode` module
 - Remove redundant blank lines and optimize code structure
+- Move macro definitions into independent `macro_rules` module
 
 ## [v0.2.2] - 2025-11-06
 
