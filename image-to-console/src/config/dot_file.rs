@@ -122,9 +122,11 @@ pub struct GifArgs {
     /// Set the frames per second for GIF playback
     #[serde(default)]
     pub fps: Option<u64>,
+
     /// Loop the GIF playback
     #[serde(default)]
     pub loop_play: bool,
+
     /// Audio file path
     #[serde(default)]
     pub audio: Option<String>,
@@ -171,6 +173,7 @@ pub struct VideoArgs {
     #[schema(no_default)]
     #[serde(default, deserialize_with = "from_str", serialize_with = "to_str")]
     pub flush_interval: crate::types::FlushInterval,
+
     /// Audio file path
     #[serde(default)]
     pub audio: Option<String>,
@@ -203,60 +206,79 @@ pub struct DotFileContent {
     /// Type of dot-file
     #[schema(required)]
     pub r#type: RunType,
+
     /// Input
     #[schema(required)]
     pub input: String,
+
     /// Center the image
     #[serde(default)]
     pub center: bool,
+
     /// Clear the screen
     #[serde(default)]
     pub clear: bool,
+
     /// Pause at end
     #[serde(default)]
     pub pause: bool,
+
     /// Show the consuming time at the bottom
     #[serde(default)]
     pub show_time: bool,
+
     /// Output file path
     #[serde(default)]
     pub output: Option<String>,
+
     /// Operates at half resolution
     #[serde(default)]
     pub half_resolution: bool,
+
     /// Disable the print
     #[serde(default)]
     pub disable_print: bool,
+
     /// Disable display info
     #[serde(default)]
     pub disable_info: bool,
+
     /// Convert the image to grayscale
     #[serde(default)]
     pub no_color: bool,
+
     /// Black background (Only run in no-color mode)
     #[serde(default)]
     pub black_background: bool,
+
     /// Disable resize (Only run in auto mode)
     #[serde(default)]
     pub no_resize: bool,
+
     /// Protocol to use
     #[serde(default)]
     pub protocol: Protocol,
+
     /// Set image resize mode
     #[serde(default)]
     pub resize_mode: ClapResizeMode,
+
     /// Set image width (Only run in custom mode)
     #[serde(default)]
     pub width: Option<u32>,
+
     /// Set image height (Only run in custom mode)
     #[serde(default)]
     pub height: Option<u32>,
+
     /// Without resize the width (Only run in auto mode)
     #[serde(default)]
     pub without_resize_width: bool,
+
     /// Without resize the height (Only run in auto mode)
     #[serde(default)]
     pub without_resize_height: bool,
+
     /// Max colors (Only run in sixel protocol)
     #[cfg(feature = "sixel_support")]
     #[schema(minimum = 2, maximum = 256)]
@@ -265,24 +287,31 @@ pub struct DotFileContent {
         deserialize_with = "deserialize_max_colors"
     )]
     pub max_colors: u16,
+
     /// Enable compression (Only run in normal protocol)
     #[serde(default)]
     pub enable_compression: bool,
+
     /// Disable dither (Only run in normal protocol)
     #[serde(default)]
     #[cfg(feature = "sixel_support")]
     pub disable_dither: bool,
+
     /// Set quantified color space
     #[serde(default)]
     #[cfg(feature = "sixel_support")]
     pub color_space: ColorSpace,
+
     #[serde(default)]
     pub file: Option<FileArgs>,
+
     #[serde(default)]
     pub directory: Option<DirectoryArgs>,
+
     #[serde(default)]
     #[cfg(feature = "gif_player")]
     pub gif: Option<GifArgs>,
+
     #[serde(default)]
     #[cfg(feature = "video_player")]
     pub video: Option<VideoArgs>,

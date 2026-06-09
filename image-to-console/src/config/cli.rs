@@ -21,178 +21,206 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 #[clap(name = "image_to_console")]
 #[command(color = clap::ColorChoice::Auto, styles = CLAP_STYLING)]
 pub struct Cli {
-    #[clap(short = 'c', long, help = "Center the image", default_value_t = false)]
+    /// Center the image
+    #[clap(short = 'c', long, default_value_t = false)]
     pub center: bool,
-    #[clap(long, help = "Clear the screen", default_value_t = false)]
+
+    /// Clear the screen
+    #[clap(long, default_value_t = false)]
     pub clear: bool,
-    #[clap(long, help = "Pause at the end", default_value_t = false)]
+
+    /// Pause at the edn
+    #[clap(long, default_value_t = false)]
     pub pause: bool,
-    #[clap(
-        short,
-        long,
-        help = "Show the consuming time at the bottom",
-        default_value_t = false
-    )]
+
+    /// Show the consuming time at the bottom
+    #[clap(short, long, default_value_t = false)]
     pub show_time: bool,
-    #[clap(short, long, help = "Output file path")]
+
+    /// Output file path
+    #[clap(short, long)]
     pub output: Option<String>,
-    #[clap(long, help = "Operates at half resolution", default_value_t = false)]
+
+    /// Operates at half resolution
+    #[clap(long, default_value_t = false)]
     pub half_resolution: bool,
-    #[clap(long, help = "Disable the print", default_value_t = false)]
+
+    /// Disable the print
+    #[clap(long, default_value_t = false)]
     pub disable_print: bool,
-    #[clap(long, help = "Disable display info", default_value_t = false)]
+
+    /// Disable display info
+    #[clap(long, default_value_t = false)]
     pub disable_info: bool,
-    #[clap(long, help = "Convert the image to grayscale", default_value_t = false)]
+
+    /// Convert the image to grayscale
+    #[clap(long, default_value_t = false)]
     pub no_color: bool,
-    #[clap(
-        short,
-        long,
-        help = "Black background (Only run in no-color mode)",
-        default_value_t = false
-    )]
+
+    /// Black background (Only run in no-color mode)
+    #[clap(short, long, default_value_t = false)]
     pub black_background: bool,
-    #[clap(
-        short,
-        long,
-        help = "Disable resize (Only run in auto mode)",
-        default_value_t = false
-    )]
+
+    /// Disable resize (Only run in auto mode)
+    #[clap(short, long, default_value_t = false)]
     pub no_resize: bool,
-    #[clap(short, long, help = "Protocol to use", default_value = "auto")]
+
+    /// Protocol to use
+    #[clap(short, long, default_value = "auto")]
     pub protocol: Protocol,
-    #[clap(short, long, help = "Set image resize mode", default_value = "auto")]
+
+    /// Set image resize mode
+    #[clap(short, long, default_value = "auto")]
     pub resize_mode: ClapResizeMode,
-    #[clap(long, help = "Set image width (Only run in custom mode)")]
+
+    /// Set image width (Only run in custom mode)
+    #[clap(long)]
     pub width: Option<u32>,
-    #[clap(long, help = "Set image height (Only run in custom mode)")]
+
+    /// Set image height (Only run in custom mode)
+    #[clap(long)]
     pub height: Option<u32>,
-    #[clap(
-        long,
-        help = "Without resize the width (Only run in auto mode)",
-        default_value_t = false
-    )]
+
+    /// Without resize the width (Only run in auto mode)
+    #[clap(long, default_value_t = false)]
     pub without_resize_width: bool,
-    #[clap(
-        short,
-        long,
-        help = "Without resize the height (Only run in auto mode)",
-        default_value_t = false
-    )]
+
+    /// Without resize the height (Only run in auto mode)
+    #[clap(short, long, default_value_t = false)]
     pub without_resize_height: bool,
+
     #[cfg(feature = "sixel_support")]
-    #[clap(long, help = "Max colors (Only run in sixel protocol)", default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256)
-    )]
+    /// Max colors (Only run in sixel protocol)
+    #[clap(long, default_value = "256", value_parser = clap::value_parser!(u16).range(1..=256))]
     pub max_colors: u16,
-    #[clap(
-        long,
-        help = "Enable compression (Only run in normal protocol)",
-        default_value_t = false
-    )]
+
+    /// Enable compression (Only run in normal protocol)
+    #[clap(long, default_value_t = false)]
     pub enable_compression: bool,
+
     #[cfg(feature = "sixel_support")]
-    #[clap(
-        long,
-        help = "Disable dither (Only run in normal protocol)",
-        default_value_t = false
-    )]
+    /// Disable dither (Only run in normal protocol)
+    #[clap(long, default_value_t = false)]
     pub disable_dither: bool,
+
     #[cfg(feature = "sixel_support")]
-    #[clap(long, help = "", default_value = "srgb")]
+    /// Set color space
+    #[clap(long, default_value = "srgb")]
     pub color_space: crate::types::ColorSpace,
+
     #[clap(subcommand)]
     pub command: Commands,
 }
 
 #[derive(Clone, Subcommand)]
 pub enum Commands {
-    #[clap(about = "Load an image from a file")]
+    /// Load an image from a file
     File(FileArgs),
-    #[clap(about = "Load an image from input bytes")]
+
+    /// Load an image from input bytes
     Bytes,
-    #[clap(about = "Load an image from a base64")]
+
+    /// Load an image from a base64
     Base64(Base64Args),
-    #[clap(about = "Load all the images from a directory")]
+
+    /// Load all the images from a directory
     Directory(DirectoryArgs),
+
     #[cfg(feature = "url")]
-    #[clap(about = "Load an image from a url")]
+    /// Load an image from a url
     Url(UrlArgs),
+
     #[cfg(feature = "gif_player")]
-    #[clap(about = "Load a gif from a file")]
+    /// Load a gif from a file
     Gif(GifArgs),
+
     #[cfg(feature = "video_player")]
-    #[clap(about = "Load a video from a file")]
+    /// Load a video from a file
     Video(VideoArgs),
+
     #[cfg(feature = "dot_file")]
-    #[clap(about = "dot-file command")]
+    /// dot-file command
     DotFile(DotFileArgs),
 }
 
 #[derive(Clone, Parser)]
 pub struct FileArgs {
-    #[clap(
-        long,
-        help = "Hide the filename in the bottom",
-        default_value_t = false
-    )]
+    /// Hide the filename in the bottom
+    #[clap(long, default_value_t = false)]
     pub hide_filename: bool,
-    #[clap(help = "Path to the image")]
+
+    /// Path to the image
     pub path: String,
 }
 
 #[derive(Clone, Parser)]
 pub struct DirectoryArgs {
-    #[clap(long, help = "Read all images at once", default_value_t = false)]
+    /// Read all images at once
+    #[clap(long, default_value_t = false)]
     pub read_all: bool,
-    #[clap(help = "Path of directory")]
+
+    /// Path of directory
     pub path: String,
 }
 
 #[cfg(feature = "gif_player")]
 #[derive(Clone, Parser)]
 pub struct GifArgs {
-    #[clap(long, help = "Set the frames per second for gif playback")]
+    /// Set the frames per second for gif playback
+    #[clap(long)]
     pub fps: Option<u64>,
-    #[clap(long = "loop", help = "Loop the gif playback", default_value_t = false)]
+
+    /// Loop the gif playback
+    #[clap(long = "loop", default_value_t = false)]
     pub loop_play: bool,
+
+    /// Audio file path
     #[cfg(feature = "audio_support")]
-    #[clap(long, help = "Audio file path")]
+    #[clap(long)]
     pub audio: Option<String>,
-    #[clap(help = "Gif file path")]
+
+    /// Gif file path
     pub path: String,
 }
 
 #[derive(Clone, Parser)]
 pub struct Base64Args {
-    #[clap(help = "Base64 string")]
+    /// Base64 string
     pub base64: String,
 }
 
 #[cfg(feature = "url")]
 #[derive(Clone, Parser)]
 pub struct UrlArgs {
-    #[clap(help = "Url to the image")]
+    /// Url to the image
     pub url: String,
 }
 
 #[cfg(feature = "video_player")]
 #[derive(Clone, Parser)]
 pub struct VideoArgs {
-    #[clap(short = 'F', long, help = "Set flush interval", default_value = "1s")]
+    /// Set flush interval
+    #[clap(short = 'F', long, default_value = "1s")]
     pub flush_interval: crate::types::FlushInterval,
-    #[clap(long, help = "Audio file path")]
+
+    /// Audio file path
+    #[clap(long)]
     pub audio: Option<String>,
-    #[clap(help = "Path to the video")]
+
+    /// Path to the video
     pub path: String,
 }
 
 #[cfg(feature = "dot_file")]
 #[derive(Clone, Subcommand)]
 pub enum DotFileSubcommands {
-    #[clap(about = "taplo schema about")]
+    /// taplo schema about
     Schema(DotFileSchemaArgs),
-    #[clap(about = "run dot-file")]
+
+    /// run dot-file
     Run(DotFileRunOrCheckArgs),
-    #[clap(about = "check dot-file")]
+
+    /// check dot-file
     Check(DotFileRunOrCheckArgs),
 }
 
@@ -206,15 +234,19 @@ pub struct DotFileSchemaArgs {
 #[cfg(feature = "dot_file")]
 #[derive(Clone, Subcommand)]
 pub enum DotFileSchemaSubcommands {
-    #[clap(about = "summon the schema file if not exists")]
+    /// summon the schema file if not exists
     Init,
-    #[clap(about = "get the schema path if exists")]
+
+    /// get the schema path if exists
     Path,
-    #[clap(about = "remove the schema file if exists")]
+
+    /// remove the schema file if exists
     Remove,
-    #[clap(about = "resummon the schema file")]
+
+    /// resummon the schema file
     ReInit,
-    #[clap(about = "print the schema to stdout")]
+
+    /// print the schema to stdout
     Out,
 }
 
@@ -228,7 +260,7 @@ impl Default for DotFileSchemaSubcommands {
 #[cfg(feature = "dot_file")]
 #[derive(Clone, Parser)]
 pub struct DotFileRunOrCheckArgs {
-    #[arg(help = "Dot file path")]
+    /// Dot file path
     pub path: String,
 }
 
