@@ -1,3 +1,4 @@
+use crate::types::ImageType;
 use crate::{
     config::{Config, cli::Cli},
     types::{
@@ -13,13 +14,13 @@ use image_to_console_core::{
 };
 
 pub trait CreateIPFromConfig {
-    fn from_config(config: &Config) -> Result<Self, String>
+    fn from_config(img: ImageType, config: &Config) -> Result<Self, String>
     where
         Self: Sized;
 }
 
 impl CreateIPFromConfig for ImageProcessor {
-    fn from_config(config: &Config) -> Result<Self, String> {
+    fn from_config(img: ImageType, config: &Config) -> Result<Self, String> {
         let option = ImageProcessorOptions {
             mode: config.mode,
             center: config.center,
@@ -34,7 +35,7 @@ impl CreateIPFromConfig for ImageProcessor {
             #[cfg(feature = "sixel_support")]
             color_space: ColorSpace::from(&config.color_space),
         };
-        match config.image.clone() {
+        match img {
             Image(image) => Ok(Self::new(image, option)),
             Path(path) => {
                 let image = image::open(path).map_err(|e| e.to_string())?;

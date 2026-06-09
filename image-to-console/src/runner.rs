@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::types::ImageType;
 use crate::util::CreateIPFromConfig;
 use image_to_console_colored::colors::TerminalColor;
 use image_to_console_colored::prelude::ToColoredText;
@@ -21,9 +22,9 @@ pub fn err(err_msg: String) -> ! {
     std::process::exit(1)
 }
 
-pub fn run(config: Result<Config, String>) {
+pub fn run(config: Result<(ImageType, Config), String>) {
     match config {
-        Ok(config) => match ImageProcessor::from_config(&config) {
+        Ok((img, config)) => match ImageProcessor::from_config(img, &config) {
             Ok(mut image_processor) => {
                 let Ok(result) = image_processor.process() else {
                     return;
@@ -48,16 +49,16 @@ pub fn run(config: Result<Config, String>) {
 }
 
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
-pub fn run_video(config: Result<Config, String>) {
+pub fn run_video(config: Result<(ImageType, Config), String>) {
     use crate::types::ImageType;
     #[allow(unused_imports)]
     use crossbeam_channel::{bounded, unbounded};
     match config {
-        Ok(config) => {
+        Ok((image, config)) => {
             let config_clone = config.clone();
             #[allow(unused)]
             let config_clone2 = config.clone();
-            match config.image {
+            match image {
                 #[cfg(feature = "gif_player")]
                 ImageType::Gif(gif) => {
                     use image_to_console_renderer::frame::Frame;
@@ -68,9 +69,11 @@ pub fn run_video(config: Result<Config, String>) {
                         for frame in gif {
                             match frame {
                                 Ok((frame, index, delay)) => {
-                                    let mut frame_config = config_clone.clone();
-                                    frame_config.image = ImageType::Image(frame);
-                                    match ImageProcessor::from_config(&frame_config) {
+                                    let frame_config = config_clone.clone();
+                                    match ImageProcessor::from_config(
+                                        ImageType::Image(frame),
+                                        &frame_config,
+                                    ) {
                                         Ok(mut image_processor) => {
                                             match image_processor.process() {
                                                 Ok(result) => st
@@ -156,11 +159,10 @@ pub fn run_video(config: Result<Config, String>) {
                                                                 continue;
                                                             }
                                                         }
-                                                        let mut frame_config = config_clone.clone();
-                                                        frame_config.image =
-                                                            ImageType::Image(frame);
+                                                        let frame_config = config_clone.clone();
                                                         let timer = std::time::Instant::now();
                                                         match ImageProcessor::from_config(
+                                                            ImageType::Image(frame),
                                                             &frame_config,
                                                         ) {
                                                             Ok(mut image_processor) => {
@@ -258,7 +260,7 @@ pub fn run_video(config: Result<Config, String>) {
     }
 }
 
-pub fn run_multiple(configs: Vec<Result<Config, String>>) {
+pub fn run_multiple(configs: Vec<Result<(ImageType, Config), String>>) {
     let pd = ProgressBar::new(configs.len() as u64);
     pd.set_style(ProgressStyle::default_bar().template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} {speed} ({eta} remaining)").unwrap());
     pd.enable_steady_tick(Duration::from_millis(100));
