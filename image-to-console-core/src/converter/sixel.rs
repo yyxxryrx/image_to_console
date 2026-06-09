@@ -83,7 +83,7 @@ fn render_same(
             } else if times < 3 {
                 (Some(index), char.repeat(times))
             } else {
-                (Some(index), format!("!{}{}", times, char))
+                (Some(index), String::from("!") + &times.to_string() + char)
             }
         }
         None => {
@@ -92,7 +92,7 @@ fn render_same(
             } else if times < 3 {
                 (None, char.repeat(times))
             } else {
-                (None, format!("!{}{}", times, char))
+                (None, String::from("!") + &times.to_string() + char)
             }
         }
     }
@@ -285,7 +285,7 @@ pub fn convert(
     let pixels = pixels
         .into_par_iter()
         .map(|(index, char)| match index {
-            Some(index) => format!("#{}{}", index_mapping[&(index as usize)], char),
+            Some(index) => format!("#{}{char}", index_mapping[&(index as usize)]),
             None => char,
         })
         .collect::<String>();

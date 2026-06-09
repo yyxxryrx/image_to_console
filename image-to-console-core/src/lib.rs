@@ -25,17 +25,18 @@
 * }
 * ```
 */
-
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::collapsible_else_if)]
 pub mod converter;
 pub mod error;
 #[cfg(feature = "gif")]
 pub mod gif_processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
+mod macro_rules;
 #[cfg(feature = "processor")]
 pub mod processor;
 pub mod protocol;
-mod macro_rules;
 
 pub extern crate image;
 #[cfg(feature = "sixel")]
@@ -703,7 +704,7 @@ mod tests {
         assert!(processed_both.both().is_some());
 
         // Test is_color
-        assert_eq!(processed_both.is_color(), false);
+        assert!(processed_both.is_color());
 
         let luma_img = DynamicImage::new_luma8(10, 10);
         let processed_luma = ProcessedImage::new(DisplayMode::Ascii, &luma_img);

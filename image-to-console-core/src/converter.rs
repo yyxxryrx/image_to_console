@@ -420,7 +420,7 @@ impl ImageConverter {
             if last_color == cur_color {
                 "  ".to_string()
             } else {
-                format!("{}  ", cur_color)
+                format!("{cur_color}  ")
             }
         } else {
             panic!("Invalid image type")
@@ -491,7 +491,7 @@ impl ImageConverter {
             {
                 cur_char.to_string()
             } else {
-                format!("{}{}", cur_color, cur_char)
+               cur_color + cur_char
             }
         } else {
             panic!("Invalid image type")

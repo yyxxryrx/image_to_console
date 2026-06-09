@@ -94,12 +94,11 @@ impl Display for ConvertError {
                 expect_type,
             } => write!(
                 f,
-                "Unsupported Image Type, expect {}, but actual {}",
-                expect_type, actual_type
+                "Unsupported Image Type, expect {expect_type}, but actual {actual_type}"
             ),
             ConvertError::GetTerminalSizeError => write!(f, "Terminal size error"),
             ConvertError::AboveMaxLength(len, _) => {
-                write!(f, "above the maximum length of {}", len)
+                write!(f, "above the maximum length of {len}")
             }
             ConvertError::LockError(context) => write!(f, "{}", context.message),
             ConvertError::ImageError(context) => write!(f, "{}", context.message),

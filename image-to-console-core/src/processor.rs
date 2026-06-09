@@ -1,4 +1,3 @@
-#![cfg(feature = "processor")]
 use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
 use crate::error::{ConvertError, ConvertResult};
@@ -65,7 +64,6 @@ pub trait ImageProcessorOptionsCreate<T> {
     /// # Returns
     ///
     /// Returns a new image processor instance
-
     fn create_processor(&self, image: T) -> ImageProcessor;
 }
 
@@ -93,7 +91,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a configured ImageProcessorOptions instance
-
     pub fn new(mode: DisplayMode, resize: ResizeMode, center: bool) -> Self {
         Self {
             mode,
@@ -119,7 +116,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     pub fn option_display_mode(&mut self, mode: DisplayMode) -> &mut Self {
         self.mode = mode;
         self.full = mode.is_full();
@@ -135,7 +131,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     pub fn option_resize(&mut self, resize: ResizeMode) -> &mut Self {
         self.resize_mode = resize;
         self
@@ -150,7 +145,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     pub fn option_center(&mut self, center: bool) -> &mut Self {
         self.center = center;
         self
@@ -165,7 +159,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     pub fn option_black_background(&mut self, enabled: bool) -> &mut Self {
         self.black_background = enabled;
         self
@@ -180,7 +173,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     pub fn option_compression(&mut self, enabled: bool) -> &mut Self {
         self.enable_compression = enabled;
         self
@@ -195,7 +187,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     #[cfg(feature = "sixel")]
     pub fn option_max_colors(&mut self, max_colors: u16) -> &mut Self {
         self.max_colors = max_colors;
@@ -211,7 +202,6 @@ impl ImageProcessorOptions {
     /// # Returns
     ///
     /// Returns a mutable reference to self for method chaining
-
     #[cfg(feature = "sixel")]
     pub fn option_dither(&mut self, enabled: bool) -> &mut Self {
         self.dither = enabled;

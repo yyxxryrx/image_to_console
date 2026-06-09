@@ -1,4 +1,3 @@
-#![cfg(feature = "sixel")]
 use quantette::{AboveMaxLen, palette::{encoding::Srgb, rgb::Rgb}, ColorSpace};
 
 /// An image represented with a limited color palette (indexed image)

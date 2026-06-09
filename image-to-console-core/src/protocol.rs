@@ -10,8 +10,7 @@ use crate::DisplayMode;
 /// Detection priority:
 /// 1. WezTerm - detected by "wezterm" in TERM_PROGRAM or TERM environment variables
 /// 2. Kitty - detected by "kitty" in TERM_PROGRAM or TERM environment variables
-/// 3. ITerm2 - detected by "iterm" in TERM_PROGRAM or TERM environment variables,
-///             or presence of ITERM_SESSION environment variable
+/// 3. ITerm2 - detected by "iterm" in TERM_PROGRAM or TERM environment variables, or presence of ITERM_SESSION environment variable
 /// 4. Sixel - detected by querying terminal capabilities via escape sequences (requires crossterm feature)
 /// 5. Normal - fallback if no specific terminal protocol is detected
 ///
@@ -268,7 +267,6 @@ impl DisplayModeBuilder {
     /// # Returns
     ///
     /// A DisplayMode variant that corresponds to the configured protocol and options
-
     pub fn build(&self) -> DisplayMode {
         match self.protocol {
             Protocol::Normal => match (self.is_full, self.has_color) {
