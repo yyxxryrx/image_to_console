@@ -252,12 +252,12 @@ pub struct ImageProcessorResult {
 ///
 /// This struct is responsible for formatting and displaying the processed image result
 /// It handles the vertical spacing (air lines) and line formatting for terminal output
-pub struct ImageProcessorResultDisplay {
+pub struct ImageProcessorResultDisplay<'a> {
     air_lines: usize,
-    lines: Vec<String>,
+    lines: &'a [String],
 }
 
-impl std::fmt::Display for ImageProcessorResultDisplay {
+impl<'a> std::fmt::Display for ImageProcessorResultDisplay<'a> {
     /// Formats the image result for display in terminal
     ///
     /// # Arguments
@@ -277,7 +277,7 @@ impl std::fmt::Display for ImageProcessorResultDisplay {
     }
 }
 
-impl ImageProcessorResultDisplay {
+impl<'a> ImageProcessorResultDisplay<'a> {
     /// Creates a new ImageProcessorResultDisplay instance
     ///
     /// # Arguments
@@ -288,7 +288,7 @@ impl ImageProcessorResultDisplay {
     /// # Returns
     ///
     /// New ImageProcessorResultDisplay instance
-    fn new(air_lines: usize, lines: Vec<String>) -> Self {
+    fn new(air_lines: usize, lines: &'a [String]) -> Self {
         Self { lines, air_lines }
     }
 }
@@ -303,7 +303,7 @@ impl ImageProcessorResult {
     ///
     /// ImageProcessorResultDisplay instance for formatting the result
     pub fn display(&self) -> ImageProcessorResultDisplay {
-        ImageProcessorResultDisplay::new(self.air_lines, self.lines.clone())
+        ImageProcessorResultDisplay::new(self.air_lines, &self.lines)
     }
 }
 
