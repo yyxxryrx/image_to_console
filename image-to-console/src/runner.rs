@@ -121,7 +121,7 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
                                     #[cfg(feature = "audio_support")]
                                     let (vrx, audio_path, fps, sync_pos) = args;
                                     let (st, rt) = bounded(10);
-                                    let flush_interval = config.flush_interval.to_frames(fps);
+                                    let flush_interval = config.flush_interval.get_frames(fps);
 
                                     #[cfg(feature = "audio_support")]
                                     let per_frame = Duration::from_secs_f32(1f32 / fps);
@@ -188,7 +188,7 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
                                                                 spare = timer.elapsed() <= per_frame;
                                                             }
                                                         }
-                                                        Err(EOF) => break,
+                                                        Err(Eof) => break,
                                                         Err(DecodeError) => {
                                                             err("cannot decode this frame".to_string())
                                                         }

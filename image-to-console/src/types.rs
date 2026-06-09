@@ -198,7 +198,7 @@ impl FlushInterval {
     /// - `Never` returns `usize::MAX` (essentially never flush)
     /// - `Frames(n)` returns n
     /// - `Seconds(s)` returns s * fps rounded to nearest usize
-    pub fn to_frames(&self, fps: f32) -> usize {
+    pub fn get_frames(&self, fps: f32) -> usize {
         match self {
             Self::Always => 1,
             Self::Never => usize::MAX,
@@ -266,17 +266,17 @@ mod tests {
             FlushInterval::from_str("never").unwrap(),
             FlushInterval::Never
         ));
-        assert!(matches!(FlushInterval::from_str("-1.5s"), Err(_)));
-        assert!(matches!(FlushInterval::from_str("0f"), Err(_)));
+        assert!(FlushInterval::from_str("-1.5s").is_err());
+        assert!(FlushInterval::from_str("0f").is_err());
     }
 
     #[test]
     #[cfg(feature = "video_player")]
     fn test_to_frames_conversion() {
         let fps = 30.0;
-        assert_eq!(FlushInterval::Always.to_frames(fps), 1);
-        assert_eq!(FlushInterval::Never.to_frames(fps), usize::MAX);
-        assert_eq!(FlushInterval::Frames(10).to_frames(fps), 10);
-        assert_eq!(FlushInterval::Seconds(2.0).to_frames(fps), 60);
+        assert_eq!(FlushInterval::Always.get_frames(fps), 1);
+        assert_eq!(FlushInterval::Never.get_frames(fps), usize::MAX);
+        assert_eq!(FlushInterval::Frames(10).get_frames(fps), 10);
+        assert_eq!(FlushInterval::Seconds(2.0).get_frames(fps), 60);
     }
 }

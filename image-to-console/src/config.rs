@@ -133,7 +133,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                     let entry = match entry {
                         Ok(entry) => entry,
                         Err(err) => {
-                            eprintln!("{}", err);
+                            eprintln!("{err}");
                             return None;
                         }
                     };
@@ -175,7 +175,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                             }
                         }
                         Err(err) => {
-                            eprintln!("{}", err);
+                            eprintln!("{err}");
                             None
                         }
                     }
@@ -272,8 +272,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                             .unwrap();
                         if !(type_.starts_with("image") || type_.starts_with("binary")) {
                             return Once(Err(format!(
-                                "The file is not an image! (\x1b[0;35m{}\x1b[0m)",
-                                type_
+                                "The file is not an image! (\x1b[0;35m{type_}\x1b[0m)"
                             )));
                         }
                         let total_size = resp
@@ -298,13 +297,13 @@ pub fn parse2(cli: Cli) -> RunMode {
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
                             Ok(img) => Once(Ok((Image(img), Config::from(&cli).get_options()))),
-                            Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
+                            Err(e) => Once(Err(format!("Failed to load image from bytes: {e}"))),
                         }
                     } else {
                         Once(Err(format!("Bad requests({})", resp.status())))
                     }
                 }
-                Err(e) => Once(Err(format!("Failed to download the image: {}", e))),
+                Err(e) => Once(Err(format!("Failed to download the image: {e}"))),
             }
         }
         #[cfg(feature = "video_player")]
@@ -326,7 +325,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                         Ok::<std::path::PathBuf, ffmpeg_next::error::Error>(audio_path)
                     };
                     function()
-                        .map(|path| AudioPath::Temp(path))
+                        .map(AudioPath::Temp)
                         .unwrap_or_default()
                 } else {
                     if args
@@ -404,7 +403,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 }
                             }
                         }
-                        vtx.send(Err(FrameError::EOF)).unwrap();
+                        vtx.send(Err(FrameError::Eof)).unwrap();
                     })
                     .join()
                     .unwrap();
