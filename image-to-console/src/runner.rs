@@ -114,19 +114,23 @@ pub fn run_video(config: Result<Config, String>) {
                                 }
                                 Initialized(args) => {
                                     #[cfg(not(feature = "audio_support"))]
-                                    let (vrx, fps, sync_pos) = args;
+                                    let (vrx, fps) = args;
                                     #[cfg(feature = "audio_support")]
                                     let (vrx, audio_path, fps, sync_pos) = args;
                                     let (st, rt) = bounded(10);
                                     let flush_interval = config_clone.flush_interval.to_frames(fps);
                                     let config_clone = config_clone.clone();
 
+                                    #[cfg(feature = "audio_support")]
                                     let per_frame = Duration::from_secs_f32(1f32 / fps);
 
+                                    #[cfg(feature = "audio_support")]
                                     let two_frame = per_frame * 2;
 
+                                    #[cfg(feature = "audio_support")]
                                     let mut spare = true;
 
+                                    #[cfg(feature = "audio_support")]
                                     let pos = sync_pos.clone();
                                     let task = std::thread::spawn(move || {
                                         loop {
@@ -137,6 +141,7 @@ pub fn run_video(config: Result<Config, String>) {
                                                 }
                                                 Ok(frame) => match frame {
                                                     Ok((frame, index, pts)) => {
+                                                        #[cfg(feature = "audio_support")]
                                                         if let Some(pts) = pts {
                                                             let p = Duration::from_millis(pos.load(
                                                                 std::sync::atomic::Ordering::SeqCst,
@@ -177,7 +182,10 @@ pub fn run_video(config: Result<Config, String>) {
                                                                 err(e);
                                                             }
                                                         }
-                                                        spare = timer.elapsed() <= per_frame;
+                                                        #[cfg(feature = "audio_support")]
+                                                        {
+                                                            spare = timer.elapsed() <= per_frame;
+                                                        }
                                                     }
                                                     Err(EOF) => break,
                                                     Err(DecodeError) => {
@@ -227,20 +235,12 @@ pub fn run_video(config: Result<Config, String>) {
                                             config.mode.is_sixel(),
                                             config.clear,
                                             flush_interval,
-                                            sync_pos,
                                         );
                                         #[cfg(all(
                                             not(feature = "sixel_support"),
                                             not(feature = "audio_support")
                                         ))]
-                                        render_video(
-                                            rt,
-                                            fps,
-                                            false,
-                                            config.clear,
-                                            flush_interval,
-                                            sync_pos,
-                                        );
+                                        render_video(rt, fps, false, config.clear, flush_interval);
                                     });
                                     task.join().unwrap();
                                     render_task.join().unwrap();

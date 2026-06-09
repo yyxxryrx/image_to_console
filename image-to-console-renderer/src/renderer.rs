@@ -225,6 +225,7 @@ pub fn render_video(
     is_sixel: bool,
     clear: bool,
     flush_interval: usize,
+    #[cfg(feature = "rodio")]
     sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
@@ -252,7 +253,7 @@ pub fn render_video(
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         flush_interval: usize,
-        sink: std::sync::Arc<Option<rodio::Sink>>,
+        #[cfg(feature = "rodio")] sink: std::sync::Arc<Option<rodio::Sink>>,
     ) {
         let frame = frames.recv();
         if frame.is_err() {
@@ -266,6 +267,7 @@ pub fn render_video(
         // create a new timer
         let timer = std::time::Instant::now();
         let max_frame_clone = max_frame.clone();
+        #[cfg(feature = "rodio")]
         let other_sink = sink.clone();
         let task = std::thread::spawn(move || {
             std::thread::sleep(d);
@@ -280,6 +282,7 @@ pub fn render_video(
                 time - d,
                 max_frame_clone,
                 flush_interval,
+                #[cfg(feature = "rodio")]
                 other_sink,
             );
         });
@@ -310,6 +313,8 @@ pub fn render_video(
             std::io::stdout().flush().unwrap();
         }
         println!("\ncurrent frame: {index}");
+
+        #[cfg(feature = "rodio")]
         if let Some((pos, pts)) = sink.as_ref().as_ref().map(|s| s.get_pos()).zip(pts) {
             std::println!("current delay: {:?}", pos.saturating_sub(pts));
         }
@@ -333,12 +338,16 @@ pub fn render_video(
         std::time::Duration::default(),
         max_frame.clone(),
         flush_interval,
+        #[cfg(feature = "rodio")]
         sink.clone(),
     );
 
+    #[cfg(feature = "rodio")]
     let is_finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    #[cfg(feature = "rodio")]
     let is_finished_2 = is_finished.clone();
 
+    #[cfg(feature = "rodio")]
     let sync_thread = std::thread::spawn(move || {
         if sink.is_some() {
             while !is_finished_2.load(std::sync::atomic::Ordering::SeqCst) {
@@ -355,6 +364,7 @@ pub fn render_video(
         task.join().unwrap();
     }
 
+    #[cfg(feature = "rodio")]
     is_finished.store(true, std::sync::atomic::Ordering::SeqCst);
 
     println!(

@@ -58,7 +58,6 @@ pub enum VideoEvent {
                 >,
             >,
             f32,
-            std::sync::Arc<std::sync::atomic::AtomicU64>,
         ),
     ),
     #[cfg(feature = "audio_support")]
