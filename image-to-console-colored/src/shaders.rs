@@ -60,12 +60,12 @@ impl Text {
     }
 
     pub fn set_foreground_color_with_code(&mut self, foreground_color: u8) -> &mut Self {
-        self.head.foreground_color = Some(format!("\x1b[38;5;{}m", foreground_color));
+        self.head.foreground_color = Some(format!("\x1b[38;5;{foreground_color}m"));
         self
     }
 
     pub fn set_foreground_color_rgb(&mut self, r: u8, g: u8, b: u8) -> &mut Self {
-        self.head.foreground_color = Some(format!("\x1b[38;2;{};{};{}m", r, g, b));
+        self.head.foreground_color = Some(format!("\x1b[38;2;{r};{g};{b}m"));
         self
     }
 
@@ -74,12 +74,12 @@ impl Text {
     }
 
     pub fn set_background_color_with_code(&mut self, background_color: u8) -> &mut Self {
-        self.head.background_color = Some(format!("\x1b[48;5;{}m", background_color));
+        self.head.background_color = Some(format!("\x1b[48;5;{background_color}m"));
         self
     }
 
     pub fn set_background_color_rgb(&mut self, r: u8, g: u8, b: u8) -> &mut Self {
-        self.head.background_color = Some(format!("\x1b[48;2;{};{};{}m", r, g, b));
+        self.head.background_color = Some(format!("\x1b[48;2;{r};{g};{b}m"));
         self
     }
 

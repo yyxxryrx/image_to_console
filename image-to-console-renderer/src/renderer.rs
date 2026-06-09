@@ -30,7 +30,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         for _ in 0..result.air_lines {
             println!();
         }
-        println!("{}", output);
+        println!("{output}");
     }
     if !config.disable_info {
         println!(
@@ -90,7 +90,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
                 "RENDER FINISHED IN"
                     .to_colored_text()
                     .set_foreground_color(TerminalColor::Green),
-                format!("{:02}:{:02}.{:03}", min, sec, ms)
+                format!("{min:02}:{sec:02}.{ms:03}")
                     .to_colored_text()
                     .set_foreground_color(TerminalColor::LightGreen)
             );
@@ -159,7 +159,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
         if back_top {
             print!("\x1b[1;1H");
         }
-        println!("{}", frame);
+        println!("{frame}");
         println!("Current frame: {index}");
         if !back_top {
             // Back to the saved position
@@ -238,7 +238,7 @@ pub fn render_video(
         .map(|path| std::io::BufReader::new(File::open(path).unwrap()));
     #[cfg(feature = "rodio")]
     let sink =
-        std::sync::Arc::new(file.map(|file| rodio::play(&stream_handle.mixer(), file).unwrap()));
+        std::sync::Arc::new(file.map(|file| rodio::play(stream_handle.mixer(), file).unwrap()));
 
     // calculate the delay
     let start_time = std::time::Instant::now();
