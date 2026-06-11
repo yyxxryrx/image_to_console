@@ -20,7 +20,7 @@ pub trait CreateIPFromConfig {
 }
 
 impl CreateIPFromConfig for ImageProcessor {
-    fn from_config(img: ImageType, config: &Config) -> Result<Self, String> {
+    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self> {
         let option = ImageProcessorOptions {
             mode: config.mode,
             center: config.center,
@@ -42,7 +42,10 @@ impl CreateIPFromConfig for ImageProcessor {
                 Ok(Self::new(image, option))
             }
             #[cfg(any(feature = "gif_player", feature = "video_player"))]
-            _ => Err(String::from("cannot init")),
+            _ => Err(image_to_console_core::error::ConvertError::WrongImageType {
+                expect_type: String::from("Image or Path"),
+                actual_type: format!("{img:?}"),
+            }),
         }
     }
 }

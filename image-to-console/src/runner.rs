@@ -1,9 +1,10 @@
 use crate::config::Config;
-use crate::types::ImageType;
+use crate::types::{GifType, ImageType};
 use crate::util::CreateIPFromConfig;
+use image::DynamicImage;
 use image_to_console_colored::colors::TerminalColor;
 use image_to_console_colored::prelude::ToColoredText;
-use image_to_console_core::processor::ImageProcessor;
+use image_to_console_core::processor::{ImageProcessor, ImageProcessorResult};
 use image_to_console_renderer::renderer::render;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::IntoParallelIterator;
@@ -12,7 +13,7 @@ use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 use std::time::Duration;
 
-pub fn err(err_msg: String) -> ! {
+pub fn err<E: std::fmt::Display>(err_msg: E) -> ! {
     eprintln!(
         "{}: {err_msg}",
         "error"
@@ -48,6 +49,14 @@ pub fn run(config: Result<(ImageType, Config), String>) {
     }
 }
 
+#[cfg(feature = "gif_player")]
+fn process(
+    img: DynamicImage,
+    config: &Config,
+) -> image_to_console_core::ConvertResult<ImageProcessorResult> {
+    ImageProcessor::from_config(ImageType::Image(img), config).and_then(|p| p.process())
+}
+
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
 pub fn run_video(config: Result<(ImageType, Config), String>) {
     use crate::types::ImageType;
@@ -67,26 +76,13 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
                             for frame in gif {
                                 match frame {
                                     Ok((frame, index, delay)) => {
-                                        match ImageProcessor::from_config(
-                                            ImageType::Image(frame),
-                                            &config,
-                                        ) {
-                                            Ok(mut image_processor) => {
-                                                match image_processor.process() {
-                                                    Ok(result) => st
-                                                        .send(Frame {
-                                                            index,
-                                                            delay: delay as u64,
-                                                            frame: result.lines.join("\n"),
-                                                        })
-                                                        .map_err(|e| err(e.to_string()))
-                                                        .unwrap(),
-                                                    Err(e) => err(e.to_string()),
-                                                }
-                                            }
-                                            Err(e) => {
-                                                err(e);
-                                            }
+                                        if let Ok(r) = process(frame, &config).map_err(err) {
+                                            st.send(Frame {
+                                                index,
+                                                delay: delay as u64,
+                                                frame: r.display().to_string(),
+                                            })
+                                            .unwrap()
                                         }
                                     }
                                     Err(e) => {
@@ -159,6 +155,7 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
                                                                     continue;
                                                                 }
                                                             }
+                                                            #[cfg(feature = "audio_support")]
                                                             let timer = std::time::Instant::now();
                                                             match ImageProcessor::from_config(
                                                                 ImageType::Image(frame),
