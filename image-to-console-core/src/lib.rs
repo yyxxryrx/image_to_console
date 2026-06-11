@@ -43,7 +43,7 @@ pub extern crate image;
 pub extern crate quantette;
 pub extern crate rayon;
 
-use error::ConvertResult;
+pub use error::ConvertResult;
 #[cfg(feature = "sixel")]
 use image::RgbImage;
 use image::{DynamicImage, GrayImage, RgbaImage};
