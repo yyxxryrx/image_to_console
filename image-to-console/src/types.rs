@@ -2,7 +2,10 @@ use clap::{ValueEnum, builder::PossibleValue};
 use image::DynamicImage;
 use std::fmt::Debug;
 
+#[cfg(feature = "gif_player")]
 pub type GifType = crossbeam_channel::Receiver<Result<(DynamicImage, usize, u16), String>>;
+
+#[cfg(feature = "video_player")]
 pub type VideoType = crossbeam_channel::Receiver<Result<VideoEvent, String>>;
 
 #[derive(Debug, Clone)]

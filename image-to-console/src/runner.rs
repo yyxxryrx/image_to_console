@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::types::{GifType, ImageType, VideoType};
+use crate::types::ImageType;
 use crate::util::CreateIPFromConfig;
 use crossbeam_channel::bounded;
 use image::DynamicImage;
@@ -75,7 +75,8 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
     }
 }
 
-fn gif(gif: GifType, config: &Config) {
+#[cfg(feature = "gif_player")]
+fn gif(gif: crate::types::GifType, config: &Config) {
     use image_to_console_renderer::frame::Frame;
     use image_to_console_renderer::renderer::render_gif;
     let (st, rt) = bounded::<Frame>(config.fps.unwrap_or(30) as _);
@@ -109,7 +110,8 @@ fn gif(gif: GifType, config: &Config) {
     });
 }
 
-fn video(video_event: VideoType, config: &Config) {
+#[cfg(feature = "video_player")]
+fn video(video_event: crate::types::VideoType, config: &Config) {
     use crate::errors::FrameError::*;
     use crate::types::VideoEvent::*;
     use image_to_console_renderer::renderer::render_video;
@@ -188,34 +190,12 @@ fn video(video_event: VideoType, config: &Config) {
                                 rt,
                                 audio_path,
                                 fps,
-                                config.mode.is_sixel(),
                                 config.clear,
                                 flush_interval,
                                 sync_pos,
                             );
-                            #[cfg(all(not(feature = "sixel_support"), feature = "audio_support"))]
-                            render_video(
-                                rt,
-                                audio_path,
-                                fps,
-                                false,
-                                config.clear,
-                                flush_interval,
-                                sync_pos,
-                            );
-                            #[cfg(all(feature = "sixel_support", not(feature = "audio_support")))]
-                            render_video(
-                                rt,
-                                fps,
-                                config.mode.is_sixel(),
-                                config.clear,
-                                flush_interval,
-                            );
-                            #[cfg(all(
-                                not(feature = "sixel_support"),
-                                not(feature = "audio_support")
-                            ))]
-                            render_video(rt, fps, false, config.clear, flush_interval);
+                            #[cfg(not(feature = "audio_support"))]
+                            render_video(rt, fps, config.clear, flush_interval);
                         });
                     });
                 }

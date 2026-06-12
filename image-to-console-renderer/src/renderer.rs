@@ -108,7 +108,6 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     Ok(())
 }
 
-#[allow(unused)]
 #[cfg(feature = "gif_player")]
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
@@ -128,9 +127,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     fn play_frame(
         frames: crossbeam_channel::Receiver<Frame>,
         delay: Option<u64>,
-        frame_index: usize,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
-        is_sixel: bool,
         back_top: bool,
         offset: std::time::Duration,
     ) {
@@ -151,11 +148,10 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
             std::thread::sleep(d);
             // calculate the time
             let time = timer.elapsed();
-            play_frame(frames, delay, index + 1, st2, is_sixel, back_top, time - d);
+            play_frame(frames, delay, st2, back_top, time - d);
         });
         st.send(task).unwrap();
 
-        let time = std::time::Instant::now();
         if back_top {
             print!("\x1b[1;1H");
         }
@@ -172,18 +168,13 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     if !config.clear {
         print!("\x1b[s");
     }
-    #[cfg(feature = "sixel_support")]
     play_frame(
         results,
         delay,
-        0,
         st,
-        config.mode.is_sixel(),
         config.clear,
         std::time::Duration::default(),
     );
-    #[cfg(not(feature = "sixel_support"))]
-    play_frame(results, delay, 0, st, false, config.clear);
 
     for task in rt.iter() {
         task.join().unwrap();
@@ -216,17 +207,14 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 
 pub type Vrx = crossbeam_channel::Receiver<(String, usize, Option<std::time::Duration>)>;
 
-#[allow(unused)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: Vrx,
     #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
-    is_sixel: bool,
     clear: bool,
     flush_interval: usize,
-    #[cfg(feature = "rodio")]
-    sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    #[cfg(feature = "rodio")] sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
@@ -244,11 +232,12 @@ pub fn render_video(
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+    #[allow(clippy::too_many_arguments)]
     fn play_frame(
         frames: Vrx,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
-        is_sixel: bool,
         back_top: bool,
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
@@ -260,7 +249,10 @@ pub fn render_video(
             return;
         }
         let frame = frame.unwrap();
+
+        #[allow(unused)]
         let (frame, index, pts) = frame;
+
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
             .saturating_sub(offset);
         let st2 = st.clone();
@@ -277,7 +269,6 @@ pub fn render_video(
                 frames,
                 delay,
                 st2,
-                is_sixel,
                 back_top,
                 time - d,
                 max_frame_clone,
@@ -333,7 +324,6 @@ pub fn render_video(
         vrx,
         fps,
         st,
-        is_sixel,
         clear,
         std::time::Duration::default(),
         max_frame.clone(),
@@ -381,6 +371,10 @@ pub fn render_video(
         .to_colored_text()
         .set_foreground_color(TerminalColor::LightGreen)
     );
+
+    #[cfg(feature = "rodio")]
+    sync_thread.join().unwrap();
+
     // audio_task.join().unwrap();
     // quit the audio stream
     #[cfg(feature = "rodio")]
