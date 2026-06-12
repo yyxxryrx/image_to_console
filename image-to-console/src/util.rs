@@ -14,7 +14,7 @@ use image_to_console_core::{
 };
 
 pub trait CreateIPFromConfig {
-    fn from_config(img: ImageType, config: &Config) -> Result<Self, String>
+    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self>
     where
         Self: Sized;
 }
@@ -38,7 +38,17 @@ impl CreateIPFromConfig for ImageProcessor {
         match img {
             Image(image) => Ok(Self::new(image, option)),
             Path(path) => {
-                let image = image::open(path).map_err(|e| e.to_string())?;
+                let image = image::open(path).map_err(|e| {
+                    image_to_console_core::error::ConvertError::ImageError(
+                        image_to_console_core::error::ConvertErrorContext::new(
+                            image_to_console_core::error::ConvertErrorContextSource::Function(
+                                String::from("from_config"),
+                            ),
+                            String::from("Open failed"),
+                        )
+                        .with_inner(Box::new(e)),
+                    )
+                })?;
                 Ok(Self::new(image, option))
             }
             #[cfg(any(feature = "gif_player", feature = "video_player"))]
