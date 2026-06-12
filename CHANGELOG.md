@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed URL parameter passing error in `dot_file` command [#0ed8dc4]
 - Fixed video decoder error handling and frame extraction logic [#7edad71]
 - Fixed frame rate fetching and frame data passing issues in video playback [#c25aac5]
+- Unified error handling types in utility module [#87d2b9d]
+- Enhanced Kitty terminal protocol recognition [#84b72f5]
 
 ### Performance
 
@@ -44,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused dependencies and updated video decoding in CLI crate [#2c52845]
 - Moved macro definitions to independent module in core library [#94cc6f3]
 - Refactored video playback logic to support audio functionality [#e93677c]
+- Extracted video and GIF processing logic into independent functions [#5ea7881]
+- Optimized GIF processing logic and improved error handling [#3ec5683]
+- Refactored configuration structure to separate image type parameters [#97eca4e]
+- Refactored renderer code to remove unused parameters and conditional compilation [#c9bbd2e]
+- Optimized string formatting and method naming [#eca71a5]
+- Updated formatting string syntax [#aa5f150]
+- Optimized packet processing logic in video decoder [#9d91b63]
+- Added clippy lint rule to allow collapsible if [#bd964b0]
 
 ### Documentation
 
