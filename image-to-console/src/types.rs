@@ -43,6 +43,11 @@ impl ValueEnum for ClapResizeMode {
     }
 }
 
+#[cfg(feature = "video_player")]
+pub type FrameReceiver = crossbeam_channel::Receiver<
+    Result<(DynamicImage, usize, Option<std::time::Duration>), crate::errors::FrameError>,
+>;
+
 /// The event type to of video parser
 #[cfg(feature = "video_player")]
 #[derive(Debug, Clone)]
@@ -52,26 +57,11 @@ pub enum VideoEvent {
     ///
     /// The last one is the frame rate.
     #[cfg(not(feature = "audio_support"))]
-    Initialized(
-        (
-            crossbeam_channel::Receiver<
-                Result<
-                    (DynamicImage, usize, Option<std::time::Duration>),
-                    crate::errors::FrameError,
-                >,
-            >,
-            f32,
-        ),
-    ),
+    Initialized((FrameReceiver, f32)),
     #[cfg(feature = "audio_support")]
     Initialized(
         (
-            crossbeam_channel::Receiver<
-                Result<
-                    (DynamicImage, usize, Option<std::time::Duration>),
-                    crate::errors::FrameError,
-                >,
-            >,
+            FrameReceiver,
             image_to_console_renderer::audio_path::AudioPath,
             f32,
             std::sync::Arc<std::sync::atomic::AtomicU64>,
