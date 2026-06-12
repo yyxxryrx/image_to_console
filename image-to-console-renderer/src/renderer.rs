@@ -333,14 +333,9 @@ pub fn render_video(
     );
 
     #[cfg(feature = "rodio")]
-    let is_finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    #[cfg(feature = "rodio")]
-    let is_finished_2 = is_finished.clone();
-
-    #[cfg(feature = "rodio")]
-    let sync_thread = std::thread::spawn(move || {
+    let _ = std::thread::spawn(move || {
         if sink.is_some() {
-            while !is_finished_2.load(std::sync::atomic::Ordering::SeqCst) {
+            loop {
                 sync_pos.store(
                     sink.as_ref().as_ref().unwrap().get_pos().as_millis() as u64,
                     std::sync::atomic::Ordering::SeqCst,
@@ -353,9 +348,6 @@ pub fn render_video(
     for task in rt.iter() {
         task.join().unwrap();
     }
-
-    #[cfg(feature = "rodio")]
-    is_finished.store(true, std::sync::atomic::Ordering::SeqCst);
 
     println!(
         "{} {}",
@@ -371,9 +363,6 @@ pub fn render_video(
         .to_colored_text()
         .set_foreground_color(TerminalColor::LightGreen)
     );
-
-    #[cfg(feature = "rodio")]
-    sync_thread.join().unwrap();
 
     // audio_task.join().unwrap();
     // quit the audio stream
