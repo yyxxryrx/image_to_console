@@ -175,7 +175,7 @@ impl<'a> VideoFrames<'a> {
         if let Some((pts, pos)) = pts.as_ref().zip(self.pos.as_ref()) {
             let pos =
                 std::time::Duration::from_millis(pos.load(std::sync::atomic::Ordering::SeqCst));
-            if pos.saturating_sub(*pts).as_millis() > 300 {
+            if pos.saturating_sub(*pts).as_millis() > 250 {
                 return self.forward();
             }
         }

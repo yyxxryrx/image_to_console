@@ -139,6 +139,9 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                     let mut spare = true;
 
                     #[cfg(feature = "audio_support")]
+                    let mut discarded = 0usize;
+
+                    #[cfg(feature = "audio_support")]
                     let pos = sync_pos.clone();
                     std::thread::scope(|s| {
                         s.spawn(|| {
@@ -161,7 +164,12 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                                     continue;
                                                 }
 
-                                                if p.as_millis() > 300 {
+                                                if p.as_millis() > 250 {
+                                                    continue;
+                                                }
+
+                                                if p.as_millis() > 200 && discarded % 3 != 2 {
+                                                    discarded += 1;
                                                     continue;
                                                 }
                                             }
@@ -171,6 +179,7 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                             st.send((r.lines.join("\n"), index, pts)).unwrap();
                                             #[cfg(feature = "audio_support")]
                                             {
+                                                discarded = 0;
                                                 spare = timer.elapsed() <= two_frame;
                                             }
                                         }
