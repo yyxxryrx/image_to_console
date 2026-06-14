@@ -174,7 +174,10 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                                 spare = timer.elapsed() <= per_frame;
                                             }
                                         }
-                                        Err(Eof) => break,
+                                        Err(Eof) => {
+                                            drop(st);
+                                            return;
+                                        }
                                         Err(DecodeError) => {
                                             err("cannot decode this frame".to_string())
                                         }
@@ -199,7 +202,7 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                         });
                     });
                 }
-                Finished => {}
+                Finished => break,
             },
             Err(e) => err(e),
         }
