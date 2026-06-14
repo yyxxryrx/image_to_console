@@ -358,7 +358,7 @@ pub fn render_video(
                     sink.as_ref().as_ref().unwrap().get_pos().as_millis() as u64,
                     std::sync::atomic::Ordering::SeqCst,
                 );
-                std::thread::sleep(std::time::Duration::from_millis(50));
+                std::thread::sleep(std::time::Duration::from_millis(5));
             }
         }
     });

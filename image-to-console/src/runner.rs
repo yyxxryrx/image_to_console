@@ -142,6 +142,9 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                     let mut discarded = 0usize;
 
                     #[cfg(feature = "audio_support")]
+                    let mut buzy = false;
+
+                    #[cfg(feature = "audio_support")]
                     let pos = sync_pos.clone();
                     std::thread::scope(|s| {
                         s.spawn(|| {
@@ -168,9 +171,15 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                                     continue;
                                                 }
 
-                                                if p.as_millis() > 200 && discarded % 3 != 2 {
+                                                if p.as_millis() > if buzy { 180 } else { 200 }
+                                                    && discarded % 3 != 2
+                                                {
                                                     discarded += 1;
                                                     continue;
+                                                }
+
+                                                if p.as_millis() < 180 {
+                                                    buzy = false;
                                                 }
                                             }
                                             #[cfg(feature = "audio_support")]
