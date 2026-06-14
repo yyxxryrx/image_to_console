@@ -332,10 +332,20 @@ pub fn render_video(
         sink.clone(),
     );
 
+    let (sr, rr) = std::sync::mpsc::channel::<()>();
+
     #[cfg(feature = "rodio")]
-    let _ = std::thread::spawn(move || {
+    std::thread::spawn(move || {
         if sink.is_some() {
             loop {
+                match rr.try_recv() {
+                    Ok(..) => break,
+                    Err(e) => {
+                        if e == std::sync::mpsc::TryRecvError::Disconnected {
+                            break;
+                        }
+                    }
+                }
                 sync_pos.store(
                     sink.as_ref().as_ref().unwrap().get_pos().as_millis() as u64,
                     std::sync::atomic::Ordering::SeqCst,
@@ -348,6 +358,7 @@ pub fn render_video(
     for task in rt.iter() {
         task.join().unwrap();
     }
+    sr.send(()).unwrap();
 
     println!(
         "{} {}",

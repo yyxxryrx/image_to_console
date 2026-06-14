@@ -1,5 +1,6 @@
 use crate::{Error, VideoResult};
 
+#[derive(Debug)]
 pub struct VideoFrame {
     pub pts: Option<std::time::Duration>,
     pub frame: image::RgbImage,
@@ -59,7 +60,6 @@ impl<'a> VideoDecoder<'a> {
             let time_base = stream.time_base();
             time_base.0 as f64 / time_base.1 as f64
         };
-        // dbg!(codec.time_base());
         Ok(Self {
             video_stream,
             pockets: input.packets(),

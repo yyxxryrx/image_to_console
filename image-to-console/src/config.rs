@@ -324,20 +324,16 @@ pub fn parse2(cli: Cli) -> RunMode {
                         crate::util::pick_audio(path, &audio_path)?;
                         Ok::<std::path::PathBuf, ffmpeg_next::error::Error>(audio_path)
                     };
-                    function()
-                        .map(AudioPath::Temp)
-                        .unwrap_or_default()
+                    function().map(AudioPath::Temp).unwrap_or_default()
+                } else if args
+                    .audio
+                    .as_ref()
+                    .map(|s| s.to_lowercase() == "none")
+                    .unwrap_or_default()
+                {
+                    AudioPath::None
                 } else {
-                    if args
-                        .audio
-                        .as_ref()
-                        .map(|s| s.to_lowercase() == "none")
-                        .unwrap_or_default()
-                    {
-                        AudioPath::None
-                    } else {
-                        AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
-                    }
+                    AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
                 };
                 // And then, extract the video
                 // We will to use ffmpeg-next lib to do this
@@ -378,7 +374,6 @@ pub fn parse2(cli: Cli) -> RunMode {
                 .unwrap();
                 std::thread::scope(|s| {
                     s.spawn(|| {
-                        let mut frame_counter = 0usize;
                         #[cfg(not(feature = "audio_support"))]
                         let frames = decoder.frames();
                         #[cfg(feature = "audio_support")]
@@ -390,23 +385,21 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 return;
                             }
                         };
-                        for frame in frames {
+                        for (index, frame) in frames.enumerate() {
                             match frame {
                                 Ok(frame) => {
-                                    vtx.send(Ok((frame.frame.into(), frame_counter, frame.pts)))
+                                    vtx.send(Ok((frame.frame.into(), index, frame.pts)))
                                         .unwrap();
-                                    frame_counter += 1;
                                 }
                                 // Other errors
                                 Err(err) => {
-                                    vtx.send(Err(FrameError::Other(err.to_string()))).unwrap()
+                                    vtx.send(Err(FrameError::Other(err.to_string()))).unwrap();
+                                    return;
                                 }
                             }
                         }
                         vtx.send(Err(FrameError::Eof)).unwrap();
-                    })
-                    .join()
-                    .unwrap();
+                    });
                 });
                 etx.send(Ok(Finished)).unwrap();
             });
