@@ -171,7 +171,7 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                             st.send((r.lines.join("\n"), index, pts)).unwrap();
                                             #[cfg(feature = "audio_support")]
                                             {
-                                                spare = timer.elapsed() <= per_frame;
+                                                spare = timer.elapsed() <= two_frame;
                                             }
                                         }
                                         Err(Eof) => {
