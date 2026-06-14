@@ -286,9 +286,6 @@ pub fn render_video(
 
         if back_top {
             print!("\x1b[1;1H");
-        } else {
-            // Save current cursor position
-            print!("\r\x1b[s");
         }
         let lines = frame.as_bytes();
         for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
@@ -303,7 +300,16 @@ pub fn render_video(
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
-        println!("\ncurrent frame: {index}");
+        if let Some(pts) = pts {
+            println!(
+                "\nTime: {:02}:{:02}:{:02}.{:03}",
+                pts.as_secs() / 3600,
+                pts.as_secs() / 60,
+                pts.as_secs() % 60,
+                pts.as_millis() % 1000
+            );
+        }
+        println!("current frame: {index}");
 
         #[cfg(feature = "rodio")]
         if let Some((pos, pts)) = sink.as_ref().as_ref().map(|s| s.get_pos()).zip(pts) {
@@ -320,6 +326,8 @@ pub fn render_video(
         print!("\x1bc");
     }
 
+    // Save current cursor position
+    print!("\r\x1b[s");
     play_frame(
         vrx,
         fps,
