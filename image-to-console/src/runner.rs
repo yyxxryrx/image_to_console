@@ -213,10 +213,17 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                 fps,
                                 config.clear,
                                 flush_interval,
+                                config.disable_info,
                                 sync_pos,
                             );
                             #[cfg(not(feature = "audio_support"))]
-                            render_video(rt, fps, config.clear, flush_interval);
+                            render_video(
+                                rt,
+                                fps,
+                                config.clear,
+                                flush_interval,
+                                config.disable_info,
+                            );
                         });
                     });
                 }

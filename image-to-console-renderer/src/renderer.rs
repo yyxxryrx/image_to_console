@@ -214,6 +214,7 @@ pub fn render_video(
     fps: f32,
     clear: bool,
     flush_interval: usize,
+    disable_info: bool,
     #[cfg(feature = "rodio")] sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
@@ -242,6 +243,7 @@ pub fn render_video(
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         flush_interval: usize,
+        disable_info: bool,
         #[cfg(feature = "rodio")] sink: std::sync::Arc<Option<rodio::Sink>>,
     ) {
         let frame = frames.recv();
@@ -283,6 +285,7 @@ pub fn render_video(
                 time - d,
                 max_frame_clone,
                 flush_interval,
+                disable_info,
                 #[cfg(feature = "rodio")]
                 other_sink,
             );
@@ -310,20 +313,23 @@ pub fn render_video(
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
-        if let Some(pts) = pts {
-            println!(
-                "\nTime: {:02}:{:02}:{:02}.{:03}",
-                pts.as_secs() / 3600,
-                pts.as_secs() / 60,
-                pts.as_secs() % 60,
-                pts.as_millis() % 1000
-            );
-        }
-        println!("current frame: {index}");
 
-        #[cfg(feature = "rodio")]
-        if let Some(sub) = sub {
-            std::println!("current delay: {sub:?}");
+        if !disable_info {
+            if let Some(pts) = pts {
+                println!(
+                    "\nTime: {:02}:{:02}:{:02}.{:03}",
+                    pts.as_secs() / 3600,
+                    pts.as_secs() / 60,
+                    pts.as_secs() % 60,
+                    pts.as_millis() % 1000
+                );
+            }
+            println!("current frame: {index}");
+
+            #[cfg(feature = "rodio")]
+            if let Some(sub) = sub {
+                std::println!("current delay: {sub:?}");
+            }
         }
 
         if !back_top {
@@ -346,6 +352,7 @@ pub fn render_video(
         std::time::Duration::default(),
         max_frame.clone(),
         flush_interval,
+        disable_info,
         #[cfg(feature = "rodio")]
         sink.clone(),
     );
