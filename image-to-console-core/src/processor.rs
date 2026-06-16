@@ -292,7 +292,7 @@ impl ImageProcessorResult {
     /// # Returns
     ///
     /// ImageProcessorResultDisplay instance for formatting the result
-    pub fn display(&self) -> ImageProcessorResultDisplay {
+    pub fn display(&self) -> ImageProcessorResultDisplay<'_> {
         ImageProcessorResultDisplay::new(self.air_lines, &self.lines)
     }
 }
