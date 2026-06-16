@@ -253,6 +253,16 @@ pub fn render_video(
         #[allow(unused)]
         let (frame, index, pts) = frame;
 
+        #[cfg(feature = "rodio")]
+        let sub = sink
+            .as_ref()
+            .as_ref()
+            .zip(pts.as_ref())
+            .map(|(sink, pts)| sink.get_pos().saturating_sub(*pts));
+
+        #[cfg(feature = "rodio")]
+        let offset = sub.unwrap_or(offset);
+
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
             .saturating_sub(offset);
         let st2 = st.clone();
@@ -278,12 +288,6 @@ pub fn render_video(
             );
         });
         st.send(task).unwrap();
-
-        if let Some((sink, pts)) = sink.as_ref().as_ref().zip(pts.as_ref()) {
-            if sink.get_pos().saturating_sub(*pts).as_millis() > 200 {
-                return;
-            }
-        }
 
         if index <= max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
             return;
@@ -318,8 +322,8 @@ pub fn render_video(
         println!("current frame: {index}");
 
         #[cfg(feature = "rodio")]
-        if let Some((pos, pts)) = sink.as_ref().as_ref().map(|s| s.get_pos()).zip(pts) {
-            std::println!("current delay: {:?}", pos.saturating_sub(pts));
+        if let Some(sub) = sub {
+            std::println!("current delay: {sub:?}");
         }
 
         if !back_top {
