@@ -279,6 +279,12 @@ pub fn render_video(
         });
         st.send(task).unwrap();
 
+        if let Some((sink, pts)) = sink.as_ref().as_ref().zip(pts.as_ref()) {
+            if sink.get_pos().saturating_sub(*pts).as_millis() > 200 {
+                return;
+            }
+        }
+
         if index <= max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
             return;
         }
