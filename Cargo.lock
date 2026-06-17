@@ -918,7 +918,7 @@ dependencies = [
 
 [[package]]
 name = "image_to_console"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "build-options",
