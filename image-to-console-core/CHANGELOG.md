@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Enhance Kitty terminal protocol recognition
+- Add explicit lifetime annotation to `display` return type in processor
 
 ### Refactor
 
