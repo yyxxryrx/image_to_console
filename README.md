@@ -35,15 +35,15 @@ English | [简体中文](README_zh-CN.md)
 
 ## Features
 
-| Feature       | Dependencies                                         | Description                                                      | Is Default                          |
-|---------------|------------------------------------------------------|------------------------------------------------------------------|-------------------------------------|
-| reqwest       | reqwest                                              | HTTP client library                                              | <span style="color: green">✓</span> |
-| audio_support | rodio                                                | Play audio support                                               | <span style="color: red">✗</span>   |
-| use_crossterm | crossterm                                            | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
-| gif_player    | gif, crossbeam-channel                               | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
-| video_player  | ffmpeg-next, video-rs, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
-| sixel_support | quantette, nohash-hasher                             | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
-| dot_file      | toml, serde                                          | TOML configuration file support                                  | <span style="color: red">✗</span>   |
+| Feature       | Dependencies                               | Description                                                      | Is Default                          |
+|---------------|--------------------------------------------|------------------------------------------------------------------|-------------------------------------|
+| reqwest       | reqwest                                    | HTTP client library                                              | <span style="color: green">✓</span> |
+| audio_support | rodio                                      | Play audio support                                               | <span style="color: red">✗</span>   |
+| use_crossterm | crossterm                                  | Cross-platform terminal library                                  | <span style="color: green">✓</span> |
+| gif_player    | gif, crossbeam-channel                     | Play GIF animations in terminal                                  | <span style="color: green">✓</span> |
+| video_player  | ffmpeg-next, crossbeam-channel, **FFmpeg** | Play video files in terminal (requires video feature and FFmpeg) | <span style="color: red">✗</span>   |
+| sixel_support | quantette, nohash-hasher                   | Display images using Sixel protocol                              | <span style="color: green">✓</span> |
+| dot_file      | toml, serde                                | TOML configuration file support                                  | <span style="color: red">✗</span>   |
 
 ## Installation
 
