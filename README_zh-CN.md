@@ -1,6 +1,6 @@
 # image_to_console
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Last Version](https://img.shields.io/github/v/release/yyxxryrx/image_to_console)](https://github.com/yyxxryrx/image_to_console/releases/latest)
 [![Mirror](https://img.shields.io/badge/Mirror-Gitee-red?logo=gitee)](https://gitee.com/yyxxryrx/image_to_console)
 
@@ -371,9 +371,7 @@ audio = "path/to/audio.mp3"
 | [gif](https://crates.io/crates/gif)                             | 0.13.3  | MIT              | GIF 动画解码（可选）     |
 | [crossbeam-channel](https://crates.io/crates/crossbeam-channel) | 0.5.15  | MIT / Apache-2.0 | 跨线程通信（可选）        |
 | [rodio](https://crates.io/crates/rodio)                         | 0.21.1  | MIT / Apache-2.0 | 音频播放（可选）         |
-| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)             | 8.0.0   | WTFPL            | 音频处理（可选）         |
-| [video-rs](https://crates.io/crates/video-rs)                   | 0.11.0  | MIT              | 视频处理（可选）         |
-| [ndarray](https://crates.io/crates/ndarray)                     | 0.17.2  | MIT              | N维数组（可选）         |
+| [ffmpeg-next](https://crates.io/crates/ffmpeg-next)             | 8.1.0   | WTFPL            | 音频处理和视频解码（可选）    |
 | [quantette](https://crates.io/crates/quantette)                 | 0.3.0   | MIT              | Sixel 图像量化（可选）   |
 | [nohash-hasher](https://crates.io/crates/nohash-hasher)         | 0.2.0   | MIT              | Sixel 快速哈希（可选）   |
 | [pyo3](https://crates.io/crates/pyo3)                           | 0.27.1  | MIT / Apache-2.0 | Python 绑定（可选）    |
