@@ -118,7 +118,7 @@ impl From<&Config> for image_to_console_renderer::config::Config {
     }
 }
 
-#[cfg(feature = "video_player")]
+#[cfg(all(feature = "video_player", feature = "audio_support"))]
 pub fn pick_audio(
     path: &std::path::Path,
     target: &std::path::Path,

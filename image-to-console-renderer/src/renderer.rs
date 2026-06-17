@@ -365,6 +365,7 @@ pub fn render_video(
         sink.clone(),
     );
 
+    #[cfg(feature = "rodio")]
     let (sr, rr) = std::sync::mpsc::channel::<()>();
 
     #[cfg(feature = "rodio")]
@@ -391,6 +392,8 @@ pub fn render_video(
     for task in rt.iter() {
         task.join().unwrap();
     }
+
+    #[cfg(feature = "rodio")]
     sr.send(()).unwrap();
 
     println!(
