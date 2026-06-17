@@ -300,15 +300,22 @@ pub fn render_video(
         if back_top {
             print!("\x1b[1;1H");
         }
-        let lines = frame.as_bytes();
-        for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
-            if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
-                return;
-            }
-            if std::io::stdout().lock().write_all(line).is_err() {
-                return;
-            }
+        // let lines = frame.as_bytes();
+        // for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
+        //     if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+        //         return;
+        //     }
+        if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+            return;
         }
+        if std::io::stdout()
+            .lock()
+            .write_all(frame.as_bytes())
+            .is_err()
+        {
+            return;
+        }
+        // }
         // Refresh
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
@@ -317,18 +324,18 @@ pub fn render_video(
         if !disable_info {
             if let Some(pts) = pts {
                 println!(
-                    "\nTime: {:02}:{:02}:{:02}.{:03}",
+                    "\n\x1b[2K\rTime: {:02}:{:02}:{:02}.{:03}",
                     pts.as_secs() / 3600,
                     pts.as_secs() / 60,
                     pts.as_secs() % 60,
                     pts.as_millis() % 1000
                 );
             }
-            println!("current frame: {index}");
+            println!("\x1b[2K\rcurrent frame: {index}");
 
             #[cfg(feature = "rodio")]
             if let Some(sub) = sub {
-                std::println!("current delay: {sub:?}");
+                std::println!("\x1b[2K\rcurrent delay: {sub:?}");
             }
         }
 
