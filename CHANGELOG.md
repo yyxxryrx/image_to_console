@@ -18,16 +18,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `ToImageFailed` error variant for improved video decoding error handling [#469e647]
 - Updated Nix Flake configuration with additional build packages and subdirectory build support [#db088f6, #a852950]
 - **Video Playback Sync**: Implemented video playback synchronization functionality [#5c7b98e]
+- **Disable Info Display**: Added option to disable information display in renderer [#b69e3bd]
 
 ### Fixed
 
 - Fixed URL parameter passing error in `dot_file` command [#0ed8dc4]
 - Fixed video decoder error handling and frame extraction logic [#7edad71]
 - Fixed frame rate fetching and frame data passing issues in video playback [#c25aac5]
+- Unified error handling types in utility module [#87d2b9d]
+- Enhanced Kitty terminal protocol recognition [#84b72f5]
+- Fixed video playback end resource release issue [#93e5662]
+- Fixed console renderer cursor position handling [#4d3facb]
+- Fixed frame time calculation error in audio support [#cfbfcc5]
+- Added explicit lifetime annotation to processor display return type [#789224e]
+- Fixed frame rendering and info display issue [#36cc49c]
 
 ### Performance
 
 - Optimized frame synchronization logic in runner to improve playback performance [#206bf43]
+- Optimized video decoder time synchronization logic [#c85772d]
+- Optimized audio synchronization performance [#daaca01]
+- Skip frame processing when sink is far behind PTS [#8bfaed7]
 
 ### Refactor
 
@@ -44,6 +55,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused dependencies and updated video decoding in CLI crate [#2c52845]
 - Moved macro definitions to independent module in core library [#94cc6f3]
 - Refactored video playback logic to support audio functionality [#e93677c]
+- Extracted video and GIF processing logic into independent functions [#5ea7881]
+- Optimized GIF processing logic and improved error handling [#3ec5683]
+- Refactored configuration structure to separate image type parameters [#97eca4e]
+- Refactored renderer code to remove unused parameters and conditional compilation [#c9bbd2e]
+- Optimized string formatting and method naming [#eca71a5]
+- Updated formatting string syntax [#aa5f150]
+- Optimized packet processing logic in video decoder [#9d91b63]
+- Added clippy lint rule to allow collapsible if [#bd964b0]
+- Simplified audio synchronization in video rendering [#ebf580c]
+- Optimized video decoding and audio playback logic [#bc6e1ba]
+- Optimized audio synchronization logic implementation [#e3a7051]
 
 ### Documentation
 

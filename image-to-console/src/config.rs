@@ -30,7 +30,6 @@ pub struct Config {
     pub no_color: bool,
     pub loop_play: bool,
     pub show_time: bool,
-    pub image: ImageType,
     pub fps: Option<u64>,
     pub mode: DisplayMode,
     pub disable_info: bool,
@@ -88,36 +87,12 @@ impl From<&Cli> for Config {
 
 #[derive(Debug, Clone)]
 pub enum RunMode {
-    Once(Result<Config, String>),
-    Multiple(Vec<Result<Config, String>>),
+    Once(Result<(ImageType, Config), String>),
+    Multiple(Vec<Result<(ImageType, Config), String>>),
     #[cfg(any(feature = "video_player", feature = "gif_player"))]
-    Video(Result<Config, String>),
+    Video(Result<(ImageType, Config), String>),
+    #[allow(unused)]
     Error(String),
-}
-
-#[allow(dead_code)]
-impl RunMode {
-    pub fn once(&self) -> Result<Config, String> {
-        match self {
-            Once(config) => config.clone(),
-            _ => panic!("Cannot get the config in other mode"),
-        }
-    }
-
-    pub fn multiple(&self) -> Vec<Result<Config, String>> {
-        match self {
-            Multiple(configs) => configs.clone(),
-            _ => panic!("Cannot get the config in other mode"),
-        }
-    }
-
-    #[cfg(any(feature = "video_player", feature = "gif_player"))]
-    pub fn video(&self) -> Result<Config, String> {
-        match self {
-            Video(config) => config.clone(),
-            _ => panic!("Cannot get the config in other mode"),
-        }
-    }
 }
 
 pub fn parse2(cli: Cli) -> RunMode {
@@ -135,13 +110,12 @@ pub fn parse2(cli: Cli) -> RunMode {
             }
             let img = image::open(&args.path).expect("Failed to open image");
             let config = Config::from(&cli)
-                .image(Image(img))
                 .file_name(Some(
                     path.file_name().unwrap().to_string_lossy().to_string(),
                 ))
                 .show_time(!args.hide_filename)
                 .get_options();
-            Once(Ok(config))
+            Once(Ok((Image(img), config)))
         }
         Commands::Directory(ref args) => {
             let path = Path::new(&args.path);
@@ -159,7 +133,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                     let entry = match entry {
                         Ok(entry) => entry,
                         Err(err) => {
-                            eprintln!("{}", err);
+                            eprintln!("{err}");
                             return None;
                         }
                     };
@@ -192,17 +166,16 @@ pub fn parse2(cli: Cli) -> RunMode {
                                         ImageType::Path(path.to_str().unwrap().to_string())
                                     };
                                     let config = Config::from(&cli)
-                                        .image(img)
                                         .output(Some(output.to_str().unwrap().to_string() + ".txt"))
                                         .show_file_name(false)
                                         .get_options();
-                                    Some(Ok(config))
+                                    Some(Ok((img, config)))
                                 }
                                 None => None,
                             }
                         }
                         Err(err) => {
-                            eprintln!("{}", err);
+                            eprintln!("{err}");
                             None
                         }
                     }
@@ -246,7 +219,6 @@ pub fn parse2(cli: Cli) -> RunMode {
                         });
                         #[allow(unused_mut)]
                         let mut config = Config::from(&cli2)
-                            .image(Gif(rx))
                             .fps(args.fps)
                             .loop_play(args.loop_play)
                             .get_options();
@@ -258,7 +230,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 .unwrap_or_default();
                         }
 
-                        Video(Ok(config))
+                        Video(Ok((Gif(rx), config)))
                     }
                     Err(err) => Once(Err(err.to_string())),
                 }
@@ -268,7 +240,7 @@ pub fn parse2(cli: Cli) -> RunMode {
         Commands::Base64(ref args) => {
             match base64::engine::general_purpose::STANDARD.decode(args.base64.clone()) {
                 Ok(buffer) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
+                    Ok(img) => Once(Ok((Image(img), Config::from(&cli).get_options()))),
                     Err(_) => Once(Err("Failed to load image from base64".to_string())),
                 },
                 Err(_) => Once(Err("Invalid base64 string".to_string())),
@@ -278,7 +250,7 @@ pub fn parse2(cli: Cli) -> RunMode {
             let mut buffer = Vec::new();
             match std::io::stdin().lock().read_to_end(&mut buffer) {
                 Ok(_) => match image::load_from_memory(&buffer) {
-                    Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
+                    Ok(img) => Once(Ok((Image(img), Config::from(&cli).get_options()))),
                     Err(e) => Once(Err(e.to_string())),
                 },
                 Err(e) => Once(Err(e.to_string())),
@@ -300,8 +272,7 @@ pub fn parse2(cli: Cli) -> RunMode {
                             .unwrap();
                         if !(type_.starts_with("image") || type_.starts_with("binary")) {
                             return Once(Err(format!(
-                                "The file is not an image! (\x1b[0;35m{}\x1b[0m)",
-                                type_
+                                "The file is not an image! (\x1b[0;35m{type_}\x1b[0m)"
                             )));
                         }
                         let total_size = resp
@@ -325,14 +296,14 @@ pub fn parse2(cli: Cli) -> RunMode {
                         }
                         pd.finish_with_message("Download complete");
                         match image::load_from_memory(&buffer) {
-                            Ok(img) => Once(Ok(Config::from(&cli).image(Image(img)).get_options())),
-                            Err(e) => Once(Err(format!("Failed to load image from bytes: {}", e))),
+                            Ok(img) => Once(Ok((Image(img), Config::from(&cli).get_options()))),
+                            Err(e) => Once(Err(format!("Failed to load image from bytes: {e}"))),
                         }
                     } else {
                         Once(Err(format!("Bad requests({})", resp.status())))
                     }
                 }
-                Err(e) => Once(Err(format!("Failed to download the image: {}", e))),
+                Err(e) => Once(Err(format!("Failed to download the image: {e}"))),
             }
         }
         #[cfg(feature = "video_player")]
@@ -353,20 +324,16 @@ pub fn parse2(cli: Cli) -> RunMode {
                         crate::util::pick_audio(path, &audio_path)?;
                         Ok::<std::path::PathBuf, ffmpeg_next::error::Error>(audio_path)
                     };
-                    function()
-                        .map(|path| AudioPath::Temp(path))
-                        .unwrap_or_default()
+                    function().map(AudioPath::Temp).unwrap_or_default()
+                } else if args
+                    .audio
+                    .as_ref()
+                    .map(|s| s.to_lowercase() == "none")
+                    .unwrap_or_default()
+                {
+                    AudioPath::None
                 } else {
-                    if args
-                        .audio
-                        .as_ref()
-                        .map(|s| s.to_lowercase() == "none")
-                        .unwrap_or_default()
-                    {
-                        AudioPath::None
-                    } else {
-                        AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
-                    }
+                    AudioPath::Custom(Path::new(&args.audio.unwrap()).to_path_buf())
                 };
                 // And then, extract the video
                 // We will to use ffmpeg-next lib to do this
@@ -398,11 +365,15 @@ pub fn parse2(cli: Cli) -> RunMode {
                 etx.send(Ok(Initialized((vrx, decoder.frame_rate()))))
                     .unwrap();
                 #[cfg(feature = "audio_support")]
-                etx.send(Ok(Initialized((vrx, audio_path, decoder.frame_rate(), pos.clone()))))
-                    .unwrap();
+                etx.send(Ok(Initialized((
+                    vrx,
+                    audio_path,
+                    decoder.frame_rate(),
+                    pos.clone(),
+                ))))
+                .unwrap();
                 std::thread::scope(|s| {
                     s.spawn(|| {
-                        let mut frame_counter = 0usize;
                         #[cfg(not(feature = "audio_support"))]
                         let frames = decoder.frames();
                         #[cfg(feature = "audio_support")]
@@ -414,29 +385,30 @@ pub fn parse2(cli: Cli) -> RunMode {
                                 return;
                             }
                         };
-                        for frame in frames {
+                        for (index, frame) in frames.enumerate() {
                             match frame {
                                 Ok(frame) => {
-                                    vtx.send(Ok((frame.frame.into(), frame_counter, frame.pts))).unwrap();
-                                    frame_counter += 1;
+                                    vtx.send(Ok((frame.frame.into(), index, frame.pts)))
+                                        .unwrap();
                                 }
                                 // Other errors
                                 Err(err) => {
-                                    vtx.send(Err(FrameError::Other(err.to_string()))).unwrap()
+                                    vtx.send(Err(FrameError::Other(err.to_string()))).unwrap();
+                                    return;
                                 }
                             }
                         }
-                        vtx.send(Err(FrameError::EOF)).unwrap();
-                    })
-                    .join()
-                    .unwrap();
+                        vtx.send(Err(FrameError::Eof)).unwrap();
+                    });
                 });
                 etx.send(Ok(Finished)).unwrap();
             });
-            Video(Ok(Config::from(&cli2)
-                .image(ImageType::Video(erx))
-                .flush_interval(args.flush_interval)
-                .get_options()))
+            Video(Ok((
+                ImageType::Video(erx),
+                Config::from(&cli2)
+                    .flush_interval(args.flush_interval)
+                    .get_options(),
+            )))
         }
         #[cfg(feature = "dot_file")]
         Commands::DotFile(args) => {

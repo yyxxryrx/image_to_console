@@ -18,12 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename `dither_method` to `quantize_method` in `ImageConverterOption`
 
+### Fixed
+
+- Enhance Kitty terminal protocol recognition
+- Add explicit lifetime annotation to `display` return type in processor
+
 ### Refactor
 
 - Extract Sixel conversion logic into dedicated `converter/sixel` module
 - Extract Unicode conversion logic into dedicated `converter/unicode` module
 - Remove redundant blank lines and optimize code structure
 - Move macro definitions into independent `macro_rules` module
+- Make `ConvertResult` a public export
+- Optimize code format and performance
+- Optimize `ImageProcessorResultDisplay` lifetime management
+- Optimize block processing logic in image converter
 
 ## [v0.2.2] - 2025-11-06
 

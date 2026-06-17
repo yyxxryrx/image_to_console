@@ -1,3 +1,4 @@
+use crate::types::ImageType;
 use crate::{
     config::{Config, cli::Cli},
     types::{
@@ -13,13 +14,13 @@ use image_to_console_core::{
 };
 
 pub trait CreateIPFromConfig {
-    fn from_config(config: &Config) -> Result<Self, String>
+    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self>
     where
         Self: Sized;
 }
 
 impl CreateIPFromConfig for ImageProcessor {
-    fn from_config(config: &Config) -> Result<Self, String> {
+    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self> {
         let option = ImageProcessorOptions {
             mode: config.mode,
             center: config.center,
@@ -34,14 +35,27 @@ impl CreateIPFromConfig for ImageProcessor {
             #[cfg(feature = "sixel_support")]
             color_space: ColorSpace::from(&config.color_space),
         };
-        match config.image.clone() {
+        match img {
             Image(image) => Ok(Self::new(image, option)),
             Path(path) => {
-                let image = image::open(path).map_err(|e| e.to_string())?;
+                let image = image::open(path).map_err(|e| {
+                    image_to_console_core::error::ConvertError::ImageError(
+                        image_to_console_core::error::ConvertErrorContext::new(
+                            image_to_console_core::error::ConvertErrorContextSource::Function(
+                                String::from("from_config"),
+                            ),
+                            String::from("Open failed"),
+                        )
+                        .with_inner(Box::new(e)),
+                    )
+                })?;
                 Ok(Self::new(image, option))
             }
             #[cfg(any(feature = "gif_player", feature = "video_player"))]
-            _ => Err(String::from("cannot init")),
+            _ => Err(image_to_console_core::error::ConvertError::WrongImageType {
+                expect_type: String::from("Image or Path"),
+                actual_type: format!("{img:?}"),
+            }),
         }
     }
 }

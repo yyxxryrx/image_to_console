@@ -2,15 +2,21 @@ use clap::{ValueEnum, builder::PossibleValue};
 use image::DynamicImage;
 use std::fmt::Debug;
 
+#[cfg(feature = "gif_player")]
+pub type GifType = crossbeam_channel::Receiver<Result<(DynamicImage, usize, u16), String>>;
+
+#[cfg(feature = "video_player")]
+pub type VideoType = crossbeam_channel::Receiver<Result<VideoEvent, String>>;
+
 #[derive(Debug, Clone)]
 pub enum ImageType {
     Image(DynamicImage),
     Path(String),
     #[cfg(feature = "gif_player")]
-    Gif(crossbeam_channel::Receiver<Result<(DynamicImage, usize, u16), String>>),
+    Gif(GifType),
     #[cfg(feature = "video_player")]
     /// The channel to receive video events
-    Video(crossbeam_channel::Receiver<Result<VideoEvent, String>>),
+    Video(VideoType),
 }
 
 impl Default for ImageType {
@@ -40,6 +46,11 @@ impl ValueEnum for ClapResizeMode {
     }
 }
 
+#[cfg(feature = "video_player")]
+pub type FrameReceiver = crossbeam_channel::Receiver<
+    Result<(DynamicImage, usize, Option<std::time::Duration>), crate::errors::FrameError>,
+>;
+
 /// The event type to of video parser
 #[cfg(feature = "video_player")]
 #[derive(Debug, Clone)]
@@ -49,26 +60,11 @@ pub enum VideoEvent {
     ///
     /// The last one is the frame rate.
     #[cfg(not(feature = "audio_support"))]
-    Initialized(
-        (
-            crossbeam_channel::Receiver<
-                Result<
-                    (DynamicImage, usize, Option<std::time::Duration>),
-                    crate::errors::FrameError,
-                >,
-            >,
-            f32,
-        ),
-    ),
+    Initialized((FrameReceiver, f32)),
     #[cfg(feature = "audio_support")]
     Initialized(
         (
-            crossbeam_channel::Receiver<
-                Result<
-                    (DynamicImage, usize, Option<std::time::Duration>),
-                    crate::errors::FrameError,
-                >,
-            >,
+            FrameReceiver,
             image_to_console_renderer::audio_path::AudioPath,
             f32,
             std::sync::Arc<std::sync::atomic::AtomicU64>,
@@ -198,7 +194,7 @@ impl FlushInterval {
     /// - `Never` returns `usize::MAX` (essentially never flush)
     /// - `Frames(n)` returns n
     /// - `Seconds(s)` returns s * fps rounded to nearest usize
-    pub fn to_frames(&self, fps: f32) -> usize {
+    pub fn get_frames(&self, fps: f32) -> usize {
         match self {
             Self::Always => 1,
             Self::Never => usize::MAX,
@@ -266,17 +262,17 @@ mod tests {
             FlushInterval::from_str("never").unwrap(),
             FlushInterval::Never
         ));
-        assert!(matches!(FlushInterval::from_str("-1.5s"), Err(_)));
-        assert!(matches!(FlushInterval::from_str("0f"), Err(_)));
+        assert!(FlushInterval::from_str("-1.5s").is_err());
+        assert!(FlushInterval::from_str("0f").is_err());
     }
 
     #[test]
     #[cfg(feature = "video_player")]
     fn test_to_frames_conversion() {
         let fps = 30.0;
-        assert_eq!(FlushInterval::Always.to_frames(fps), 1);
-        assert_eq!(FlushInterval::Never.to_frames(fps), usize::MAX);
-        assert_eq!(FlushInterval::Frames(10).to_frames(fps), 10);
-        assert_eq!(FlushInterval::Seconds(2.0).to_frames(fps), 60);
+        assert_eq!(FlushInterval::Always.get_frames(fps), 1);
+        assert_eq!(FlushInterval::Never.get_frames(fps), usize::MAX);
+        assert_eq!(FlushInterval::Frames(10).get_frames(fps), 10);
+        assert_eq!(FlushInterval::Seconds(2.0).get_frames(fps), 60);
     }
 }

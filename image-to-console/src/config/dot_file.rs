@@ -193,8 +193,7 @@ where
     } else {
         // 返回自定义错误信息
         Err(serde::de::Error::custom(format!(
-            "max-colors must be between 1 and 256, got {}",
-            value
+            "max-colors must be between 1 and 256, got {value}"
         )))
     }
 }

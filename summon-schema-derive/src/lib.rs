@@ -32,7 +32,7 @@
 //!     age: u32,
 //! }
 //! ```
-
+#![allow(clippy::collapsible_if)]
 use proc_macro::TokenStream;
 /// Extract documentation from attributes
 ///
@@ -534,4 +534,3 @@ mod tests {
         );
     }
 }
-

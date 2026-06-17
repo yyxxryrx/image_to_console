@@ -30,7 +30,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
         for _ in 0..result.air_lines {
             println!();
         }
-        println!("{}", output);
+        println!("{output}");
     }
     if !config.disable_info {
         println!(
@@ -90,7 +90,7 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
                 "RENDER FINISHED IN"
                     .to_colored_text()
                     .set_foreground_color(TerminalColor::Green),
-                format!("{:02}:{:02}.{:03}", min, sec, ms)
+                format!("{min:02}:{sec:02}.{ms:03}")
                     .to_colored_text()
                     .set_foreground_color(TerminalColor::LightGreen)
             );
@@ -108,7 +108,6 @@ pub fn render(result: ImageProcessorResult, config: Config) -> Result<()> {
     Ok(())
 }
 
-#[allow(unused)]
 #[cfg(feature = "gif_player")]
 pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     // Load the audio if exists
@@ -128,9 +127,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     fn play_frame(
         frames: crossbeam_channel::Receiver<Frame>,
         delay: Option<u64>,
-        frame_index: usize,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
-        is_sixel: bool,
         back_top: bool,
         offset: std::time::Duration,
     ) {
@@ -151,15 +148,14 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
             std::thread::sleep(d);
             // calculate the time
             let time = timer.elapsed();
-            play_frame(frames, delay, index + 1, st2, is_sixel, back_top, time - d);
+            play_frame(frames, delay, st2, back_top, time - d);
         });
         st.send(task).unwrap();
 
-        let time = std::time::Instant::now();
         if back_top {
             print!("\x1b[1;1H");
         }
-        println!("{}", frame);
+        println!("{frame}");
         println!("Current frame: {index}");
         if !back_top {
             // Back to the saved position
@@ -172,18 +168,13 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
     if !config.clear {
         print!("\x1b[s");
     }
-    #[cfg(feature = "sixel_support")]
     play_frame(
         results,
         delay,
-        0,
         st,
-        config.mode.is_sixel(),
         config.clear,
         std::time::Duration::default(),
     );
-    #[cfg(not(feature = "sixel_support"))]
-    play_frame(results, delay, 0, st, false, config.clear);
 
     for task in rt.iter() {
         task.join().unwrap();
@@ -216,17 +207,15 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 
 pub type Vrx = crossbeam_channel::Receiver<(String, usize, Option<std::time::Duration>)>;
 
-#[allow(unused)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: Vrx,
     #[cfg(feature = "rodio")] audio_path: AudioPath,
     fps: f32,
-    is_sixel: bool,
     clear: bool,
     flush_interval: usize,
-    #[cfg(feature = "rodio")]
-    sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    disable_info: bool,
+    #[cfg(feature = "rodio")] sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
     #[cfg(feature = "rodio")]
@@ -238,21 +227,23 @@ pub fn render_video(
         .map(|path| std::io::BufReader::new(File::open(path).unwrap()));
     #[cfg(feature = "rodio")]
     let sink =
-        std::sync::Arc::new(file.map(|file| rodio::play(&stream_handle.mixer(), file).unwrap()));
+        std::sync::Arc::new(file.map(|file| rodio::play(stream_handle.mixer(), file).unwrap()));
 
     // calculate the delay
     let start_time = std::time::Instant::now();
     let (st, rt) = crossbeam_channel::unbounded::<JoinHandle<()>>();
     let max_frame = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+    #[allow(clippy::too_many_arguments)]
     fn play_frame(
         frames: Vrx,
         delay: f32,
         st: crossbeam_channel::Sender<JoinHandle<()>>,
-        is_sixel: bool,
         back_top: bool,
         offset: std::time::Duration,
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         flush_interval: usize,
+        disable_info: bool,
         #[cfg(feature = "rodio")] sink: std::sync::Arc<Option<rodio::Sink>>,
     ) {
         let frame = frames.recv();
@@ -260,7 +251,20 @@ pub fn render_video(
             return;
         }
         let frame = frame.unwrap();
+
+        #[allow(unused)]
         let (frame, index, pts) = frame;
+
+        #[cfg(feature = "rodio")]
+        let sub = sink
+            .as_ref()
+            .as_ref()
+            .zip(pts.as_ref())
+            .map(|(sink, pts)| sink.get_pos().saturating_sub(*pts));
+
+        #[cfg(feature = "rodio")]
+        let offset = sub.unwrap_or(offset);
+
         let d = std::time::Duration::from_micros((1_000_000f32 / delay).round() as u64)
             .saturating_sub(offset);
         let st2 = st.clone();
@@ -277,11 +281,11 @@ pub fn render_video(
                 frames,
                 delay,
                 st2,
-                is_sixel,
                 back_top,
                 time - d,
                 max_frame_clone,
                 flush_interval,
+                disable_info,
                 #[cfg(feature = "rodio")]
                 other_sink,
             );
@@ -295,28 +299,44 @@ pub fn render_video(
 
         if back_top {
             print!("\x1b[1;1H");
-        } else {
-            // Save current cursor position
-            print!("\r\x1b[s");
         }
-        let lines = frame.as_bytes();
-        for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
-            if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
-                return;
-            }
-            if std::io::stdout().lock().write_all(line).is_err() {
-                return;
-            }
+        // let lines = frame.as_bytes();
+        // for line in lines.chunks(lines.len().saturating_div(100).max(1)) {
+        //     if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+        //         return;
+        //     }
+        if index < max_frame.load(std::sync::atomic::Ordering::Relaxed) || index == 0 {
+            return;
         }
+        if std::io::stdout()
+            .lock()
+            .write_all(frame.as_bytes())
+            .is_err()
+        {
+            return;
+        }
+        // }
         // Refresh
         if index % flush_interval == 0 {
             std::io::stdout().flush().unwrap();
         }
-        println!("\ncurrent frame: {index}");
 
-        #[cfg(feature = "rodio")]
-        if let Some((pos, pts)) = sink.as_ref().as_ref().map(|s| s.get_pos()).zip(pts) {
-            std::println!("current delay: {:?}", pos.saturating_sub(pts));
+        if !disable_info {
+            if let Some(pts) = pts {
+                println!(
+                    "\n\x1b[2K\rTime: {:02}:{:02}:{:02}.{:03}",
+                    pts.as_secs() / 3600,
+                    pts.as_secs() / 60,
+                    pts.as_secs() % 60,
+                    pts.as_millis() % 1000
+                );
+            }
+            println!("\x1b[2K\rcurrent frame: {index}");
+
+            #[cfg(feature = "rodio")]
+            if let Some(sub) = sub {
+                std::println!("\x1b[2K\rcurrent delay: {sub:?}");
+            }
         }
 
         if !back_top {
@@ -329,33 +349,40 @@ pub fn render_video(
         print!("\x1bc");
     }
 
+    // Save current cursor position
+    print!("\r\x1b[s");
     play_frame(
         vrx,
         fps,
         st,
-        is_sixel,
         clear,
         std::time::Duration::default(),
         max_frame.clone(),
         flush_interval,
+        disable_info,
         #[cfg(feature = "rodio")]
         sink.clone(),
     );
 
-    #[cfg(feature = "rodio")]
-    let is_finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    #[cfg(feature = "rodio")]
-    let is_finished_2 = is_finished.clone();
+    let (sr, rr) = std::sync::mpsc::channel::<()>();
 
     #[cfg(feature = "rodio")]
-    let sync_thread = std::thread::spawn(move || {
+    std::thread::spawn(move || {
         if sink.is_some() {
-            while !is_finished_2.load(std::sync::atomic::Ordering::SeqCst) {
+            loop {
+                match rr.try_recv() {
+                    Ok(..) => break,
+                    Err(e) => {
+                        if e == std::sync::mpsc::TryRecvError::Disconnected {
+                            break;
+                        }
+                    }
+                }
                 sync_pos.store(
                     sink.as_ref().as_ref().unwrap().get_pos().as_millis() as u64,
                     std::sync::atomic::Ordering::SeqCst,
                 );
-                std::thread::sleep(std::time::Duration::from_millis(50));
+                std::thread::sleep(std::time::Duration::from_millis(5));
             }
         }
     });
@@ -363,9 +390,7 @@ pub fn render_video(
     for task in rt.iter() {
         task.join().unwrap();
     }
-
-    #[cfg(feature = "rodio")]
-    is_finished.store(true, std::sync::atomic::Ordering::SeqCst);
+    sr.send(()).unwrap();
 
     println!(
         "{} {}",
@@ -381,6 +406,7 @@ pub fn render_video(
         .to_colored_text()
         .set_foreground_color(TerminalColor::LightGreen)
     );
+
     // audio_task.join().unwrap();
     // quit the audio stream
     #[cfg(feature = "rodio")]

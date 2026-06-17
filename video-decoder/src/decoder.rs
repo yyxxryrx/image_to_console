@@ -1,5 +1,6 @@
 use crate::{Error, VideoResult};
 
+#[derive(Debug)]
 pub struct VideoFrame {
     pub pts: Option<std::time::Duration>,
     pub frame: image::RgbImage,
@@ -59,7 +60,6 @@ impl<'a> VideoDecoder<'a> {
             let time_base = stream.time_base();
             time_base.0 as f64 / time_base.1 as f64
         };
-        // dbg!(codec.time_base());
         Ok(Self {
             video_stream,
             pockets: input.packets(),
@@ -114,7 +114,7 @@ impl<'a> VideoDecoder<'a> {
         if self.decoder.receive_frame(&mut self.video_frame).is_ok() {
             return Ok(Some(self.video_frame.clone()));
         }
-        while let Some((stream, packet)) = self.pockets.next() {
+        for (stream, packet) in self.pockets.by_ref() {
             if stream.index() == self.video_stream {
                 match self.decoder.send_packet(&packet) {
                     Err(ffmpeg_next::Error::Other { errno })
@@ -175,7 +175,7 @@ impl<'a> VideoFrames<'a> {
         if let Some((pts, pos)) = pts.as_ref().zip(self.pos.as_ref()) {
             let pos =
                 std::time::Duration::from_millis(pos.load(std::sync::atomic::Ordering::SeqCst));
-            if pos.saturating_sub(*pts).as_millis() > 300 {
+            if pos.saturating_sub(*pts).as_millis() > 250 {
                 return self.forward();
             }
         }

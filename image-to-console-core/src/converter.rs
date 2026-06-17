@@ -420,7 +420,7 @@ impl ImageConverter {
             if last_color == cur_color {
                 "  ".to_string()
             } else {
-                format!("{}  ", cur_color)
+                format!("{cur_color}  ")
             }
         } else {
             panic!("Invalid image type")
@@ -491,7 +491,7 @@ impl ImageConverter {
             {
                 cur_char.to_string()
             } else {
-                format!("{}{}", cur_color, cur_char)
+               cur_color + cur_char
             }
         } else {
             panic!("Invalid image type")
@@ -663,15 +663,13 @@ impl ImageConverter {
 
         line.push_str(&STANDARD.encode(chunks.nth(0).ok_or(ConvertError::EmptyData)?));
         line.push_str("\x1b\\");
+
+        let length = chunks.len();
         if chunks.len() > 0 {
-            for chunk in chunks.clone().take(chunks.len() - 1) {
-                line.push_str(&format!("\x1b_Gm=1;{}\x1b\\", STANDARD.encode(chunk)));
+            for (index, chunk) in chunks.enumerate() {
+                let m = if index + 1 == length { 1 } else { 0 };
+                line.push_str(&format!("\x1b_Gm={m};{}\x1b\\", STANDARD.encode(chunk)));
             }
-            // It is definitely available here, so there is no need to check
-            line.push_str(&format!(
-                "\x1b_Gm=0;{}\x1b\\",
-                STANDARD.encode(unsafe { chunks.last().unwrap_unchecked() })
-            ));
         }
         Ok(vec![line])
     }
