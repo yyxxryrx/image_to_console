@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.2.1] - 2026-6-17
+
 ### Added
 
-- **Video Decoder Module**: Introduced the `video-decoder` crate with frame extraction, error handling, and lifetime-aware decoding capabilities [#c895c4b, #469e647, #204ecf5, #73255d3]
+- **Video Decoder Module**: Introduced the `video-decoder` crate with frame extraction, error handling, and
+  lifetime-aware decoding capabilities [#c895c4b, #469e647, #204ecf5, #73255d3]
 - Integrated `video-decoder` as an optional dependency in the CLI crate with `video_player` feature [#04dd33d]
-- **Processor Feature Support**: Added `processor` feature across workspace crates with updated dependency configuration [#ce25843]
-- **Full Development Shell**: Added complete development shell configuration with updated toolchain dependencies [#37c59bd]
+- **Processor Feature Support**: Added `processor` feature across workspace crates with updated dependency
+  configuration [#ce25843]
+- **Full Development Shell**: Added complete development shell configuration with updated toolchain
+  dependencies [#37c59bd]
 - Added `ToImageFailed` error variant for improved video decoding error handling [#469e647]
 - Updated Nix Flake configuration with additional build packages and subdirectory build support [#db088f6, #a852950]
 - **Video Playback Sync**: Implemented video playback synchronization functionality [#5c7b98e]
@@ -32,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed frame time calculation error in audio support [#cfbfcc5]
 - Added explicit lifetime annotation to processor display return type [#789224e]
 - Fixed frame rendering and info display issue [#36cc49c]
+- Fixed audio feature conditional compilation issue [#aa2fd13]
 
 ### Performance
 
@@ -66,10 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified audio synchronization in video rendering [#ebf580c]
 - Optimized video decoding and audio playback logic [#bc6e1ba]
 - Optimized audio synchronization logic implementation [#e3a7051]
+- Optimized console output performance [#b6b0cab]
 
 ### Documentation
 
 - Updated CLI parameters and configuration structs documentation comments [#3d7be6a]
+- Updated build instructions and dependency tables in README [#0d5b91d]
 
 ### Dependencies
 
@@ -85,17 +93,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   always, and never refresh
 - Add the `-F/--flush-interval` parameter for the video playback command, with a default value of "1s"
 - Add a `flush_interval` field to the `Config` struct to control the video refresh frequency
-- **Nix Build Support**: Integrated `rust-overlay` for Rust toolchain management, configured `bindgenHook` for C library bindings, added support for Linux/Darwin multi-platform architectures, and pre-installed `rust-analyzer` and `clippy` in the dev shell [#3d67f93].
-- **TOML Configuration System**: Introduced the `dot-file` subcommand supporting `schema`, `run`, and `check` operations. Implemented bidirectional conversion between TOML config and CLI arguments [#a8a13e7, #0037fb7].
-- **Terminal Styling Module**: Added a new `styles` module implementing `Display` traits for `TextHeader` and `Text`, enabling unified formatting and custom style settings [#2e1a4fc].
-- **Unicode Width Support**: Added `unicode-width` dependency to ensure correct alignment of multi-byte characters in console output [#69d2032].
-- **New `summon-schema` crate**: Added a library for converting Rust types to JSON Schema with the `ToSchema` trait (#5ee1402, #4982c22)
+- **Nix Build Support**: Integrated `rust-overlay` for Rust toolchain management, configured `bindgenHook` for C library
+  bindings, added support for Linux/Darwin multi-platform architectures, and pre-installed `rust-analyzer` and `clippy`
+  in the dev shell [#3d67f93].
+- **TOML Configuration System**: Introduced the `dot-file` subcommand supporting `schema`, `run`, and `check`
+  operations. Implemented bidirectional conversion between TOML config and CLI arguments [#a8a13e7, #0037fb7].
+- **Terminal Styling Module**: Added a new `styles` module implementing `Display` traits for `TextHeader` and `Text`,
+  enabling unified formatting and custom style settings [#2e1a4fc].
+- **Unicode Width Support**: Added `unicode-width` dependency to ensure correct alignment of multi-byte characters in
+  console output [#69d2032].
+- **New `summon-schema` crate**: Added a library for converting Rust types to JSON Schema with the `ToSchema` trait (
+  #5ee1402, #4982c22)
 
 ### Changed
 
 - Refactor the configuration building method, replacing the original `from_cli` static method with the `From<&Cli>`
   trait
-  
+
 - Change the configuration building pattern to chained calls to improve code readability and maintainability
 
 - Enhance the robustness of `FlushInterval` parsing by adding validation for negative and zero values
@@ -104,16 +118,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Optimize the `build-options` macro to correctly handle field visibility
 
-- **HTTP Client Migration**: Replaced `reqwest` with `ureq` to simplify the dependency tree, reduce binary size, and improve compile times [#232de16].
+- **HTTP Client Migration**: Replaced `reqwest` with `ureq` to simplify the dependency tree, reduce binary size, and
+  improve compile times [#232de16].
 
 - **FFmpeg Backend Upgrade**:
     - Replaced `ez-ffmpeg` with `ffmpeg-next` for audio extraction.
-    
-    - Upgraded dependencies: `bindgen` (0.70.1→0.72.1), `ffmpeg-next` (7.1.0→8.0.0), `video-rs` (0.10.5→0.11.0), `ndarray` (0.16.1→0.17.2), and others [#a3bdc58].
-    
-- **Config Module Refactor**: Moved `Cli` struct and command definitions into a dedicated `cli` module to improve maintainability [#c535076].
 
-- **Error Handling Improvements**: Enhanced TOML parsing errors to display visual highlights with precise line and column numbers [#ef3d74c].
+    - Upgraded dependencies: `bindgen` (0.70.1→0.72.1), `ffmpeg-next` (7.1.0→8.0.0), `video-rs` (0.10.5→0.11.0),
+      `ndarray` (0.16.1→0.17.2), and others [#a3bdc58].
+
+- **Config Module Refactor**: Moved `Cli` struct and command definitions into a dedicated `cli` module to improve
+  maintainability [#c535076].
+
+- **Error Handling Improvements**: Enhanced TOML parsing errors to display visual highlights with precise line and
+  column numbers [#ef3d74c].
 
 - **Serialization Convention**: Unified configuration structs to use `kebab-case` naming convention [#0037fb7].
 
@@ -122,8 +140,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix the `Default` implementation of `ImageType` and provide a reasonable default value
 - Improve the error handling mechanism to ensure that invalid refresh interval parameters are correctly rejected
 - Fixed Unicode character width calculation in source code highlighting to prevent console misalignment [#69d2032].
-- Fixed temporary audio file cleanup logic by adding `unwrap_or_default()` to prevent errors when files are missing [#ce480d6, #0037fb7].
-- Fixed `AudioPath::drop` implementation to better handle filesystem permissions and concurrent access issues [#0037fb7].
+- Fixed temporary audio file cleanup logic by adding `unwrap_or_default()` to prevent errors when files are
+  missing [#ce480d6, #0037fb7].
+- Fixed `AudioPath::drop` implementation to better handle filesystem permissions and concurrent access
+  issues [#0037fb7].
 
 ### Refactor
 
@@ -137,7 +157,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Updated README: Added TOML configuration examples, `dot-file` subcommand usage, and protocol support table [#a525ffe, #22c0809].
+- Updated README: Added TOML configuration examples, `dot-file` subcommand usage, and protocol support
+  table [#a525ffe, #22c0809].
 - Corrected video feature name: `video` → `video_player` and updated dependency table format [#22c0809].
 - Improved Chinese documentation layout and refined parameter descriptions [#a525ffe].
 
