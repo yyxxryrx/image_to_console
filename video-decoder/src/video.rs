@@ -9,7 +9,7 @@ impl Video {
         Self { input }
     }
 
-    pub fn video_decoder(&mut self) -> VideoResult<crate::VideoDecoder> {
+    pub fn video_decoder(&mut self) -> VideoResult<crate::VideoDecoder<'_>> {
         let index = self
             .input
             .streams()

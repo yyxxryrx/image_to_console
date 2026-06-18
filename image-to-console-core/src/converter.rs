@@ -667,7 +667,7 @@ impl ImageConverter {
         let length = chunks.len();
         if chunks.len() > 0 {
             for (index, chunk) in chunks.enumerate() {
-                let m = if index + 1 == length { 1 } else { 0 };
+                let m = if index + 1 == length { 0 } else { 1 };
                 line.push_str(&format!("\x1b_Gm={m};{}\x1b\\", STANDARD.encode(chunk)));
             }
         }
