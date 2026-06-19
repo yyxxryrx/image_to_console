@@ -132,6 +132,8 @@ pub enum Protocol {
     Normal,
     WezTerm,
     Kitty,
+    #[cfg(target_os = "linux")]
+    KittyShm,
     ITerm2,
     #[cfg(feature = "sixel")]
     Sixel,
@@ -279,6 +281,11 @@ impl DisplayModeBuilder {
                 true => DisplayMode::Kitty,
                 false => DisplayMode::KittyNoColor,
             },
+            #[cfg(target_os = "linux")]
+            Protocol::KittyShm => match self.has_color {
+                true => DisplayMode::KittyShm,
+                false => DisplayMode::KittyShmNoColor,
+            },
             Protocol::ITerm2 => match self.has_color {
                 true => DisplayMode::Iterm2,
                 false => DisplayMode::Iterm2NoColor,
@@ -351,6 +358,8 @@ impl clap::ValueEnum for Protocol {
             Self::Normal => PossibleValue::new("normal"),
             Self::WezTerm => PossibleValue::new("wezterm"),
             Self::Kitty => PossibleValue::new("kitty"),
+            #[cfg(target_os = "linux")]
+            Self::KittyShm => PossibleValue::new("kitty-shm"),
             Self::ITerm2 => PossibleValue::new("iterm2"),
             #[cfg(feature = "sixel")]
             Self::Sixel => PossibleValue::new("sixel"),
