@@ -1,3 +1,5 @@
+#[cfg(target_os = "linux")]
+pub mod kitty_shm;
 mod sixel;
 mod unicode;
 
@@ -491,7 +493,7 @@ impl ImageConverter {
             {
                 cur_char.to_string()
             } else {
-               cur_color + cur_char
+                cur_color + cur_char
             }
         } else {
             panic!("Invalid image type")

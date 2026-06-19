@@ -50,6 +50,9 @@ use image::{DynamicImage, GrayImage, RgbaImage};
 #[cfg(feature = "processor")]
 use processor::ImageProcessorOptionsCreate;
 
+#[cfg(target_os = "linux")]
+mod shm;
+
 /// The protocol of display
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DisplayMode {
@@ -62,6 +65,10 @@ pub enum DisplayMode {
     WezTermNoColor,
     Kitty,
     KittyNoColor,
+    #[cfg(target_os = "linux")]
+    KittyShm,
+    #[cfg(target_os = "linux")]
+    KittyShmNoColor,
     Iterm2,
     Iterm2NoColor,
     #[cfg(feature = "sixel")]
