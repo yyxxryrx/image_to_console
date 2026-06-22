@@ -10,7 +10,6 @@ pub struct KittyImage {
 impl KittyImage {
     pub fn new(name: String, image: &image::RgbImage) -> crate::shm::error::ShmResult<Self> {
         let data = crate::shm::SharedData::new(&name, &image.as_raw()[..])?;
-        dbg!(image.len());
         Ok(Self {
             data,
             name,
