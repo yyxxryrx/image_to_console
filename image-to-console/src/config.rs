@@ -358,6 +358,16 @@ pub fn parse2(cli: Cli) -> RunMode {
                 };
                 let (vtx, vrx) = bounded(decoder.frame_rate().ceil() as usize);
 
+                #[cfg(target_os = "linux")]
+                {
+                    let mut shm = image_to_console_core::util::SHM
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
+                    let len = std::num::NonZeroUsize::new(decoder.frame_rate().ceil() as usize * 2)
+                        .unwrap_or_else(|_| unsafe { std::num::NonZeroUsize::new_unchecked(200) });
+                    shm.set_max_len(len);
+                }
+
                 #[cfg(feature = "audio_support")]
                 let pos = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
                 // tell the channel
