@@ -52,6 +52,7 @@ use processor::ImageProcessorOptionsCreate;
 
 #[cfg(target_os = "linux")]
 mod shm;
+pub mod util;
 
 /// The protocol of display
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -120,22 +121,19 @@ impl DisplayMode {
     /// - `DisplayMode::KittyNoColor`
     /// - `DisplayMode::Iterm2NoColor`
     pub fn is_color(&self) -> bool {
-        #[cfg(feature = "sixel")]
-        return matches!(
-            self,
-            Self::FullColor
-                | Self::HalfColor
-                | Self::WezTerm
-                | Self::Kitty
-                | Self::Iterm2
-                | Self::SixelHalf
-                | Self::SixelFull
-        );
-        #[cfg(not(feature = "sixel"))]
-        matches!(
+        let mut color = matches!(
             self,
             Self::FullColor | Self::HalfColor | Self::WezTerm | Self::Kitty | Self::Iterm2
-        )
+        );
+        #[cfg(feature = "sixel")]
+        {
+            color = color || matches!(self, Self::SixelHalf | Self::SixelFull);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            color = color || matches!(self, Self::KittyShm)
+        }
+        color
     }
 
     /// Check if the display mode supports only luminance/grayscale output
@@ -240,6 +238,10 @@ impl DisplayMode {
             Self::SixelHalf => "SixelHalf",
             #[cfg(feature = "sixel")]
             Self::SixelFull => "SixelFull",
+            #[cfg(target_os = "linux")]
+            Self::KittyShm => "KittyShm",
+            #[cfg(target_os = "linux")]
+            Self::KittyShmNoColor => "KittyShmNoColor",
         }
     }
 
@@ -281,6 +283,8 @@ impl DisplayMode {
             Self::FullColor => img_type.is_both(),
             #[cfg(feature = "sixel")]
             Self::SixelHalf | Self::SixelFull => img_type.is_color2(),
+            #[cfg(target_os = "linux")]
+            Self::KittyShm | Self::KittyShmNoColor => img_type.is_color2(),
             Self::HalfColor | Self::Kitty | Self::Iterm2 | Self::WezTerm => img_type.is_color(),
             Self::Ascii
             | Self::FullNoColor
@@ -317,6 +321,8 @@ impl DisplayMode {
             Self::FullColor => "Both",
             #[cfg(feature = "sixel")]
             Self::SixelHalf | Self::SixelFull => "Color2",
+            #[cfg(target_os = "linux")]
+            Self::KittyShm | Self::KittyShmNoColor => "Color2",
             Self::HalfColor | Self::Kitty | Self::Iterm2 | Self::WezTerm => "Color",
             Self::Ascii
             | Self::FullNoColor
@@ -369,6 +375,12 @@ impl ProcessedImage {
             DisplayMode::SixelHalf => Self::Color2(img.to_rgb8()),
             #[cfg(feature = "sixel")]
             DisplayMode::SixelFull => Self::Color2(img.to_rgb8()),
+            #[cfg(target_os = "linux")]
+            DisplayMode::KittyShm => Self::Color2(img.to_rgb8()),
+            #[cfg(target_os = "linux")]
+            DisplayMode::KittyShmNoColor => {
+                Self::Color2(DynamicImage::from(img.to_luma8()).to_rgb8())
+            }
         }
     }
 

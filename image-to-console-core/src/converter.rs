@@ -335,7 +335,7 @@ impl ImageConverter {
             WezTerm | WezTermNoColor => self.wezterm_convert(),
             #[cfg(feature = "sixel")]
             SixelHalf | SixelFull => self.sixel_convert(),
-            _ => {
+            HalfColor | FullColor | FullNoColor | Ascii => {
                 let chunk_size = std::cmp::max(1, self.option.height / num_cpus::get() as u32);
 
                 let convert_pixel = |x, y| match self.option.mode {
@@ -388,6 +388,8 @@ impl ImageConverter {
                 }
                 Ok(lines)
             }
+            #[cfg(target_os = "linux")]
+            KittyShm | KittyShmNoColor => self.kitty_shm_convert(),
         }
     }
 
@@ -712,6 +714,23 @@ impl ImageConverter {
     #[cfg(feature = "sixel")]
     fn sixel_convert(&self) -> ConvertResult<Vec<String>> {
         sixel::convert(self.img.rgb().unwrap(), self.full, &self.option)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn kitty_shm_convert(&self) -> ConvertResult<Vec<String>> {
+        let img = self.img.rgb().ok_or(ConvertError::WrongImageType {
+            expect_type: "rgb".to_string(),
+            actual_type: "other".to_string(),
+        })?;
+        let name = crate::util::gen_shm_name();
+        let img = kitty_shm::KittyImage::new(name, img).map_err(|e| match e {
+            crate::shm::error::ShmError::EmptyData => ConvertError::EmptyData,
+            _ => ConvertError::OSError(
+                ConvertErrorContext::new(ConvertErrorContextSource::OS, "OS error".to_string())
+                    .with_inner(Box::new(e)),
+            ),
+        })?;
+        Ok(vec![img.to_string()])
     }
 }
 

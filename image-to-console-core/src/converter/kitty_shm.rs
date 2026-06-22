@@ -24,11 +24,11 @@ impl std::fmt::Display for KittyImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\x1b_Ga=T,s={width},v={height},S={size},t=s,f=24;{playload}\x1b\\",
+            "\x1b_Ga=T,s={width},v={height},S={size},t=s,f=24;{payload}\x1b\\",
             width = self.width,
             height = self.height,
             size = self.data.size,
-            playload = base64::engine::general_purpose::STANDARD.encode(self.name.as_bytes())
+            payload = base64::engine::general_purpose::STANDARD.encode(self.name.as_bytes())
         )
     }
 }

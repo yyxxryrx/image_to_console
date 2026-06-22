@@ -2,6 +2,7 @@ use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
 use crate::error::{ConvertError, ConvertResult};
 use crate::{AutoResizeOption, DisplayMode, ProcessedImage, ResizeMode};
+use clap::builder::Str;
 use image::{GenericImageView, imageops::FilterType};
 use std::default::Default;
 
@@ -322,15 +323,9 @@ impl ImageProcessor {
         Self { image, option }
     }
 
-    /// Process the image
-    ///
-    /// Processes the image according to configuration options and returns the result
-    ///
-    /// # Returns
-    ///
-    /// Returns the processed result
-    pub fn process(&mut self) -> ConvertResult<ImageProcessorResult> {
-        let time = std::time::Instant::now();
+    pub fn process_only(
+        &mut self,
+    ) -> ConvertResult<(&image::DynamicImage, (u32, u32), String, usize)> {
         let mut air_line: usize = 0;
         let (mut w, mut h) = self.image.dimensions();
         let (width, height) =
@@ -451,8 +446,24 @@ impl ImageProcessor {
                 }
             }
         }
+        Ok((&self.image, (w, h), line_init, air_line))
+    }
+
+    /// Process the image
+    ///
+    /// Processes the image according to configuration options and returns the result
+    ///
+    /// # Returns
+    ///
+    /// Returns the processed result
+    pub fn process(&mut self) -> ConvertResult<ImageProcessorResult> {
+        let mode = self.option.mode;
+        let time = std::time::Instant::now();
+        let (img, (w, h), line_init, air_line) = self.process_only()?;
+        let (width, height) =
+            terminal_size::terminal_size().ok_or(ConvertError::GetTerminalSizeError)?;
         let converter = ImageConverter::new(
-            ProcessedImage::new(self.option.mode, &self.image),
+            ProcessedImage::new(mode, img),
             ImageConverterOption {
                 center: self.option.center,
                 width: w,

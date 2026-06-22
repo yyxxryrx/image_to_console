@@ -152,6 +152,7 @@ path = "examples/example-cli/src/main.rs"
 [dependencies]
 base64 = "0.22.1"
 num_cpus = "1.17.0"
+rand = "0.10.1"
 rayon = "1.11.0"
 
 [dependencies.clap]
