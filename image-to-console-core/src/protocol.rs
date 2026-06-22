@@ -347,6 +347,8 @@ impl clap::ValueEnum for Protocol {
             Self::ITerm2,
             #[cfg(feature = "sixel")]
             Self::Sixel,
+            #[cfg(target_os = "linux")]
+            Self::KittyShm
         ]
     }
 
