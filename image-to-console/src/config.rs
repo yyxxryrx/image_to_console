@@ -356,15 +356,17 @@ pub fn parse2(cli: Cli) -> RunMode {
                         return;
                     }
                 };
-                let (vtx, vrx) = bounded(decoder.frame_rate().ceil() as usize);
+                let (vtx, vrx) = bounded(decoder.frame_rate().max(3f32).ceil() as usize);
 
                 #[cfg(target_os = "linux")]
                 {
                     let mut shm = image_to_console_core::util::SHM
                         .lock()
                         .unwrap_or_else(|e| e.into_inner());
-                    let len = std::num::NonZeroUsize::new(decoder.frame_rate().ceil() as usize * 2)
-                        .unwrap_or_else(|_| unsafe { std::num::NonZeroUsize::new_unchecked(200) });
+                    let len = std::num::NonZeroUsize::new(
+                        (decoder.frame_rate().max(0f32).ceil() as usize).saturating_mul(2),
+                    )
+                    .unwrap_or(crate::const_value::DEFAULT_LEN);
                     shm.set_max_len(len);
                 }
 
