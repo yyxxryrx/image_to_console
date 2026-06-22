@@ -1,9 +1,8 @@
-use crate::ResizeMode::{Auto, Custom, None};
 use crate::converter::{ImageConverter, ImageConverterOption};
 use crate::error::{ConvertError, ConvertResult};
+use crate::ResizeMode::{Auto, Custom, None};
 use crate::{AutoResizeOption, DisplayMode, ProcessedImage, ResizeMode};
-use clap::builder::Str;
-use image::{GenericImageView, imageops::FilterType};
+use image::{imageops::FilterType, GenericImageView};
 use std::default::Default;
 
 /// Image processor options
