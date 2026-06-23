@@ -55,7 +55,39 @@ fn process(
     img: DynamicImage,
     config: &Config,
 ) -> image_to_console_core::ConvertResult<ImageProcessorResult> {
-    ImageProcessor::from_config(ImageType::Image(img), config).and_then(|mut p| p.process())
+    let option = config.into();
+    let mut processor = image_to_console_core::processor::ImageProcessor::new(img, option);
+    #[cfg(target_os = "linux")]
+    if config.mode.is_kitty_shm() {
+        let time = std::time::Instant::now();
+        let (img, (w, h), _, air_line) = processor.process_only()?;
+        let kitty_img = image_to_console_core::converter::kitty_shm::KittyImage::new(
+            image_to_console_core::util::gen_shm_name(),
+            &img.to_rgb8(),
+        )
+        .map_err(|e| match e {
+            image_to_console_core::shm::error::ShmError::EmptyData => {
+                image_to_console_core::error::ConvertError::EmptyData
+            }
+            _ => image_to_console_core::error::ConvertError::OSError(
+                image_to_console_core::error::ConvertErrorContext::new(
+                    image_to_console_core::error::ConvertErrorContextSource::OS,
+                    "Send frame failed".to_string(),
+                )
+                .with_inner(Box::new(e)),
+            ),
+        })?
+        .id(1);
+        return Ok(image_to_console_core::processor::ImageProcessorResult {
+            time,
+            option,
+            width: w,
+            height: h,
+            air_lines: air_line,
+            lines: vec![kitty_img.to_string()],
+        });
+    }
+    processor.process()
 }
 
 #[cfg(any(feature = "video_player", feature = "gif_player"))]
@@ -64,15 +96,23 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
     #[allow(unused_imports)]
     use crossbeam_channel::{bounded, unbounded};
     match config {
-        Ok((image, config)) => match image {
-            #[cfg(feature = "gif_player")]
-            ImageType::Gif(gif_type) => gif(gif_type, &config),
-            #[cfg(feature = "video_player")]
-            ImageType::Video(video_event) => video(video_event, &config),
-            _ => err(String::from("cannot init")),
-        },
+        Ok((image, config)) => {
+            #[cfg(all(target_os = "linux", feature = "crossterm"))]
+            if config.mode.is_kitty_shm() {
+                let _ = crossterm::terminal::enable_raw_mode();
+            }
+            match image {
+                #[cfg(feature = "gif_player")]
+                ImageType::Gif(gif_type) => gif(gif_type, &config),
+                #[cfg(feature = "video_player")]
+                ImageType::Video(video_event) => video(video_event, &config),
+                _ => err(String::from("cannot init")),
+            }
+        }
         Err(e) => err(e),
     }
+    #[cfg(feature = "crossterm")]
+    let _ = crossterm::terminal::disable_raw_mode();
 }
 
 #[cfg(feature = "gif_player")]
