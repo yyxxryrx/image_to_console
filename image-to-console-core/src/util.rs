@@ -63,9 +63,9 @@ impl Drop for CleanShm {
 pub fn gen_shm_name() -> String {
     let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
     let name = format!("/itcc-shm-{:x}-{seq:x}-{:x}", *PID, *ID);
-    #[cfg(target_os = "linux")]
-    SHM.lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .add(name.clone());
+    // #[cfg(target_os = "linux")]
+    // SHM.lock()
+    //     .unwrap_or_else(|e| e.into_inner())
+    //     .add(name.clone());
     name
 }
