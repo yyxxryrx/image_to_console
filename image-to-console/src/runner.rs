@@ -56,7 +56,7 @@ fn process(
     config: &Config,
 ) -> image_to_console_core::ConvertResult<ImageProcessorResult> {
     let option = config.into();
-    let mut processor = image_to_console_core::processor::ImageProcessor::new(img, option);
+    let mut processor = ImageProcessor::new(img, option);
     #[cfg(target_os = "linux")]
     if config.mode.is_kitty_shm() {
         let time = std::time::Instant::now();
@@ -78,7 +78,7 @@ fn process(
             ),
         })?
         .id(1);
-        return Ok(image_to_console_core::processor::ImageProcessorResult {
+        return Ok(ImageProcessorResult {
             time,
             option,
             width: w,
@@ -97,10 +97,6 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
     use crossbeam_channel::{bounded, unbounded};
     match config {
         Ok((image, config)) => {
-            #[cfg(all(target_os = "linux", feature = "crossterm"))]
-            if config.mode.is_kitty_shm() {
-                let _ = crossterm::terminal::enable_raw_mode();
-            }
             match image {
                 #[cfg(feature = "gif_player")]
                 ImageType::Gif(gif_type) => gif(gif_type, &config),
@@ -111,8 +107,6 @@ pub fn run_video(config: Result<(ImageType, Config), String>) {
         }
         Err(e) => err(e),
     }
-    #[cfg(feature = "crossterm")]
-    let _ = crossterm::terminal::disable_raw_mode();
 }
 
 #[cfg(feature = "gif_player")]
@@ -254,6 +248,7 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                 config.clear,
                                 flush_interval,
                                 config.disable_info,
+                                config.mode.is_kitty_shm(),
                                 sync_pos,
                             );
                             #[cfg(not(feature = "audio_support"))]
@@ -263,6 +258,7 @@ fn video(video_event: crate::types::VideoType, config: &Config) {
                                 config.clear,
                                 flush_interval,
                                 config.disable_info,
+                                config.mode.is_kitty_shm(),
                             );
                         });
                     });

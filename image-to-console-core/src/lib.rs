@@ -199,6 +199,11 @@ impl DisplayMode {
     pub fn is_kitty_shm(&self) -> bool {
         matches!(self, Self::KittyShm | Self::KittyShmNoColor)
     }
+    
+    #[cfg(not(target_os = "linux"))]
+    pub fn is_kitty_shm(&self) -> bool {
+        false
+    }
 
     /// Get the name of the display mode as a static string slice
     ///

@@ -207,6 +207,7 @@ pub fn render_gif(results: crossbeam_channel::Receiver<Frame>, config: Config) {
 
 pub type Vrx = crossbeam_channel::Receiver<(String, usize, Option<std::time::Duration>)>;
 
+#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "video_player")]
 pub fn render_video(
     vrx: Vrx,
@@ -215,6 +216,7 @@ pub fn render_video(
     clear: bool,
     flush_interval: usize,
     disable_info: bool,
+    is_shm: bool,
     #[cfg(feature = "rodio")] sync_pos: std::sync::Arc<std::sync::atomic::AtomicU64>,
 ) {
     // Load the audio if exists
@@ -244,6 +246,7 @@ pub fn render_video(
         max_frame: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         flush_interval: usize,
         disable_info: bool,
+        _is_shm: bool,
         #[cfg(feature = "rodio")] sink: std::sync::Arc<Option<rodio::Sink>>,
     ) {
         let frame = frames.recv();
@@ -286,6 +289,7 @@ pub fn render_video(
                 max_frame_clone,
                 flush_interval,
                 disable_info,
+                _is_shm,
                 #[cfg(feature = "rodio")]
                 other_sink,
             );
@@ -346,9 +350,17 @@ pub fn render_video(
         }
         drop(lock);
 
-        let mut lock = std::io::stdin().lock();
-        let mut buf = [0; 1024];
-        let _ = lock.read(&mut buf);
+        #[cfg(feature = "crossterm")]
+        if _is_shm {
+            let mut lock = std::io::stdin().lock();
+            let mut buf = [0; 1024];
+            let _ = lock.read(&mut buf);
+        }
+    }
+
+    #[cfg(feature = "crossterm")]
+    if is_shm {
+        let _ = crossterm::terminal::enable_raw_mode();
     }
 
     if clear {
@@ -366,6 +378,7 @@ pub fn render_video(
         max_frame.clone(),
         flush_interval,
         disable_info,
+        is_shm,
         #[cfg(feature = "rodio")]
         sink.clone(),
     );
@@ -400,6 +413,11 @@ pub fn render_video(
 
     #[cfg(feature = "rodio")]
     sr.send(()).unwrap();
+
+    #[cfg(feature = "crossterm")]
+    if is_shm {
+        let _ = crossterm::terminal::disable_raw_mode();
+    }
 
     println!(
         "\r{} {}",
