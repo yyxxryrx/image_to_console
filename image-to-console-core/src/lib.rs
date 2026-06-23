@@ -33,7 +33,7 @@ pub mod error;
 pub mod gif_processor;
 #[cfg(feature = "sixel")]
 pub mod indexed_image;
-mod macro_rules;
+pub mod macro_rules;
 #[cfg(feature = "processor")]
 pub mod processor;
 pub mod protocol;
@@ -51,7 +51,7 @@ use image::{DynamicImage, GrayImage, RgbaImage};
 use processor::ImageProcessorOptionsCreate;
 
 #[cfg(target_os = "linux")]
-mod shm;
+pub mod shm;
 pub mod util;
 
 /// The protocol of display
@@ -193,6 +193,11 @@ impl DisplayMode {
     #[cfg(feature = "sixel")]
     pub fn is_sixel(&self) -> bool {
         matches!(self, Self::SixelHalf | Self::SixelFull)
+    }
+
+    #[cfg(target_os = "linux")]
+    pub fn is_kitty_shm(&self) -> bool {
+        matches!(self, Self::KittyShm | Self::KittyShmNoColor)
     }
 
     /// Get the name of the display mode as a static string slice
