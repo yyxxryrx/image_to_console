@@ -344,6 +344,11 @@ pub fn render_video(
             // Back to the saved position
             lock.write_all("\x1b[u".as_bytes()).unwrap();
         }
+        drop(lock);
+
+        let mut lock = std::io::stdin().lock();
+        let mut buf = [0; 1024];
+        let _ = lock.read(&mut buf);
     }
 
     if clear {
@@ -397,7 +402,7 @@ pub fn render_video(
     sr.send(()).unwrap();
 
     println!(
-        "{} {}",
+        "\r{} {}",
         "Render in"
             .to_colored_text()
             .set_foreground_color(TerminalColor::Green),
