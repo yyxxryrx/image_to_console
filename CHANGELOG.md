@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Kitty Shared Memory Protocol**: Added Kitty SHM protocol support for Linux platform with `libc`-based shared memory, display mode support, configurable buffer size, and auto-detection [#9fa296d, #8acf9be, #f0830c4, #8cc7766, #b267ad6, #d8ff0c5, #2e2ff01, #5f0a85c, #420ca44]
+- Added stdin input handling and improved console output in renderer [#a20f792]
+
+### Fixed
+
+- Fixed block marker logic in image-to-console conversion [#598aba3]
+- Fixed frame rate calculation and shared memory length safety issues [#4add27a]
+
+### Refactor
+
+- Adjusted Linux platform conditional compilation structure for kitty-shm [#c9d75f5]
+- Optimized module import order and structure in processor [#7d3b8d7]
+- Removed debug print statements from kitty-shm [#5007a2b]
+- Commented out shared memory tracking in `gen_shm_name` [#fdab0e5]
+
+### Documentation
+
+- Updated documentation content and adjusted format [#c859807]
+
 ## [v0.2.1] - 2026-6-17
 
 ### Added

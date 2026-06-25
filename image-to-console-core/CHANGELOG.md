@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `processor` feature
 - Add `color_space` option in `ImageConverterOption`
+- Add Kitty SHM (shared memory) support for Linux platform
+- Add `KittyShm` display mode and protocol support
+- Add `libc` dependency and update crate versions
 
 ### Changed
 
@@ -22,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Enhance Kitty terminal protocol recognition
 - Add explicit lifetime annotation to `display` return type in processor
+- Fix block marker logic in image converter
 
 ### Refactor
 
@@ -33,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimize code format and performance
 - Optimize `ImageProcessorResultDisplay` lifetime management
 - Optimize block processing logic in image converter
+- Adjust Linux platform conditional compilation structure for kitty-shm
+- Optimize module import order and structure
+- Remove debug print statements
+- Comment out shared memory tracking in `gen_shm_name`
 
 ## [v0.2.2] - 2025-11-06
 

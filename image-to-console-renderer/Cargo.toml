@@ -20,6 +20,10 @@ image_to_console_colored = { path = "../image-to-console-colored" }
 optional = true
 version = "0.21.1"
 
+[dependencies.crossterm]
+optional = true
+version = "0.29.0"
+
 [dependencies.crossbeam-channel]
 optional = true
 version = "0.5.15"

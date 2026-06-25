@@ -19,9 +19,9 @@ pub trait CreateIPFromConfig {
         Self: Sized;
 }
 
-impl CreateIPFromConfig for ImageProcessor {
-    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self> {
-        let option = ImageProcessorOptions {
+impl From<&Config> for ImageProcessorOptions {
+    fn from(config: &Config) -> Self {
+        Self {
             mode: config.mode,
             center: config.center,
             full: config.full_resolution,
@@ -34,7 +34,13 @@ impl CreateIPFromConfig for ImageProcessor {
             max_colors: config.max_colors,
             #[cfg(feature = "sixel_support")]
             color_space: ColorSpace::from(&config.color_space),
-        };
+        }
+    }
+}
+
+impl CreateIPFromConfig for ImageProcessor {
+    fn from_config(img: ImageType, config: &Config) -> image_to_console_core::ConvertResult<Self> {
+        let option = config.into();
         match img {
             Image(image) => Ok(Self::new(image, option)),
             Path(path) => {

@@ -12,6 +12,7 @@ pub enum ConvertErrorContextSource {
     SixelConvert,
     /// Error occurred in a specific function
     Function(String),
+    OS,
 }
 
 /// Context information for an error, including the source and a descriptive message
@@ -83,6 +84,7 @@ pub enum ConvertError {
     LockError(ConvertErrorContext),
     /// An error related with image
     ImageError(ConvertErrorContext),
+    OSError(ConvertErrorContext),
 }
 
 impl Display for ConvertError {
@@ -102,6 +104,7 @@ impl Display for ConvertError {
             }
             ConvertError::LockError(context) => write!(f, "{}", context.message),
             ConvertError::ImageError(context) => write!(f, "{}", context.message),
+            ConvertError::OSError(context) => write!(f, "{}", context.message),
         }
     }
 }
@@ -117,7 +120,8 @@ impl Error for ConvertError {
             } => None,
             Self::AboveMaxLength(_, context)
             | Self::LockError(context)
-            | Self::ImageError(context) => context
+            | Self::ImageError(context)
+            | Self::OSError(context) => context
                 .inner
                 .as_ref()
                 .map(|e| e.as_ref() as &(dyn Error + 'static)),

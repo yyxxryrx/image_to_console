@@ -103,7 +103,7 @@ sixel_support = [
   "image_to_console_renderer/sixel_support",
 ]
 url = ["ureq"]
-use_crossterm = ["crossterm", "image_to_console_core/crossterm"]
+use_crossterm = ["crossterm", "image_to_console_core/crossterm", "image_to_console_renderer/crossterm"]
 video_player = [
   "crossbeam-channel",
   "ffmpeg-next",
